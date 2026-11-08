@@ -185,7 +185,7 @@ public class MainActivity extends Activity {
             runOnUiThread(()->{
                 Intent send=new Intent(Intent.ACTION_SEND);
                 send.setType("text/plain");
-                send.putExtra(Intent.EXTRA_TEXT,"NEON STRIKE 5v5 — kod pokoju: "+code+"\nOtwórz aplikację, wybierz MULTI i DOŁĄCZ.\nneonstrike://join?room="+code);
+                send.putExtra(Intent.EXTRA_TEXT,"TeamCS 5v5 — kod pokoju: "+code+"\nOtwórz aplikację, wybierz MULTI i DOŁĄCZ.\nneonstrike://join?room="+code);
                 try{startActivity(Intent.createChooser(send,"Zaproś do gry"));}catch(Exception ignored){}
             });
         }
