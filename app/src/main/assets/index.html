@@ -379,8 +379,8 @@ void main(){
  if(vMat>4.5 && vMat<5.5){float planks=step(.97,fract(vUV.y*.35));base*=1.0-planks*.32*uDetails;}
  if(vMat>7.5 && vMat<8.5){float edge=step(.97,fract(vUV.x*.23))+step(.97,fract(vUV.y*.23));base*=1.0-min(1.0,edge)*.18*uDetails;}
  float sun=max(dot(n,normalize(vec3(-.48,.81,.3))),0.0);
- float light=.45+sun*.62;
- if(uMood>1.5)light=.34+sun*.30;
+ float light=.58+sun*.66;
+ if(uMood>1.5)light=.48+sun*.37;
  if(uMood>.5 && uMood<1.5)light=.62+sun*.61;
  vec3 color=base*light*(.91+vTint*.15);
  if(vMat>8.5&&vMat<11.0 || vMat>14.5){color=base*(.93+.03*sin(uTime*.45+vPos.x*.2));}
@@ -421,6 +421,34 @@ class Geometry {
   this.addFace(brf,brb,trb,trf,nrm(1,0,0),id,tint,d,h);
   this.addFace(tlf,trf,trb,tlb,nrm(0,1,0),id,tint,w,d);
   this.addFace(blb,brb,brf,blf,nrm(0,-1,0),id,tint,w,d);
+ }
+ addEllipsoid(x,y,z,rx,ry,rz,mat='steel',tint=0,segments=8,rings=5){
+  const id=typeof mat==='number'?mat:(M[mat]??M.steel);
+  const vertex=(phi,theta)=>{
+   const cp=Math.cos(phi),sp=Math.sin(phi),ct=Math.cos(theta),st=Math.sin(theta);
+   const nx=cp*ct,ny=sp,nz=cp*st;
+   return [x+rx*nx,y+ry*ny,z+rz*nz,nx,ny,nz,(theta+Math.PI)/(2*Math.PI)*rx*4,(phi+Math.PI/2)/Math.PI*ry*4,id,tint];
+  };
+  for(let row=0;row<rings;row++){
+   const a=-Math.PI/2+row*Math.PI/rings,b=-Math.PI/2+(row+1)*Math.PI/rings;
+   for(let col=0;col<segments;col++){
+    const c=col*2*Math.PI/segments,d=(col+1)*2*Math.PI/segments;
+    const p0=vertex(a,c),p1=vertex(b,c),p2=vertex(b,d),p3=vertex(a,d);
+    this.a.push(...p0,...p1,...p2,...p0,...p2,...p3);
+   }
+  }
+ }
+ addTube(x,y,z,r,len,mat='steel',tint=0,segments=10){
+  const id=M[mat]??M.steel,front=z-len/2,back=z+len/2;
+  const v=(cx,cy,cz,nx,ny,nz,u,t)=>[cx,cy,cz,nx,ny,nz,u,t,id,tint];
+  for(let i=0;i<segments;i++){
+   const a=i*2*Math.PI/segments,b=(i+1)*2*Math.PI/segments;
+   const x0=Math.cos(a),y0=Math.sin(a),x1=Math.cos(b),y1=Math.sin(b);
+   const f0=v(x+x0*r,y+y0*r,front,x0,y0,0,0,0),f1=v(x+x1*r,y+y1*r,front,x1,y1,0,1,0),b0=v(x+x0*r,y+y0*r,back,x0,y0,0,0,len),b1=v(x+x1*r,y+y1*r,back,x1,y1,0,1,len);
+   this.a.push(...f0,...f1,...b1,...f0,...b1,...b0);
+   this.a.push(...v(x,y,front,0,0,-1,0,0),...f1,...f0);
+   this.a.push(...v(x,y,back,0,0,1,0,0),...b0,...b1);
+  }
  }
  line(from,to,mat='cyan'){const id=M[mat]??9;for(const p of [from,to])this.a.push(p[0],p[1],p[2],0,1,0,0,0,id,1);}
  get data(){return new Float32Array(this.a);}
@@ -479,7 +507,7 @@ class ArenaRenderer {
  resize(){const w=Math.max(1,Math.round(innerWidth*this.ratio)),h=Math.max(1,Math.round(innerHeight*this.ratio));if(this.width===w&&this.height===h)return;this.width=w;this.height=h;this.canvas.width=w;this.canvas.height=h;this.gl.viewport(0,0,w,h);this.proj=perspective(Math.PI/180*(75-29*this.zoom),w/h,.04,280);}
  bindBuffer(buffer){const gl=this.gl;gl.bindBuffer(gl.ARRAY_BUFFER,buffer);const stride=10*4;for(const [name,size,offset] of [['aPos',3,0],['aNormal',3,12],['aUV',2,24],['aMat',1,32],['aTint',1,36]]){const loc=this.locations[name];gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,size,gl.FLOAT,false,stride,offset);}}
  useWorld(view,time,mood){const gl=this.gl;gl.useProgram(this.p);gl.uniformMatrix4fv(this.uniforms.uProj,false,this.proj);gl.uniformMatrix4fv(this.uniforms.uView,false,view);gl.uniform1f(this.uniforms.uMood,mood);gl.uniform1f(this.uniforms.uTime,time);gl.uniform1f(this.uniforms.uDetails,this.quality==='low'?.5:1);gl.uniform3fv(this.uniforms.uFog,this.fog);}
- loadMap(map){this.map=map;const g=new Geometry(),rand=rng(map.id==='port'?871:map.id==='dunes'?1204:1990),detail=this.quality==='ultra'?3:this.quality==='low'?0:1;
+ loadMap(map){this.map=map;const g=new Geometry(),rand=rng(map.id==='port'?871:map.id==='dunes'?1204:1990),detail=this.quality==='ultra'?3:this.quality==='low'?1:2;
   this.fog=map.id==='dunes'?[.58,.49,.37]:map.id==='neon'?[.055,.072,.15]:[.18,.28,.34];
   const ground=map.ground==='sand'?'sand':'asphalt';g.addBox(0,-.35,0,270,.6,270,ground);
   // Painted lanes and street markings.
@@ -541,7 +569,7 @@ class ArenaRenderer {
   // Arena bounds accent strips, hanging lamps and scenic skyline.
   const side=map.side;
   for(let k=-35;k<=35;k+=10){const edge=map.id==='dunes'?'orange':map.id==='neon'?'purple':'cyan';g.addBox(k,3.1,-side+1.1,4,.09,.1,edge);g.addBox(k,3.1,side-1.1,4,.09,.1,edge);g.addBox(-side+1.1,3.1,k,.1,.09,4,edge);g.addBox(side-1.1,3.1,k,.1,.09,4,edge);}
-  for(let i=0;i<48;i++){
+  for(let i=0;i<(this.quality==='low'?30:44);i++){
    const angle=TAU*i/48,dist=54+rand()*31,x=Math.cos(angle)*dist,z=Math.sin(angle)*dist,w=5+rand()*9,h=map.id==='neon'?18+rand()*58:map.id==='dunes'?7+rand()*16:13+rand()*27;
    const mat=map.id==='dunes'?'sandstone':map.id==='neon'?'brick':'concrete',d=6+rand()*8;g.addBox(x,h/2-.15,z,w,h,d,mat,rand()-.5);residenceFacade(g,{x,z,w,d,h,mat},detail,rand,map.mood==='night');
    if(map.id==='neon'&&detail>0){for(let y=5;y<h-2;y+=5)g.addBox(x-w/2-.03,y,z,.08,.96,1,'glass',-.4);}
@@ -616,12 +644,13 @@ class ArenaRenderer {
   const armor=ct?'blue':'sandstone',edge=ct?'steel':'wood',cloth=ct?'steel':'wood',dark=ct?'dark':'shade';
   const move=(p.moving||0),step=Math.sin(time*9+(x+z)*.22)*Math.min(.13,move*.12);
   const part=(lx,ly,lz,w,h,d,mat,tint=0)=>{const co=Math.cos(rot),si=Math.sin(rot);g.addBox(x+lx*co+lz*si,y+ly,z-lx*si+lz*co,w,h,d,mat,tint,rot);};
+  const round=(lx,ly,lz,rx,ry,rz,mat,tint=0)=>{const co=Math.cos(rot),si=Math.sin(rot);g.addEllipsoid(x+lx*co+lz*si,y+ly,z-lx*si+lz*co,rx,ry,rz,mat,tint,8,5);};
   // Tactical silhouette: leg motion, boots, knee plates, chest rig, shoulder armor.
   part(0,.015,0,.93,.02,.78,'shade',-.5);
   for(const side of [-1,1]){
    const off=side*step;
    part(side*.22,.47+Math.max(0,off),off*.35,.28,.70,.31,cloth,-.5);
-   part(side*.22,.18+Math.max(0,off),-.04+off*.35,.29,.18,.35,dark,-.2);
+   round(side*.22,.18+Math.max(0,off),-.04+off*.35,.16,.11,.20,dark,-.2);
    part(side*.22,.52+Math.max(0,off),-.175+off*.35,.29,.19,.09,armor,.1);
    part(side*.45,1.03,0,.26,.67,.33,dark,.4);
    part(side*.48,1.08,-.23,.20,.35,.1,armor,.2);
@@ -633,13 +662,13 @@ class ArenaRenderer {
   for(const side of [-1,1]){
    part(side*.31,1.34,-.318,.13,.19,.05,edge,.55);
    part(side*.29,.97,-.27,.13,.26,.11,'shade');
-   part(side*.52,1.44,-.01,.30,.24,.43,armor,.25);
+   round(side*.52,1.44,-.01,.175,.19,.235,armor,.25);
    part(side*.44,1.13,-.23,.17,.27,.13,cloth);
   }
   part(0,1.07,.34,.54,.44,.21,'steel',-.2); // backpack
   part(0,1.42,.30,.45,.20,.12,edge,-.2);
-  part(0,1.63,0,.43,.45,.39,dark,.15);part(0,1.72,-.20,.36,.20,.11,ct?'dark':'shade');
-  part(0,1.93,0,.49,.15,.48,ct?'steel':'wood',-.18);
+  round(0,1.64,0,.24,.255,.235,dark,.08);part(0,1.72,-.20,.36,.20,.11,ct?'dark':'shade');
+  round(0,1.91,.01,.29,.16,.285,ct?'steel':'wood',-.18);
   part(0,1.69,-.26,.40,.20,.08,ct?'glass':'dark',ct?.6:.25);for(const side of [-1,1])part(side*.105,1.725,-.312,.085,.035,.035,'white',-.35);
   part(0,1.54,-.255,.32,.08,.05,edge,.65);
   part(-.26,1.73,-.05,.13,.20,.36,ct?'steel':'orange',-.3);
@@ -654,6 +683,8 @@ class ArenaRenderer {
   part(.15,1.19,-.36,.08,.23,.045,'steel',.25);
   if(!ct){part(0,1.80,-.30,.39,.10,.07,'wood',-.2);part(0,1.66,.34,.30,.27,.18,'orange',-.35);}
   else{part(0,1.73,-.29,.43,.13,.065,'glass',.25);part(0,1.50,.34,.26,.20,.15,'steel',.15);}
+  round(-.05,1.19,-.37,.11,.12,.12,ct?'dark':'shade',-.1);
+  round(.24,1.18,-.36,.11,.12,.12,ct?'dark':'shade',-.1);
   // Held stylized sci-fi blaster and hand grips.
   part(.10,1.26,-.49,.21,.18,.72,'dark');
   part(.11,1.33,-.78,.12,.13,.41,'steel',.15);
@@ -708,12 +739,20 @@ class ArenaRenderer {
   w.addBox(x,y+.265,z-.14,.075,.13,.07,'steel',.3);
   w.addBox(x,y-.11,z+.04,.20,.11,.25,'steel',-.3);
   w.addBox(x,y-.25,z+.035,.14,.31,.16,'dark',.2);
+  w.addTube(x,y+.025,z-.79,.052,.38,'steel',-.15,10);
   w.addBox(x,y+.025,z-.76,.095,.09,.29,'steel');
   for(const a of [-1,1]){
    w.addBox(x+a*.13,y+.04,z-.31,.04,.14,.27,'steel',.15);
    w.addBox(x+a*.135,y+.04,z-.38,.045,.05,.10,accent,.4);
   }
   w.addBox(x-.12,y-.075,z+.39,.21,.12,.38,'dark');
+  w.addEllipsoid(x-.22,y-.235,z+.24,.13,.12,.19,'dark',-.20,8,5);
+  w.addEllipsoid(x+.10,y-.26,z+.20,.11,.10,.13,'dark',-.18,8,5);
+  w.addBox(x-.19,y+.19,z-.11,.11,.028,.39,'steel',-.32);
+  w.addBox(x+.14,y+.19,z-.11,.10,.028,.39,'steel',-.32);
+  if(gun==='rail'){w.addTube(x,y+.33,z-.20,.11,.38,'dark',.15,12);w.addTube(x,y+.33,z-.50,.055,.08,'glass',-.12,10);}
+  if(gun==='storm'||gun==='pulse'){w.addBox(x+.03,y+.10,z-.53,.20,.17,.31,'steel',-.25);w.addBox(x+.03,y-.11,z-.15,.16,.10,.20,'shade',-.2);}
+  
   if(recoil>.4)w.addBox(x,y+.02,z-.69,.15*recoil,.15*recoil,.08,accent,.5);
   const gunData=w.data;this.useWorld(new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]),time,mood);gl.bindBuffer(gl.ARRAY_BUFFER,this.dynamicBuf);gl.bufferData(gl.ARRAY_BUFFER,gunData,gl.DYNAMIC_DRAW);this.bindBuffer(this.dynamicBuf);gl.drawArrays(gl.TRIANGLES,0,gunData.length/10);
  }
