@@ -220,6 +220,14 @@ func _layout_controls() -> void:
     touch_base.size = Vector2.ONE * radius * 2
     touch_knob.size = Vector2.ONE * radius * .81
     touch_knob.position = _left_origin - touch_knob.size / 2
+    if is_instance_valid(settings_panel):
+        # 390px-tall landscape screens need a compact scrolling dialog.
+        var half_width: float = minf(260.0,size.x * .455)
+        var half_height: float = minf(290.0,size.y * .465)
+        settings_panel.offset_left = -half_width
+        settings_panel.offset_right = half_width
+        settings_panel.offset_top = -half_height
+        settings_panel.offset_bottom = half_height
     var portrait := size.x < size.y
     if portrait:
         hint_label.visible = false
