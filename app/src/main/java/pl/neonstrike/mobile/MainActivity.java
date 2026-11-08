@@ -38,6 +38,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         fullscreen();
+        preferHighRefreshRate();
         web=new WebView(this);
         web.setLayerType(View.LAYER_TYPE_HARDWARE,null);
         web.setBackgroundColor(Color.rgb(5,13,21));
@@ -87,6 +88,24 @@ public class MainActivity extends Activity {
         web.loadUrl(code!=null && code.matches("[A-Za-z2-9]{6}")?HOME+"?room="+code.toUpperCase(Locale.US):HOME);
     }
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);launch(intent);}
+    // Hint only: Android or WebView may still impose a 60 Hz rendering limit.
+    private void preferHighRefreshRate(){
+        try{
+            android.view.Display display=getWindowManager().getDefaultDisplay();
+            android.view.Display.Mode current=display.getMode();
+            android.view.Display.Mode best=current;
+            for(android.view.Display.Mode mode:display.getSupportedModes()){
+                if(mode.getPhysicalWidth()!=current.getPhysicalWidth()||mode.getPhysicalHeight()!=current.getPhysicalHeight())continue;
+                if(mode.getRefreshRate()>best.getRefreshRate()&&mode.getRefreshRate()<=120.5f)best=mode;
+            }
+            WindowManager.LayoutParams params=getWindow().getAttributes();
+            params.preferredDisplayModeId=best.getModeId();
+            params.preferredRefreshRate=best.getRefreshRate();
+            getWindow().setAttributes(params);
+        }catch(Exception ignored){
+            // Keep default mode on devices without selectable refresh modes.
+        }
+    }
     private void fullscreen(){
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY|View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     }
