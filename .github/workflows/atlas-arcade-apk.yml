@@ -1,0 +1,42 @@
+name: ATLAS ARCADE - zbuduj APK
+on:
+  push:
+    branches: [atlas-arcade-apk]
+    paths:
+      - 'atlas-app/**'
+      - '.github/workflows/atlas-arcade-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Zbuduj prawdziwy instalator Android
+        run: gradle -p atlas-app --no-daemon assembleDebug
+      - name: Nazwij instalator
+        run: cp atlas-app/app/build/outputs/apk/debug/app-debug.apk ATLAS_ARCADE_1_0.apk
+      - name: Zalacz APK do kompilacji
+        uses: actions/upload-artifact@v4
+        with:
+          name: ATLAS-ARCADE-APK
+          path: ATLAS_ARCADE_1_0.apk
+          retention-days: 14
+      - name: Publikacja bezposredniego pliku APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view atlas-arcade-v1.0 >/dev/null 2>&1; then
+            gh release upload atlas-arcade-v1.0 ATLAS_ARCADE_1_0.apk --clobber
+          else
+            gh release create atlas-arcade-v1.0 ATLAS_ARCADE_1_0.apk --target "${GITHUB_SHA}" --title "ATLAS ARCADE 1.0 na Android" --notes "Instalacyjna wersja gry arcade offline. 24 motywy maszyn, bonusowe re-spiny, minigry i wyzwania. Bez wpłat i bez zakładów pieniężnych. Uruchamia się bez przeglądarki i bez internetu."
+          fi
