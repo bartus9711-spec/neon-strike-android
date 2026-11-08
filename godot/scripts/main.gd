@@ -54,6 +54,32 @@ func _setup_palette() -> void:
             mat.emission_enabled = true
             mat.emission = colors[key]
             mat.emission_energy_multiplier = 0.35
+        # Tile real CC0 photogrammetric PBR materials over world-space objects.
+        var material_ids := {
+            "asphalt": ["asphalt_01", .55],
+            "paving": ["cobblestone_pavement", .32],
+            "stone": ["painted_plaster_wall", .27],
+            "cream": ["painted_plaster_wall", .29],
+            "sand": ["painted_plaster_wall", .32],
+            "ochre": ["red_brick", .24],
+            "copper": ["red_brick", .41],
+        }
+        if material_ids.has(key):
+            var meta: Array = material_ids[key]
+            var prefix: String = "res://assets/" + str(meta[0])
+            var diffuse := prefix + "_diff.jpg"
+            var normal := prefix + "_normal.jpg"
+            if ResourceLoader.exists(diffuse):
+                mat.albedo_texture = load(diffuse)
+                mat.albedo_color = Color(1, 1, 1, 1) if key in ["asphalt","paving"] else colors[key].lightened(.25)
+                mat.uv1_triplanar = true
+                mat.uv1_world_triplanar = true
+                var scale: float = meta[1]
+                mat.uv1_scale = Vector3(scale, scale, scale)
+                if ResourceLoader.exists(normal):
+                    mat.normal_enabled = true
+                    mat.normal_texture = load(normal)
+                    mat.normal_scale = 1.2
         palette[key] = mat
 
 func _setup_lighting() -> void:
@@ -63,7 +89,7 @@ func _setup_lighting() -> void:
     var sky := Sky.new()
     var procedural := ProceduralSkyMaterial.new()
     procedural.sky_top_color = Color(0.10, 0.25, 0.47)
-    procedural.sky_horizon_color = Color(0.80, 0.57, 0.39)
+    procedural.sky_horizon_color = Color(0.48, 0.60, 0.69)
     procedural.ground_bottom_color = Color(0.23, 0.23, 0.22)
     procedural.ground_horizon_color = Color(0.55, 0.47, 0.37)
     sky.sky_material = procedural
@@ -71,15 +97,16 @@ func _setup_lighting() -> void:
     atmosphere.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
     atmosphere.reflected_light_source = Environment.REFLECTION_SOURCE_BG
     atmosphere.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+    atmosphere.ambient_light_energy = .67
     atmosphere.fog_enabled = true
     atmosphere.fog_light_color = Color(0.70, 0.59, 0.48)
-    atmosphere.fog_density = 0.007
+    atmosphere.fog_density = 0.0027
     world.environment = atmosphere
     add_child(world)
     sun = DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-44, -34, -10)
     sun.light_color = Color(1.0, 0.89, 0.72)
-    sun.light_energy = 2.4
+    sun.light_energy = 1.38
     sun.shadow_enabled = true
     sun.directional_shadow_max_distance = 65.0
     add_child(sun)
