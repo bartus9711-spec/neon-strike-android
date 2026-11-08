@@ -190,7 +190,7 @@ const dateKey=()=>new Date().toLocaleDateString('sv-SE');
 const defaultState=()=>({version:7,coins:120,theme:0,settings:{sound:true,vibrate:false,gentle:false,notifications:false},egg:null,pet:null,collection:[],achievements:[],history:[],journal:[],inventory:{},alerts:{},stats:{hatches:0,feed:0,play:0,clean:0,cuddle:0,games:0,care:0},daily:{day:dateKey(),goals:{},claimed:[],foodKinds:[]},lastUpdate:Date.now(),lastEvent:Date.now()});
 function load(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.version===7){const d=defaultState();return {...d,...v,settings:{...d.settings,...v.settings},stats:{...d.stats,...v.stats},daily:{...d.daily,...v.daily}}}}catch(e){}return defaultState()}
 let S=load(),selected=0,activeModal='',actionFlag='',gameSession=null,toastTimer=null,shownAgeStage='',hatchShown=false,frame=0;
-function save(){S.lastUpdate=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}try{if(window.PikoNative)window.PikoNative.updateState(JSON.stringify(S))}catch(e){}}
+function save(){S.lastUpdate=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}try{if(window.PikoNative)window.PikoNative.updateState(JSON.stringify(S))}catch(e){}syncVisitPet();}
 function sound(freq=660,duration=.065){if(!S.settings.sound)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ac=sound.ctx||(sound.ctx=new C());if(ac.state==='suspended')ac.resume();const osc=ac.createOscillator(),gain=ac.createGain();osc.type='square';osc.frequency.value=freq;gain.gain.setValueAtTime(.038,ac.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+duration);osc.connect(gain);gain.connect(ac.destination);osc.start();osc.stop(ac.currentTime+duration)}catch(e){}}
 function vibrate(){if(S.settings.vibrate && navigator.vibrate)navigator.vibrate(35)}
 function notify(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2700)}
@@ -314,7 +314,7 @@ function renderUI(){if(!document.getElementById('lcdTop'))return;const p=S.pet;$
  $('lcdTitle').textContent=selected>=0?ACTIONS[selected].name:'';}
 }
 function pushButton(which){if(which==='prev')selected=(selected+ACTIONS.length-1)%ACTIONS.length;else if(which==='next')selected=(selected+1)%ACTIONS.length;else doAction(ACTIONS[selected].id);if(which!=='select'){sound(600,.045);renderUI()}const el=$(which==='prev'?'prevBtn':which==='next'?'nextBtn':'selectBtn');el.classList.add('pressed');setTimeout(()=>el.classList.remove('pressed'),130)}
-function showMenu(){const cards=[['🎨','Obudowy','themes'],['📖','Kolekcja','collection'],['❤️','Stan pupila','stats'],['🎮','Minigry','games'],['🛒','Sklepik','shop'],['🎯','Zadania','tasks'],['🏆','Osiągnięcia','achievements'],['📜','Dziennik','journal'],['⚙️','Ustawienia','settings'],['🥚','Historia pokoleń','history']];showSheet('☰ Menu PikoPet',`<p class="intro">Wybierz funkcję. Obudowy zmienisz w każdej chwili — pupil zostaje ten sam.</p><div class="menu-grid">${cards.map(([ico,name,act])=>`<button class="menu-card" data-go="${act}"><span class="emoji">${ico}</span>${name}</button>`).join('')}</div><p class="foot-line">PikoPet • gra offline • 100% fikcyjna zabawa</p>`,'menu')}
+function showMenu(){const cards=[['📡','Odwiedziny','visits'],['🎨','Obudowy','themes'],['📖','Kolekcja','collection'],['❤️','Stan pupila','stats'],['🎮','Minigry','games'],['🛒','Sklepik','shop'],['🎯','Zadania','tasks'],['🏆','Osiągnięcia','achievements'],['📜','Dziennik','journal'],['⚙️','Ustawienia','settings'],['🥚','Historia pokoleń','history']];showSheet('☰ Menu PikoPet',`<p class="intro">Wybierz funkcję. Obudowy zmienisz w każdej chwili — pupil zostaje ten sam.</p><div class="menu-grid">${cards.map(([ico,name,act])=>`<button class="menu-card" data-go="${act}"><span class="emoji">${ico}</span>${name}</button>`).join('')}</div><p class="foot-line">PikoPet • gra offline • 100% fikcyjna zabawa</p>`,'menu')}
 function showThemes(){showSheet('🎨 Wymienne obudowy',`<p class="intro">Wszystkie <strong>${THEMES.length} obudowy</strong> są od razu dostępne! Zmieniaj je kiedy chcesz — nie tracisz zwierzaka ani postępów.</p><div class="skin-grid">${THEMES.map((t,i)=>`<button class="skin-tile ${S.theme===i?'active':''}" data-theme="${i}"><img src="${SHELL_SRC}" alt="Obudowa ${esc(t.name)}" loading="lazy" style="filter:hue-rotate(${t.hue}deg) saturate(${t.sat}) brightness(${t.bright})"><span>${i+1}. ${esc(t.name)}</span></button>`).join('')}</div>`,'themes')}
 function changeTheme(i){S.theme=clamp(i,0,THEMES.length-1);save();sound(950,.07);showThemes();notify('✨ Obudowa: '+THEMES[S.theme].name)}
 function showCollection(){showSheet('📖 Kolekcja zwierzaków',`<div class="banner">Odkryto: <strong>${S.collection.length} / ${SPECIES.length}</strong> gatunków. Każde jajko to losowanie — rzadkich pupili spotyka się trudniej.</div><div class="collection-grid">${SPECIES.map(s=>{const found=S.collection.includes(s.id);return `<div class="pet-tile ${found?'found':''}"><span class="pet-emoji">${found?`<img class="pixel-thumb" alt="${esc(s.name)}" src="${SPRITES[s.id].src}">`:'❔'}</span><span class="pet-label">${found?esc(s.name):'???'}</span><span class="rarity">${TIERS[s.tier]}</span></div>`}).join('')}</div><p class="hint">32 gatunki: 12 zwykłych, 10 niezwykłych, 6 rzadkich, 4 legendarne. Wylęganie jest losowe, a gatunki różnią się wyglądem i osobowością.</p>`,'collection')}
@@ -324,7 +324,7 @@ function showSettings(){
  const status=S.egg?'🥚 Jajko się wykluwa':p?(p.alive?`🐾 ${esc(p.name)} · ${esc(stage(p))}`:`🌙 Wspomnienia: ${esc(p.name)}`):'🥚 Jeszcze nie wybrano jajka';
  const available=!!window.PikoNative || (('Notification' in window) && window.isSecureContext);
  showSheet('⚙️ Ustawienia i menu',`<div class="banner"><strong>${status}</strong><br>✦ ${S.coins} gwiazdek · ${S.collection.length}/32 odkrytych zwierzaków</div>
- <div class="action-list"><button class="primary" data-go="stats">♡ Stan zwierzaka</button><button class="primary" data-go="menu">☰ Pełne menu</button><button class="secondary" data-go="themes">🎨 32 obudowy</button><button class="secondary" data-go="collection">📖 Kolekcja</button></div>
+ <div class="action-list"><button class="primary" data-go="visits">📡 Odwiedziny BT / Wi-Fi</button><button class="primary" data-go="stats">♡ Stan zwierzaka</button><button class="primary" data-go="menu">☰ Pełne menu</button><button class="secondary" data-go="themes">🎨 32 obudowy</button><button class="secondary" data-go="collection">📖 Kolekcja</button></div>
  <div class="section-label">🔔 Przypomnienia o potrzebach</div>
  <div class="settings-row"><strong>Powiadomienia o głodzie, chorobie i czystości</strong><button class="toggle ${S.settings.notifications?'on':''}" data-action="notifications">${S.settings.notifications?'WŁ.':'WŁĄCZ'}</button></div>
  <p class="hint">${available?'Powiadomienia mogą pojawiać się, gdy aplikacja działa w przeglądarce lub tle.':'W pojedynczym pliku HTML powiadomienia systemowe mogą być niedostępne. Zainstalowana PWA z HTTPS oferuje lepszą obsługę.'} W aplikacji Android przypomnienia mogą działać także po zamknięciu gry. System oszczędzania baterii może je opóźniać.</p>
@@ -334,6 +334,86 @@ function showSettings(){
  <input id="importFile" type="file" accept="application/json,.json" hidden><div class="save-box">Dane zapisują się lokalnie na tym urządzeniu. Eksport zapisu pozwala przenieść pupila do nowej wersji pliku.</div>
  <p class="hint">PikoPet jest nieoficjalną grą inspirowaną klasycznymi wirtualnymi zwierzakami.</p>`,'settings')
 }
+
+/* PikoPet nearby visits — Android Bluetooth Classic and local Wi-Fi */
+const LINK={state:"idle",role:"",other:null,ip:"",pin:"",status:"",paired:[],plays:0,started:0};
+function linkNative(){return typeof window.PikoLinkNative!=="undefined";}
+function syncVisitPet(){
+ if(!linkNative())return;
+ try{PikoLinkNative.setPet(JSON.stringify(S.pet&&S.pet.alive?{species:S.pet.species,name:S.pet.name}:{species:"",name:""}));}catch(e){}
+}
+function showVisits(){
+ if(!linkNative()){
+   showSheet("📡 Odwiedziny",'<p class="intro">Spotkania Bluetooth i Wi-Fi działają w zainstalowanej aplikacji Android PikoPet. Wersja HTML służy do gry offline.</p>','visit');return;
+ }
+ let html='<p class="intro">Dwa telefony, dwa PikoPety. Gospodarz zaprasza pupila do swojego jajka. Bez kont i bez internetu — potrzebna jest ta sama sieć Wi-Fi lub wcześniejsze sparowanie Bluetooth.</p>';
+ if(LINK.status)html+='<div class="banner">'+esc(LINK.status)+'</div>';
+ if(LINK.state==="invite"){
+   html+='<div class="banner"><strong>🐾 '+esc(LINK.other?.name||"Pupil")+'</strong> chce wejść do Twojego domku. Czy zapraszasz go do zabawy?</div><div class="action-list"><button class="primary" data-link="accept">✅ Wpuść pupila</button><button class="secondary" data-link="reject">Nie teraz</button></div>';
+ }else if(LINK.state==="visit"){
+   const visitor=LINK.other||{};
+   let pic=SPRITES[visitor.species]?.src||"";
+   html+='<div class="banner" style="text-align:center"><div style="display:flex;gap:16px;justify-content:center;align-items:center">'+
+      (S.pet?'<img class="reveal-pixel" style="width:90px;height:90px" src="'+esc(SPRITES[S.pet.species]?.src||"")+'">':'')+
+      '<span style="font-size:28px">💞</span>'+
+      (pic?'<img class="reveal-pixel" style="width:90px;height:90px" src="'+esc(pic)+'">':'')+
+      '</div><strong>'+esc(S.pet?.name||"Twój pupil")+' i '+esc(visitor.name||"Gość")+'</strong><br>'+
+      (LINK.role==="host"?"Gość jest w Twoim jajku!":"Twój pupil wybrał się w odwiedziny!")+
+      '</div><div class="action-list"><button class="primary" data-link="play">🎾 Wspólna zabawa (+12 humoru)</button><button class="secondary" data-link="bye">🏠 Powrót do domku</button></div><p class="hint">Wspólna zabawa ma krótką przerwę. Każdy pupil zachowuje swój zapis na własnym telefonie.</p>';
+ }else{
+   if(LINK.state==="hosting"){
+     html+='<div class="banner">⏳ Domek otwarty. Czekam na drugiego PikoPeta.</div>';
+     if(LINK.ip)html+='<div class="banner"><strong>Twoje Wi-Fi:</strong><br><strong style="font-size:19px">'+esc(LINK.ip)+'</strong><br>Kod wizyty: <strong style="font-size:26px;letter-spacing:4px">'+esc(LINK.pin)+'</strong></div>';
+     html+='<div class="action-list"><button class="secondary" data-link="bye">❌ Zamknij domek</button></div>';
+   }else{
+     html+='<div class="section-label">📶 Wi-Fi / hotspot — bez internetu</div>'+
+       '<p class="hint">Połącz oba telefony z tą samą siecią Wi-Fi. Jeden otwiera domek, drugi wpisuje adres i kod pokazany u gospodarza.</p>'+
+       '<div class="action-list"><button class="primary" data-link="hostWifi">🏠 Otwórz domek Wi-Fi</button></div>'+
+       '<div class="settings-row"><input id="linkIp" type="text" inputmode="decimal" placeholder="Adres gospodarza np. 192.168.1.5" style="width:100%;min-width:0;font-size:15px;padding:12px;border-radius:12px"></div>'+
+       '<div class="settings-row"><input id="linkPin" type="text" inputmode="numeric" maxlength="6" placeholder="Kod 6 cyfr" style="width:100%;font-size:17px;padding:12px;border-radius:12px"></div>'+
+       '<div class="action-list"><button class="primary" data-link="joinWifi">🚀 Wyślij pupila przez Wi-Fi</button></div>'+
+       '<div class="section-label">🔵 Bluetooth — sparowane telefony</div>'+
+       '<p class="hint">Najpierw sparuj telefony w systemowych ustawieniach Bluetooth. Jeden czeka w domku, a drugi wybiera go z listy.</p>'+
+       '<div class="action-list"><button class="secondary" data-link="hostBt">🏠 Otwórz domek Bluetooth</button><button class="secondary" data-link="listBt">📱 Pokaż sparowane telefony</button></div>';
+     for(const d of LINK.paired){html+='<div class="action-list"><button class="primary" data-link="joinBt" data-bt="'+esc(d.address)+'">🔗 '+esc(d.name||"Telefon")+'</button></div>';}
+   }
+ }
+ showSheet("📡 Odwiedziny",html,"visit");
+}
+function linkAction(btn){
+ if(!linkNative()){notify("Zainstaluj APK na Androidzie.");return;}
+ const cmd=btn.dataset.link;
+ if(!S.pet?.alive){notify("Najpierw wykluj zdrowego pupila.");return;}
+ syncVisitPet();
+ try{
+  if(cmd==="hostWifi"){LINK.ip="";LINK.pin="";LINK.status="Otwieram domek Wi-Fi…";LINK.state="hosting";PikoLinkNative.hostWifi();}
+  else if(cmd==="joinWifi"){
+   const ip=($("linkIp")?.value||"").trim(),pin=($("linkPin")?.value||"").trim();
+   if(!ip||!pin){notify("Wpisz adres IP i 6-cyfrowy kod.");return;}
+   LINK.status="Łączę z gospodarzem Wi-Fi…";LINK.state="waiting";
+   PikoLinkNative.joinWifi(ip,pin);
+  }else if(cmd==="hostBt"){LINK.ip="";LINK.pin="";LINK.state="hosting";LINK.status="Otwieram domek Bluetooth…";PikoLinkNative.hostBluetooth();}
+  else if(cmd==="listBt"){LINK.paired=JSON.parse(PikoLinkNative.pairedBluetooth()||"[]");LINK.status=LINK.paired.length?"Wybierz urządzenie poniżej.":"Brak sparowanych urządzeń. Sparuj telefony w ustawieniach Bluetooth.";}
+  else if(cmd==="joinBt"){LINK.status="Łączę przez Bluetooth…";LINK.state="waiting";PikoLinkNative.joinBluetooth(btn.dataset.bt);}
+  else if(cmd==="accept"){PikoLinkNative.accept();LINK.status="Gość przyjęty!";}
+  else if(cmd==="reject"){PikoLinkNative.reject();LINK.state="idle";LINK.status="Odrzucono wizytę.";}
+  else if(cmd==="play"){PikoLinkNative.play();return;}
+  else if(cmd==="bye"){PikoLinkNative.endVisit();LINK.state="idle";LINK.other=null;LINK.status="Wróciliście do swoich domków.";}
+  showVisits();
+ }catch(e){notify("Nie udało się uruchomić połączenia.");}
+}
+window.PikoLink={receive:function(raw){
+ let e;try{e=JSON.parse(raw);}catch(err){return;}
+ if(e.type==="wifi_host"){LINK.state="hosting";LINK.ip=e.ip||"";LINK.pin=e.pin||"";LINK.status="Przekaż znajomemu adres i kod wizyty.";}
+ else if(e.type==="status"){LINK.status=e.message||"";notify(LINK.status);if(LINK.state==="waiting"&&/nie można|Odrzucono|nie udało/i.test(LINK.status))LINK.state="idle";}
+ else if(e.type==="invite"){LINK.state="invite";LINK.other=e.pet||null;LINK.status="Nowy pupil prosi o wizytę!";notify("🐾 Ktoś puka do domku!");}
+ else if(e.type==="visit"){LINK.state="visit";LINK.role=e.role||"";LINK.other=e.pet||null;LINK.plays=0;LINK.status="Wizyta rozpoczęta!";notify("💞 Zwierzaki są razem!");}
+ else if(e.type==="play"){if(LINK.state==="visit"&&S.pet?.alive){S.pet.happy=clamp(S.pet.happy+12);S.pet.affection=clamp(S.pet.affection+3);S.stats.play++;writeJournal("Wspólna zabawa z pupilem podczas wizyty.");save();LINK.plays++;notify("🎾 Zabawa! +12 humoru");}}
+ else if(e.type==="ended"){LINK.state="idle";LINK.role="";LINK.other=null;LINK.ip="";LINK.pin="";LINK.status="Wizyta zakończona. Zwierzak wrócił do swojego jajka.";notify("🏠 Pupil wrócił do domku.");}
+ if(activeModal==="visit")showVisits();
+ renderUI();
+}};
+
 function showHistory(){showSheet('🥚 Historia pokoleń',`<div class="banner">Wyklutych pupili: <b>${S.stats.hatches}</b><br>Odkrytych gatunków: <b>${S.collection.length}</b></div>${S.history.length?S.history.map(h=>`<div class="record-row"><b>${esc(h.name)}</b> · ${new Date(h.day).toLocaleDateString('pl-PL')}<br><small>${esc(h.reason)} · ${Math.floor(h.life/3600000)} godz.</small></div>`).join(''):'<p class="intro">Pierwsza przygoda dopiero się zaczyna. Tutaj zapiszą się wspomnienia z kolejnych pokoleń.</p>'}`,'history')}
 function showJournal(){showSheet('📜 Dziennik zdarzeń',`<p class="intro">Losowe wydarzenia, etapy życia i osiągnięcia.</p>${S.journal.length?S.journal.map(x=>`<div class="record-row"><small>${new Date(x.t).toLocaleString('pl-PL')}</small><br>${esc(x.msg)}</div>`).join(''):'<p>Jeszcze nie ma wpisów.</p>'}`,'journal')}
 function showAchievements(){showSheet('🏆 Osiągnięcia',`<div class="banner">Ukończono <b>${S.achievements.length} / ${ACHIEVEMENTS.length}</b> osiągnięć.</div><div class="collection-grid">${ACHIEVEMENTS.map(a=>`<div class="pet-tile ${S.achievements.includes(a[0])?'found':''}"><span class="pet-emoji">${S.achievements.includes(a[0])?a[2]:'🔒'}</span><span class="pet-label">${esc(a[1])}</span></div>`).join('')}</div>`,'achievements')}
@@ -391,25 +471,28 @@ function draw(){
  if(S.egg){eggDraw();return;}
  if(!S.pet){eggDraw();return;}
  if(!S.pet.alive){px(27,46,42,2,'#937c94');px(45,28,6,14,'#967b99');px(41,28,14,3,'#967b99');pixelHeart(45,16,'#98718d');return;}
- const p=S.pet,im=SPRITES[p.species],baby=stage(p)==='Maluch';
- const side=baby?52:stage(p)==='Senior'?60:58;
+ if(LINK.state==='visit'&&LINK.role==='guest'){px(24,26,5,6,'#886188');px(38,18,5,6,'#886188');px(52,30,5,6,'#886188');pixelHeart(73,13,PINK);return;}
+  const p=S.pet,im=SPRITES[p.species],baby=stage(p)==='Maluch';
+ const side=LINK.state==='visit'&&LINK.role==='host'?39:(baby?52:stage(p)==='Senior'?60:58);
  const bounce=p.sleeping?0:Math.round(Math.sin(frame*.29)*1.1);
- const x=Math.round((96-side)/2),y=Math.round((65-side)/2)+bounce;
+ const x=LINK.state==='visit'&&LINK.role==='host'?6:Math.round((96-side)/2),y=Math.round((65-side)/2)+bounce;
  if(im?.complete&&im.naturalWidth){ctx.drawImage(im,x,y,side,side);}else{
   ctx.fillStyle='#a4cfac';ctx.fillRect(38,20,20,20);px(42,27,3,4,INK);px(51,27,3,4,INK);
  }
- if(p.sleeping){px(70,14,4,2,INK);px(75,9,5,2,INK);px(82,4,5,2,INK)}
+ if(LINK.state==='visit'&&LINK.role==='host'){const visitor=SPRITES[LINK.other?.species];if(visitor?.complete&&visitor.naturalWidth){ctx.drawImage(visitor,53,14,39,39);pixelHeart(46,5,PINK);}}
+  if(p.sleeping){px(70,14,4,2,INK);px(75,9,5,2,INK);px(82,4,5,2,INK)}
  else if(p.sick){px(73,12,3,10,INK);px(73,25,3,3,INK)}
  else if(p.happy>75&&frame%22<13)pixelHeart(74,10,PINK);
  if(p.hunger<18&&!p.sleeping){px(16,22,2,8,INK);px(21,22,2,8,INK);px(16,32,8,2,INK)}
 }
-function route(where){switch(where){case 'themes':showThemes();break;case 'collection':showCollection();break;case 'stats':showStats();break;case 'games':showGames();break;case 'shop':showShop();break;case 'bag':showBag();break;case 'tasks':showTasks();break;case 'achievements':showAchievements();break;case 'journal':showJournal();break;case 'settings':showSettings();break;case 'history':showHistory();break;case 'menu':showMenu();break;default:showMenu()}}
+function route(where){switch(where){case 'visits':showVisits();break;case 'themes':showThemes();break;case 'collection':showCollection();break;case 'stats':showStats();break;case 'games':showGames();break;case 'shop':showShop();break;case 'bag':showBag();break;case 'tasks':showTasks();break;case 'achievements':showAchievements();break;case 'journal':showJournal();break;case 'settings':showSettings();break;case 'history':showHistory();break;case 'menu':showMenu();break;default:showMenu()}}
 $('openSettings').addEventListener('click',()=>showSettings());$('openCollection').addEventListener('click',()=>showCollection());$('quickMenu').addEventListener('click',showMenu);$('quickStats').addEventListener('click',showStats);
 $('prevBtn').addEventListener('click',()=>pushButton('prev'));$('nextBtn').addEventListener('click',()=>pushButton('next'));$('selectBtn').addEventListener('click',()=>pushButton('select'));
 $('closeSheet').addEventListener('click',hideSheet);$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))hideSheet()});
 $('lcdViewport').addEventListener('click',()=>{if(S.egg)eggTap();else if(S.pet?.alive){care('cuddle')}else if(!S.pet)showEggPicker();else showMemorial()});
 ['lcdTop','lcdBottom'].forEach(area=>$(area).addEventListener('click',e=>{const b=e.target.closest('[data-icon]');if(!b)return;const i=ACTIONS.findIndex(a=>a.id===b.dataset.icon);if(i>=0){selected=i;renderUI();doAction(ACTIONS[i].id)}}));
 $('overlay').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.link){linkAction(b);return}
  if(b.dataset.egg){startEgg(b.dataset.egg);return}
  if(b.dataset.go){route(b.dataset.go);return}
  if(b.dataset.action){const cmd=b.dataset.action;if(cmd==='name')renamePet();else if(cmd==='nextlife')showEggPicker();else if(cmd==='close')hideSheet();else if(cmd==='export')downloadSave();else if(cmd==='import')$('importFile')?.click();else if(cmd==='notifications')toggleNotifications();return}
@@ -430,6 +513,7 @@ document.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement)
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)simulate()});
 window.addEventListener('pageshow',()=>simulate());
 window.addEventListener('beforeunload',save);
+syncVisitPet();
 renderUI();draw();simulate();
 if(S.pet&&!S.pet.alive)showMemorial();
 setInterval(()=>{draw();if(gameSession?.kind==='catch'&&!gameSession.done&&$('gameScore')){const left=Math.max(0,12-Math.floor((Date.now()-gameSession.started)/1000));$('gameScore').innerHTML=`Punkty: <b>${gameSession.score}</b> · Czas: <b>${left}s</b>`;if(left<=0)finishGame(gameSession.score,'Czas minął!')}},170);
