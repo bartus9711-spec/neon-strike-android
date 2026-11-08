@@ -21,11 +21,12 @@
         <button class="secondary" data-bt-tool="discover">📱 Pokaż mój telefon (2 min)</button>
         <button class="primary" data-bt-tool="scan">🔍 Szukaj pobliskich</button>
         <button class="secondary" data-bt-tool="refresh">↻ Odśwież sparowane</button>
+        <button class="primary" data-bt-tool="system">📱 Systemowe wyszukiwanie i parowanie</button>
         <button class="secondary" data-bt-tool="settings">⚙️ Ustawienia Bluetooth</button>
       </div>
       ${scanState?'<div class="banner">'+esc(scanState)+'</div>':''}
       ${rowsHTML}
-      <p class="hint">Po sparowaniu na telefonie A wybierz „Otwórz domek Bluetooth”, a na telefonie B przy telefonie A wybierz „Połącz”.</p>`);
+      <p class="hint">Jeśli zwykłe wyszukiwanie nic nie pokazuje, użyj <b>Systemowe wyszukiwanie i parowanie</b>. Android wyświetli własną listę urządzeń. Po sparowaniu na telefonie A wybierz „Otwórz domek Bluetooth”, a na telefonie B przy telefonie A wybierz „Połącz”.</p>`);
   };
   function refresh(){
     if(!linkNative())return;
@@ -49,6 +50,7 @@
       if(op==='discover'){scanState='Potwierdź systemową prośbę o widoczność Bluetooth.';PikoLinkNative.makeDiscoverable();}
       else if(op==='scan'){scanState='🔍 Szukam pobliskich telefonów…';PikoLinkNative.scanBluetooth();}
       else if(op==='refresh'){refresh();return;}
+      else if(op==='system'){scanState='Android uruchamia własną listę urządzeń. Sprawdź widoczność drugiego telefonu.';PikoLinkNative.systemDevicePicker();}
       else if(op==='settings'){PikoLinkNative.openBluetoothSettings();}
       else if(op==='pair'){scanState='Potwierdź kod parowania na obu telefonach.';PikoLinkNative.pairBluetooth(button.dataset.btAddress);}
       else if(op==='connect'){
@@ -68,8 +70,14 @@
       devices.set(e.address,{address:e.address,name:e.name||'Telefon Bluetooth',paired:!!e.paired});
       scanState=e.paired?'✅ Sparowano: '+(e.name||'telefon'): 'Znaleziono telefon: '+(e.name||'Bluetooth');
     }
+    if(e.type==='bt_visible'){
+      scanState='✅ Android potwierdził widoczność na '+(e.seconds||120)+' sekund. Na DRUGIM telefonie wybierz Szukaj pobliskich.';
+    }
+    if(e.type==='status'&&e.message&&(/skan|widocz|sparowan|nie znalazł|urządze|Bluetooth/i.test(e.message))){
+      scanState=e.message;
+    }
     oldReceive(raw);
-    if(e.type==='bt_found'&&activeModal==='visit')showVisits();
+    if(['bt_found','bt_visible','status'].includes(e.type)&&activeModal==='visit')showVisits();
   };
   window.PikoBluetooth={refresh,list:()=>Array.from(devices.values())};
 })();
