@@ -23,6 +23,7 @@ common/physics_ticks_per_second=60
 renderer/rendering_method="mobile"
 renderer/rendering_method.mobile="mobile"
 textures/default_filters/use_nearest_mipmap_filter=false
+textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.06, 0.10, 0.16, 1)
 anti_aliasing/quality/msaa_3d=2
 
