@@ -10,6 +10,10 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
+import android.companion.CompanionDeviceManager;
+import android.companion.AssociationRequest;
+import android.companion.BluetoothDeviceFilter;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.webkit.JavascriptInterface;
@@ -61,6 +65,8 @@ public final class PetLink {
   private volatile long lastCoopTap=0;
   private volatile boolean scanning=false;
   private volatile boolean scanRegistered=false;
+  private volatile int scannedCount=0;
+  private final Set<String> scannedAddresses=Collections.synchronizedSet(new java.util.HashSet<String>());
   private BroadcastReceiver scanReceiver=null;
   private static final int DISCOVER_SEC=120;
 
@@ -112,17 +118,45 @@ public final class PetLink {
       sendEvent(event);
     }catch(Exception e){status("Nie można wyświetlić urządzenia Bluetooth.");}
   }
-  private void stopScan(){
-    activity.runOnUiThread(()->{
-      try{
-        if(bluetooth!=null && Build.VERSION.SDK_INT>=31 &&
-            activity.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN)!=PackageManager.PERMISSION_GRANTED)return;
-        if(bluetooth!=null&&bluetooth.isDiscovering())bluetooth.cancelDiscovery();
-      }catch(Exception ignored){}
-      if(scanRegistered&&scanReceiver!=null){
-        try{activity.unregisterReceiver(scanReceiver);}catch(Exception ignored){}
+  private void stopScanOnUiThread(){
+    try{
+      if(bluetooth!=null&&(Build.VERSION.SDK_INT<31||
+          activity.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN)==PackageManager.PERMISSION_GRANTED)){
+        if(bluetooth.isDiscovering())bluetooth.cancelDiscovery();
       }
-      scanReceiver=null;scanRegistered=false;scanning=false;
+    }catch(Exception ignored){}
+    if(scanRegistered&&scanReceiver!=null){
+      try{activity.unregisterReceiver(scanReceiver);}catch(Exception ignored){}
+    }
+    scanReceiver=null;scanRegistered=false;scanning=false;
+  }
+  private void stopScan(){
+    activity.runOnUiThread(this::stopScanOnUiThread);
+  }
+  public void reportBluetooth(String msg){status(msg);}
+  public void onDiscoverabilityResult(int resultCode){
+    if(resultCode>0){
+      status("✅ Telefon naprawdę widoczny przez "+resultCode+" sekund! Teraz na DRUGIM telefonie kliknij Szukaj pobliskich.");
+      try{
+        JSONObject e=obj("bt_visible");e.put("seconds",resultCode);sendEvent(e);
+      }catch(Exception ignored){}
+    }else status("❌ Android NIE włączył widoczności. Potwierdź systemowe okno albo użyj ustawień Bluetooth.");
+  }
+  public void onCompanionPicked(BluetoothDevice device){
+    if(device==null){status("Wybór systemowy nie zwrócił urządzenia Bluetooth.");return;}
+    try{
+      sendDevice(device);
+      if(device.getBondState()==BluetoothDevice.BOND_BONDED){
+        status("✅ Telefon już sparowany! Otwórz domek BT na drugim urządzeniu.");return;
+      }
+      boolean started=device.createBond();
+      status(started?"Potwierdź kod na obu telefonach. Po sparowaniu kliknij Odśwież sparowane.":"Nie udało się zainicjować parowania. Spróbuj w Ustawieniach Bluetooth.");
+    }catch(Exception ex){status("Nie można rozpocząć parowania systemowego: "+ex.getClass().getSimpleName());}
+  }
+  private void launchCompanionPicker(IntentSender sender){
+    activity.runOnUiThread(()->{
+      try{activity.startIntentSenderForResult(sender,76,null,0,0,0);}
+      catch(Exception ex){status("Nie udało się otworzyć systemowej listy: "+ex.getClass().getSimpleName());}
     });
   }
   public final class Bridge {
@@ -156,7 +190,8 @@ public final class PetLink {
       if(!scanPermission())return;
       activity.runOnUiThread(()->{
         try{
-          if(scanning)stopScan();
+          stopScanOnUiThread();
+          scannedAddresses.clear();scannedCount=0;
           scanning=true;
           scanReceiver=new BroadcastReceiver(){
             @Override public void onReceive(Context context,Intent intent){
@@ -166,20 +201,30 @@ public final class PetLink {
                 BluetoothDevice device=Build.VERSION.SDK_INT>=33?
                   intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE,BluetoothDevice.class):
                   (BluetoothDevice)intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                if(device!=null)sendDevice(device);
+                if(device!=null){
+                  try{if(scannedAddresses.add(device.getAddress()))scannedCount++;}catch(Exception ignored){}
+                  sendDevice(device);
+                  status("🔎 Wykryto "+scannedCount+" urządzeń. Jeśli widzisz właściwy telefon, kliknij Sparuj.");
+                }
               }else if(BluetoothDevice.ACTION_BOND_STATE_CHANGED.equals(action)){
                 BluetoothDevice device=Build.VERSION.SDK_INT>=33?
                   intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE,BluetoothDevice.class):
                   (BluetoothDevice)intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 if(device!=null){sendDevice(device);if(device.getBondState()==BluetoothDevice.BOND_BONDED)status("✅ Telefony sparowane! Teraz można rozpocząć odwiedziny.");}
+              }else if(BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)){
+                status("🔎 Bluetooth faktycznie skanuje urządzenia… (około 12–20 sekund)");
               }else if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)){
-                scanning=false;status("Skanowanie zakończone. Jeśli nie widzisz telefonu, włącz na nim widoczność.");
+                final int found=scannedCount;
+                stopScanOnUiThread();
+                if(found==0)status("❌ Skan zakończony: ZERO urządzeń. Włącz widoczność na drugim telefonie i potwierdź okno Androida. Możesz użyć Wyszukiwania systemowego.");
+                else status("✅ Skanowanie zakończone. Wykryto "+found+" urządzeń.");
               }
             }
           };
           IntentFilter filter=new IntentFilter();
           filter.addAction(BluetoothDevice.ACTION_FOUND);
           filter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+          filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
           filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
           if(Build.VERSION.SDK_INT>=33)
             activity.registerReceiver(scanReceiver,filter,Context.RECEIVER_EXPORTED);
@@ -187,8 +232,35 @@ public final class PetLink {
           scanRegistered=true;
           boolean started=bluetooth.startDiscovery();
           if(started)status("🔎 Szukam urządzeń Bluetooth w pobliżu…");
-          else{stopScan();status("Nie udało się rozpocząć skanowania. Spróbuj ponownie.");}
-        }catch(Exception e){stopScan();status("Bluetooth: brak pozwolenia na wyszukiwanie lub urządzenie jest zajęte.");}
+          else{stopScanOnUiThread();status("❌ Android nie uruchomił skanowania. Włącz Bluetooth i sprawdź zgodę na Urządzenia w pobliżu.");}
+        }catch(Exception e){stopScanOnUiThread();status("Bluetooth: błąd skanowania ("+e.getClass().getSimpleName()+"). Sprawdź zgodę na Urządzenia w pobliżu.");}
+      });
+    }
+    @JavascriptInterface public void systemDevicePicker(){
+      if(!btOk())return;
+      if(Build.VERSION.SDK_INT<26){
+        activity.runOnUiThread(()->{
+          try{activity.startActivity(new Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS));}
+          catch(Exception e){status("Nie można otworzyć listy systemowej.");}
+        });
+        return;
+      }
+      activity.runOnUiThread(()->{
+        try{
+          stopScanOnUiThread();
+          CompanionDeviceManager mgr=(CompanionDeviceManager)activity.getSystemService(Context.COMPANION_DEVICE_SERVICE);
+          if(mgr==null){status("Ten telefon nie ma systemowego wyszukiwania urządzeń.");return;}
+          BluetoothDeviceFilter filter=new BluetoothDeviceFilter.Builder().build();
+          AssociationRequest request=new AssociationRequest.Builder().addDeviceFilter(filter).setSingleDevice(false).build();
+          CompanionDeviceManager.Callback callback=new CompanionDeviceManager.Callback(){
+            @Override public void onAssociationPending(IntentSender sender){launchCompanionPicker(sender);}
+            @Override public void onDeviceFound(IntentSender sender){launchCompanionPicker(sender);}
+            @Override public void onFailure(CharSequence error){status("System nie znalazł telefonu: "+String.valueOf(error));}
+          };
+          if(Build.VERSION.SDK_INT>=33)mgr.associate(request,activity.getMainExecutor(),callback);
+          else mgr.associate(request,callback,null);
+          status("Uruchamiam systemowe wyszukiwanie Bluetooth. Na drugim telefonie potwierdź widoczność.");
+        }catch(Exception e){status("Nie można uruchomić wyszukiwania systemowego: "+e.getClass().getSimpleName());}
       });
     }
     @JavascriptInterface public void makeDiscoverable(){
