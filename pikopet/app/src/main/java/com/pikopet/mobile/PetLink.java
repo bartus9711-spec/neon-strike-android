@@ -53,6 +53,8 @@ public final class PetLink {
   private volatile String pin="";
   private volatile String joinPin="";
   private volatile long lastPlay=0;
+  private volatile long lastGift=0;
+  private volatile long lastCoopTap=0;
 
   public PetLink(Activity activity,WebView web){this.activity=activity;this.web=web;}
 
@@ -211,6 +213,24 @@ public final class PetLink {
       lastPlay=now;
       JSONObject p=obj("play");sendWire(p);sendEvent(p);
     }
+    @JavascriptInterface public void gift(){
+      if(!authorized)return;
+      long now=System.currentTimeMillis();
+      if(now-lastGift<120000){status("Prezent można wręczyć raz na 2 minuty.");return;}
+      lastGift=now;
+      JSONObject p=obj("gift");sendWire(p);sendEvent(p);
+    }
+    @JavascriptInterface public void startCoop(){
+      if(!authorized)return;
+      JSONObject p=obj("coop_start");sendWire(p);sendEvent(p);
+    }
+    @JavascriptInterface public void coopTap(){
+      if(!authorized)return;
+      long now=System.currentTimeMillis();
+      if(now-lastCoopTap<650)return;
+      lastCoopTap=now;
+      JSONObject p=obj("coop_tap");sendWire(p);sendEvent(p);
+    }
     @JavascriptInterface public void endVisit(){
       sendWire(obj("bye"));close();sendEvent(obj("ended"));
     }
@@ -250,7 +270,10 @@ public final class PetLink {
         else if(type.equals("play")&&authorized){
           long now=System.currentTimeMillis();
           if(now-lastPlay>=11000){lastPlay=now;sendEvent(obj("play"));}
-        }else if(type.equals("bye")){break;}
+        }else if(type.equals("gift")&&authorized){sendEvent(obj("gift"));}
+        else if(type.equals("coop_start")&&authorized){sendEvent(obj("coop_start"));}
+        else if(type.equals("coop_tap")&&authorized){sendEvent(obj("coop_tap"));}
+        else if(type.equals("bye")){break;}
       }
     }catch(Exception e){
       if(current==generation)status("Połączenie zostało przerwane.");
