@@ -1,4 +1,4 @@
-name: Build PikoPet APK
+name: Build PikoPet Deluxe 2.0 APK
 on:
   push:
     branches: [ pikopet-apk-build ]
@@ -20,25 +20,45 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Kontrola składni i zgodności zasobów offline
+        run: |
+          node --check pikopet/app/src/main/assets/themes.js
+          node --check pikopet/app/src/main/assets/games.js
+          node --check pikopet/app/src/main/assets/duo.js
+          python3 - <<'PY'
+          import re, subprocess
+          from pathlib import Path
+          p=Path('pikopet/app/src/main/assets')
+          html=(p/'index.html').read_text()
+          assert '<script src="./themes.js"></script>' in html
+          assert '<script src="./games.js"></script>' in html
+          assert '<script src="./duo.js"></script>' in html
+          main=re.search(r'<script>(.*?)</script>',html,re.S).group(1)
+          subprocess.run(['node','--check','-'],input=main,text=True,check=True)
+          assert 'function renderUI()' in main and 'function showVisits()' in main
+          assert 'const profiles=[' in (p/'themes.js').read_text()
+          assert 'const BONUS=[' in (p/'games.js').read_text()
+          print('PikoPet Deluxe 2.0: wszystkie skrypty i pliki są dostępne offline')
+          PY
       - name: Android SDK 35
         run: test -f "$ANDROID_HOME/platforms/android-35/android.jar"
       - name: Buduj aplikacje Android
         run: gradle --no-daemon -p pikopet :app:assembleDebug --stacktrace
       - name: Przygotuj APK
-        run: cp pikopet/app/build/outputs/apk/debug/app-debug.apk PikoPet_DUO_BT_WiFi.apk
+        run: cp pikopet/app/build/outputs/apk/debug/app-debug.apk PikoPet_DELUXE_2_0.apk
       - name: APK do pobrania
         uses: actions/upload-artifact@v4
         with:
-          name: PikoPet-Duo-1.1-APK
-          path: PikoPet_DUO_BT_WiFi.apk
+          name: PikoPet-Deluxe-2.0-APK
+          path: PikoPet_DELUXE_2_0.apk
           if-no-files-found: error
           retention-days: 30
       - name: Publiczny instalator w Releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view pikopet-duo-v1.1 >/dev/null 2>&1; then
-            gh release upload pikopet-duo-v1.1 PikoPet_DUO_BT_WiFi.apk --clobber
+          if gh release view pikopet-deluxe-v2.0 >/dev/null 2>&1; then
+            gh release upload pikopet-deluxe-v2.0 PikoPet_DELUXE_2_0.apk --clobber
           else
-            gh release create pikopet-duo-v1.1 PikoPet_DUO_BT_WiFi.apk --target "${GITHUB_SHA}" --title "PikoPet Duo 1.1 Bluetooth i Wi-Fi" --notes "Instalator Android (APK). Pikselowy pupil, 32 gatunki, 32 obudowy, zapis offline i powiadomienia systemowe. Odwiedziny na sparowanym Bluetooth lub w tej samej sieci Wi-Fi po kodzie i zgodzie gospodarza. Budowa testowa z podpisem debug."
+            gh release create pikopet-deluxe-v2.0 PikoPet_DELUXE_2_0.apk --target "${GITHUB_SHA}" --title "PikoPet Deluxe 2.0 — obudowy, minigry i odwiedziny" --notes "Instalator Android (APK). Pikselowy pupil, 32 osobne wzory obudów, 32 gatunki, 16 minigier, 12 zabaw, album pamiątek, zapis offline i przypomnienia o opiece. Odwiedziny na sparowanym Bluetooth lub w tej samej sieci Wi-Fi po kodzie i zgodzie gospodarza. Budowa testowa z podpisem debug."
           fi
