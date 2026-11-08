@@ -1,4 +1,4 @@
-name: Buduj NEON STRIKE APK
+name: Buduj TeamCS APK
 on:
   workflow_dispatch:
   push:
@@ -27,20 +27,20 @@ jobs:
       - name: Zbuduj APK
         run: gradle --no-daemon --stacktrace assembleDebug
       - name: Przygotuj plik do pobrania
-        run: cp app/build/outputs/apk/debug/app-debug.apk NEON_STRIKE_V3.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk TeamCS_Android.apk
       - name: Udostepnij APK jako artefakt kompilacji
         uses: actions/upload-artifact@v4
         with:
-          name: NEON-STRIKE-Android-APK
-          path: NEON_STRIKE_V3.apk
+          name: TeamCS-Android-APK
+          path: TeamCS_Android.apk
           if-no-files-found: error
           retention-days: 14
       - name: Opublikuj bezposredni APK w GitHub Releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view v0.3.0-beta >/dev/null 2>&1; then
-            gh release upload v0.3.0-beta NEON_STRIKE_V3.apk --clobber
+          if gh release view teamcs-v1.0.0-preview >/dev/null 2>&1; then
+            gh release upload teamcs-v1.0.0-preview TeamCS_Android.apk --clobber
           else
-            gh release create v0.3.0-beta NEON_STRIKE_V3.apk --target "${GITHUB_SHA}" --title "NEON STRIKE V3 (beta)" --prerelease --notes "NEON STRIKE V3: 8 map, 5 stylizowanych broni, prywatne pokoje online P2P, ranking beta i kosmetyka zdobywana za rozgrywke. Pobierz NEON_STRIKE_V3.apk i otworz go w Plikach na Androidzie. To testowa aplikacja spoza Google Play. Przy zmianie podpisu debug poprzednia wersja moze wymagac odinstalowania."
+            gh release create teamcs-v1.0.0-preview TeamCS_Android.apk --target "${GITHUB_SHA}" --title "TeamCS v1.0.0 (preview)" --prerelease --notes "TeamCS preview: 8 autorskich map, postacie zespolow T/CT, drewniane osłony, celowanie przez lunetę z osobną czułością, tryb solo i lobby P2P. Ranking jest lokalny, nie jest globalnym matchmakingiem. Pobierz TeamCS_Android.apk i otworz go w Plikach na Androidzie. To testowa aplikacja spoza Google Play. Przy zmianie podpisu debug poprzednia wersja moze wymagac odinstalowania."
           fi
