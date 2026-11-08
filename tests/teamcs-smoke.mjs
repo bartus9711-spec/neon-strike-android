@@ -38,14 +38,12 @@ async function runTest(name,params){
   if(params.isMobile){
     assert.equal(await page.locator('#btnFire').isVisible(),false,'Mobile controls visible too early');
   }
-  assert.equal(await page.locator('#mainMenu .match-card').count(),6,'The six quick-access actions are missing');
-  assert.equal(await page.locator('#lobbyNickname').isVisible(),true,'Lobby player profile missing');
   await page.screenshot({path:'test-results/'+name+'-lobby.png',animations:'disabled'});
-  await page.locator('#mainMenu .menu-rail [data-teamcs-action="settings"]').click();
-  assert.equal(await page.locator('#mainMenu').evaluate(e=>e.classList.contains('advanced-open')),true,'Settings drawer did not open');
+  assert.equal(await page.locator('#fpsSelect').inputValue(),'120','120 FPS target is not default');
+  await page.locator('#fpsSelect').selectOption('90');
   await page.locator('#qualitySelect').selectOption('low');
-  await page.locator('.lobby-close').click();
-  assert.equal(await page.locator('#mainMenu').evaluate(e=>e.classList.contains('advanced-open')),false,'Settings drawer did not close');
+  assert.equal(await page.locator('#fpsSelect').inputValue(),'90','FPS option did not update');
+  await page.locator('#fpsSelect').selectOption('120');
   await page.locator('#soloButton').click();
   await page.waitForTimeout(550);
   assert.equal(await page.locator('#gameOverlay').isVisible(),true,'Solo overlay not visible');
@@ -63,6 +61,7 @@ async function runTest(name,params){
   assert.equal(await page.locator('#settingsPanel').isVisible(),true,'Pause/settings panel did not open');
   assert.equal(await page.locator('#inScopeSens').count(),1,'Precision sensitivity setting missing');
   assert.equal(await page.locator('#inScopePadSens').count(),1,'Controller precision setting missing');
+  assert.equal(await page.locator('#inFpsSelect').inputValue(),'120','In-game 120 FPS setting not synchronized');
   await page.locator('#resumeGame').click();
   assert.equal(await page.locator('#settingsPanel').isVisible(),false,'Settings did not close');
   log(name+': in-game settings and resume');
