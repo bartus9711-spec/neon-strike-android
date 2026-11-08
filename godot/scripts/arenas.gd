@@ -14,6 +14,8 @@ var materials: Dictionary = {}
 var sunshine: DirectionalLight3D
 var atmosphere: Environment
 var scene_lights: Array[OmniLight3D] = []
+var texture_enabled := true
+var detail_level := 2
 
 func _init() -> void:
     var json_text := FileAccess.get_file_as_string(MAP_PATH)
@@ -55,6 +57,31 @@ func load_arena(index: int) -> void:
         "skyline": _skyline()
     _lighting()
     _flush()
+    apply_advanced(texture_enabled,detail_level)
+
+func apply_advanced(textured: bool, detail: int) -> void:
+    texture_enabled = textured
+    detail_level = clampi(detail,0,2)
+    if not is_instance_valid(world):
+        return
+    for spec in [
+        ["road","asphalt_01", .61], ["tarmac","asphalt_01", .60],
+        ["pavers","cobblestone_pavement", .43], ["stone","painted_plaster_wall", .32],
+        ["plaster","painted_plaster_wall", .36], ["brick","red_brick", .53],
+        ["sand","painted_plaster_wall", .20], ["wood","red_brick", .43]
+    ]:
+        var mat: StandardMaterial3D = materials[spec[0]]
+        if textured:
+            _material_from_photo(mat,str(spec[1]),float(spec[2]))
+        else:
+            mat.albedo_texture = null
+            mat.normal_enabled = false
+            mat.normal_texture = null
+    for node in world.get_children():
+        if node is MultiMeshInstance3D and str(node.name).begins_with("Round_Instanced"):
+            node.visible = detail_level >= 1
+    for index in range(scene_lights.size()):
+        scene_lights[index].visible = detail_level == 2 or (detail_level == 1 and index % 3 == 0)
 
 func spawn_position() -> Vector3:
     # Use each arena's authored spawn positions, never an arbitrary position inside cover.
