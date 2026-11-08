@@ -182,7 +182,7 @@ public final class PetLink {
           filter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
           filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
           if(Build.VERSION.SDK_INT>=33)
-            activity.registerReceiver(scanReceiver,filter,Context.RECEIVER_NOT_EXPORTED);
+            activity.registerReceiver(scanReceiver,filter,Context.RECEIVER_EXPORTED);
           else activity.registerReceiver(scanReceiver,filter);
           scanRegistered=true;
           boolean started=bluetooth.startDiscovery();
@@ -193,6 +193,11 @@ public final class PetLink {
     }
     @JavascriptInterface public void makeDiscoverable(){
       if(!btOk())return;
+      if(Build.VERSION.SDK_INT>=31 && activity.checkSelfPermission(Manifest.permission.BLUETOOTH_ADVERTISE)!=PackageManager.PERMISSION_GRANTED){
+        activity.runOnUiThread(()->activity.requestPermissions(new String[]{Manifest.permission.BLUETOOTH_ADVERTISE},75));
+        status("Zezwól na wykrywalność urządzenia, potem naciśnij Widoczność ponownie.");
+        return;
+      }
       activity.runOnUiThread(()->{
         try{
           Intent intent=new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
