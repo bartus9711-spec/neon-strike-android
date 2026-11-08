@@ -62,12 +62,13 @@ jobs:
           # Godot probes the Android ADB service even when exporting without a device.
           "$ANDROID_HOME/platform-tools/adb" start-server
           "$ANDROID_HOME/platform-tools/adb" devices
-          /tmp/godot --headless --path godot --editor --install-android-build-template             --quit 2>&1 | tee /tmp/godot-template.log
-          test -f godot/android/build/build.gradle
+          # Godot 4.7 CLI installs the Gradle template only together with --export-debug.
+          test -s "$HOME/.local/share/godot/export_templates/4.7.2.stable/android_source.zip"
       - name: Export signed native test APK (NEVER publishes official release)
         run: |
           set -o pipefail
-          /tmp/godot --headless --path godot --editor --export-debug "Android GT7 QA"             "$GITHUB_WORKSPACE/TeamCS_Godot_GT7_QA.apk" 2>&1 | tee /tmp/godot-export.log
+          /tmp/godot --headless --path godot --editor --install-android-build-template --export-debug "Android GT7 QA"             "$GITHUB_WORKSPACE/TeamCS_Godot_GT7_QA.apk" 2>&1 | tee /tmp/godot-export.log
+          test -f godot/android/build/build.gradle
           test -s TeamCS_Godot_GT7_QA.apk
           grep -q "BUILD SUCCESSFUL" /tmp/godot-export.log || echo "Gradle summary not found, verifying APK directly"
       - name: Validate APK is native Godot and includes Android network plugin
