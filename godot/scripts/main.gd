@@ -122,7 +122,7 @@ func _facade(side: int, block: int, seed: int) -> void:
     var x := side * 16.5
     var height := 8.0 + float((seed * 3) % 5)
     var width := 13.7
-    var finish := ["stone", "cream", "ochre", "sand"][seed % 4]
+    var finish: String = ["stone", "cream", "ochre", "sand"][seed % 4]
     _box(Vector3(x, height * 0.5, z), Vector3(6, height, width), finish, true)
     # Cornice, roof band, masonry courses and windows.
     _box(Vector3(x - side * 0.1, height + 0.25, z), Vector3(7, 0.48, width + 0.6), "roof")
@@ -301,7 +301,7 @@ func _physics_process(delta: float) -> void:
 func _turn(relative: Vector2) -> void:
     if relative == Vector2.ZERO:
         return
-    var sensitivity := hud.look_sensitivity if is_instance_valid(hud) else 1.0
+    var sensitivity: float = hud.look_sensitivity if is_instance_valid(hud) else 1.0
     heading -= relative.x * .0030 * sensitivity
     elevation = clampf(elevation - relative.y * .0030 * sensitivity, -1.35, 1.26)
 
