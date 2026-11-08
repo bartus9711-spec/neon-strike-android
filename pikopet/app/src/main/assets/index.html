@@ -471,12 +471,15 @@ function draw(){
  if(S.egg){eggDraw();return;}
  if(!S.pet){eggDraw();return;}
  if(!S.pet.alive){px(27,46,42,2,'#937c94');px(45,28,6,14,'#967b99');px(41,28,14,3,'#967b99');pixelHeart(45,16,'#98718d');return;}
+ if(LINK.state==='visit'&&window.PikoMotion){window.PikoMotion.cozy(ctx,frame,S,LINK,SPRITES);return;}
  if(LINK.state==='visit'&&LINK.role==='guest'){px(24,26,5,6,'#886188');px(38,18,5,6,'#886188');px(52,30,5,6,'#886188');pixelHeart(73,13,PINK);return;}
   const p=S.pet,im=SPRITES[p.species],baby=stage(p)==='Maluch';
  const side=LINK.state==='visit'&&LINK.role==='host'?39:(baby?52:stage(p)==='Senior'?60:58);
  const bounce=p.sleeping?0:Math.round(Math.sin(frame*.29)*1.1);
- const x=LINK.state==='visit'&&LINK.role==='host'?6:Math.round((96-side)/2),y=Math.round((65-side)/2)+bounce;
- if(im?.complete&&im.naturalWidth){ctx.drawImage(im,x,y,side,side);}else{
+ const walking=window.PikoMotion?.step(p,side);
+ const x=walking?.x??(LINK.state==='visit'&&LINK.role==='host'?6:Math.round((96-side)/2));
+ const y=walking?.y??(Math.round((65-side)/2)+bounce);
+ if(im?.complete&&im.naturalWidth){if(walking?.flip){ctx.save();ctx.translate(x+side,0);ctx.scale(-1,1);ctx.drawImage(im,0,y,side,side);ctx.restore();}else ctx.drawImage(im,x,y,side,side);}else{
   ctx.fillStyle='#a4cfac';ctx.fillRect(38,20,20,20);px(42,27,3,4,INK);px(51,27,3,4,INK);
  }
  if(LINK.state==='visit'&&LINK.role==='host'){const visitor=SPRITES[LINK.other?.species];if(visitor?.complete&&visitor.naturalWidth){ctx.drawImage(visitor,53,14,39,39);pixelHeart(46,5,PINK);}}
@@ -525,5 +528,6 @@ setInterval(simulate,10000);
 <script src="./games.js"></script>
 <script src="./duo.js"></script>
 <script src="./navigation.js"></script>
+<script src="./motion.js"></script>
 </body>
 </html>
