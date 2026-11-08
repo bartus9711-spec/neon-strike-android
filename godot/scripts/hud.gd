@@ -24,8 +24,8 @@ var ui: Control
 var status_label: Label
 var fps_label: Label
 var hint_label: Label
-var touch_base: ColorRect
-var touch_knob: ColorRect
+var touch_base: Panel
+var touch_knob: Panel
 var settings_panel: PanelContainer
 var settings_button: Button
 var profile_select: OptionButton
@@ -118,12 +118,22 @@ func _button(value: String) -> Button:
     return b
 
 func _make_controls() -> void:
-    touch_base = ColorRect.new()
-    touch_base.color = Color(.19,.37,.46,.20)
+    touch_base = Panel.new()
+    var base_style := StyleBoxFlat.new()
+    base_style.bg_color = Color(.10,.23,.32,.26)
+    base_style.border_color = Color(.39,.84,.85,.57)
+    base_style.set_border_width_all(2)
+    base_style.set_corner_radius_all(999)
+    touch_base.add_theme_stylebox_override("panel",base_style)
     touch_base.mouse_filter = Control.MOUSE_FILTER_IGNORE
     ui.add_child(touch_base)
-    touch_knob = ColorRect.new()
-    touch_knob.color = Color(.26,.78,.81,.49)
+    touch_knob = Panel.new()
+    var knob_style := StyleBoxFlat.new()
+    knob_style.bg_color = Color(.22,.64,.69,.39)
+    knob_style.border_color = Color(.66,.98,.99,.72)
+    knob_style.set_border_width_all(2)
+    knob_style.set_corner_radius_all(999)
+    touch_knob.add_theme_stylebox_override("panel",knob_style)
     touch_knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
     ui.add_child(touch_knob)
     var cross := _label("+", 24, Color(.78,1,.95,.75))
