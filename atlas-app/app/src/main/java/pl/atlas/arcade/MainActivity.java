@@ -41,7 +41,7 @@ public final class MainActivity extends Activity {
                 return !"file".equals(request.getUrl().getScheme());
             }
         });
-        webView.loadUrl("file:///android_asset/arcadeworlds.html");
+        webView.loadUrl("file:///android_asset/arcade4.html");
     }
 
     @Override public void onBackPressed() {
