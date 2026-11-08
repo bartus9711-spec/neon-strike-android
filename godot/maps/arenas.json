@@ -1,0 +1,1852 @@
+[
+  {
+    "id": "port",
+    "name": "NABRZEŻE 17",
+    "tag": "Kontenery • zachód słońca",
+    "side": 42,
+    "mood": "dusk",
+    "ground": "asphalt",
+    "accent": "#20f2e7",
+    "obstacles": [
+      {
+        "x": -43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 8,
+        "mat": "steel",
+        "kind": "perimeter"
+      },
+      {
+        "x": 43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 8,
+        "mat": "steel",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": -43,
+        "w": 88,
+        "d": 2,
+        "h": 8,
+        "mat": "steel",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": 43,
+        "w": 88,
+        "d": 2,
+        "h": 8,
+        "mat": "steel",
+        "kind": "perimeter"
+      },
+      {
+        "x": -20,
+        "z": -21,
+        "w": 18,
+        "d": 6,
+        "h": 5,
+        "mat": "blue",
+        "kind": "container"
+      },
+      {
+        "x": -18,
+        "z": -10,
+        "w": 6,
+        "d": 16,
+        "h": 4,
+        "mat": "blue",
+        "kind": "container"
+      },
+      {
+        "x": 20,
+        "z": 20,
+        "w": 19,
+        "d": 6,
+        "h": 5,
+        "mat": "orange",
+        "kind": "container"
+      },
+      {
+        "x": 18,
+        "z": 10,
+        "w": 6,
+        "d": 16,
+        "h": 4,
+        "mat": "orange",
+        "kind": "container"
+      },
+      {
+        "x": 2,
+        "z": -20,
+        "w": 15,
+        "d": 6,
+        "h": 4,
+        "mat": "steel",
+        "kind": "container"
+      },
+      {
+        "x": -2,
+        "z": 20,
+        "w": 15,
+        "d": 6,
+        "h": 4,
+        "mat": "steel",
+        "kind": "container"
+      },
+      {
+        "x": -25,
+        "z": 8,
+        "w": 9,
+        "d": 11,
+        "h": 4,
+        "mat": "concrete",
+        "kind": "warehouse"
+      },
+      {
+        "x": 25,
+        "z": -8,
+        "w": 9,
+        "d": 11,
+        "h": 4,
+        "mat": "concrete",
+        "kind": "warehouse"
+      },
+      {
+        "x": -6,
+        "z": 0,
+        "w": 9,
+        "d": 9,
+        "h": 3,
+        "mat": "steel",
+        "kind": "power"
+      },
+      {
+        "x": 8,
+        "z": 0,
+        "w": 7,
+        "d": 7,
+        "h": 3,
+        "mat": "steel",
+        "kind": "power"
+      },
+      {
+        "x": -31,
+        "z": -1,
+        "w": 5,
+        "d": 5,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 31,
+        "z": 1,
+        "w": 5,
+        "d": 5,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 0,
+        "z": -32,
+        "w": 7,
+        "d": 4,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 0,
+        "z": 32,
+        "w": 7,
+        "d": 4,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": -11,
+        "z": 31,
+        "w": 5,
+        "d": 5,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 11,
+        "z": -31,
+        "w": 5,
+        "d": 5,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      }
+    ],
+    "spawnBlue": [
+      [
+        -34,
+        29
+      ],
+      [
+        -33,
+        20
+      ],
+      [
+        -30,
+        33
+      ],
+      [
+        -26,
+        31
+      ],
+      [
+        -34,
+        12
+      ]
+    ],
+    "spawnRed": [
+      [
+        34,
+        -29
+      ],
+      [
+        33,
+        -20
+      ],
+      [
+        30,
+        -33
+      ],
+      [
+        26,
+        -31
+      ],
+      [
+        34,
+        -12
+      ]
+    ],
+    "sites": [
+      {
+        "id": "A",
+        "x": -17,
+        "z": 5
+      },
+      {
+        "id": "B",
+        "x": 17,
+        "z": -5
+      }
+    ]
+  },
+  {
+    "id": "dunes",
+    "name": "PIASKOWE MURY",
+    "tag": "Ruiny • pustynne miasto",
+    "side": 42,
+    "mood": "desert",
+    "ground": "sand",
+    "accent": "#ffbb55",
+    "obstacles": [
+      {
+        "x": -43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 9,
+        "mat": "sandstone",
+        "kind": "perimeter"
+      },
+      {
+        "x": 43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 9,
+        "mat": "sandstone",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": -43,
+        "w": 88,
+        "d": 2,
+        "h": 9,
+        "mat": "sandstone",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": 43,
+        "w": 88,
+        "d": 2,
+        "h": 9,
+        "mat": "sandstone",
+        "kind": "perimeter"
+      },
+      {
+        "x": -25,
+        "z": -15,
+        "w": 13,
+        "d": 11,
+        "h": 6,
+        "mat": "sandstone",
+        "kind": "tower"
+      },
+      {
+        "x": 25,
+        "z": 15,
+        "w": 13,
+        "d": 11,
+        "h": 6,
+        "mat": "sandstone",
+        "kind": "tower"
+      },
+      {
+        "x": 0,
+        "z": 0,
+        "w": 13,
+        "d": 13,
+        "h": 8,
+        "mat": "sandstone",
+        "kind": "temple"
+      },
+      {
+        "x": -3,
+        "z": -27,
+        "w": 14,
+        "d": 6,
+        "h": 4,
+        "mat": "sandstone",
+        "kind": "wall"
+      },
+      {
+        "x": 3,
+        "z": 27,
+        "w": 14,
+        "d": 6,
+        "h": 4,
+        "mat": "sandstone",
+        "kind": "wall"
+      },
+      {
+        "x": -24,
+        "z": 15,
+        "w": 5,
+        "d": 19,
+        "h": 4,
+        "mat": "brick",
+        "kind": "wall"
+      },
+      {
+        "x": 24,
+        "z": -15,
+        "w": 5,
+        "d": 19,
+        "h": 4,
+        "mat": "brick",
+        "kind": "wall"
+      },
+      {
+        "x": -12,
+        "z": 17,
+        "w": 5,
+        "d": 8,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 12,
+        "z": -17,
+        "w": 5,
+        "d": 8,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": -12,
+        "z": -12,
+        "w": 6,
+        "d": 6,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 12,
+        "z": 12,
+        "w": 6,
+        "d": 6,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 0,
+        "z": -13,
+        "w": 9,
+        "d": 4,
+        "h": 3,
+        "mat": "brick",
+        "kind": "cover"
+      },
+      {
+        "x": 0,
+        "z": 13,
+        "w": 9,
+        "d": 4,
+        "h": 3,
+        "mat": "brick",
+        "kind": "cover"
+      },
+      {
+        "x": -32,
+        "z": -31,
+        "w": 9,
+        "d": 5,
+        "h": 4,
+        "mat": "wood",
+        "kind": "market"
+      },
+      {
+        "x": 32,
+        "z": 31,
+        "w": 9,
+        "d": 5,
+        "h": 4,
+        "mat": "wood",
+        "kind": "market"
+      }
+    ],
+    "spawnBlue": [
+      [
+        -32,
+        32
+      ],
+      [
+        -32,
+        23
+      ],
+      [
+        -24,
+        32
+      ],
+      [
+        -35,
+        12
+      ],
+      [
+        -34,
+        8
+      ]
+    ],
+    "spawnRed": [
+      [
+        32,
+        -32
+      ],
+      [
+        32,
+        -23
+      ],
+      [
+        24,
+        -32
+      ],
+      [
+        35,
+        -12
+      ],
+      [
+        34,
+        -8
+      ]
+    ],
+    "sites": [
+      {
+        "id": "A",
+        "x": -17,
+        "z": 5
+      },
+      {
+        "id": "B",
+        "x": 17,
+        "z": -5
+      }
+    ]
+  },
+  {
+    "id": "neon",
+    "name": "NOCNE KAMIENICE",
+    "tag": "Nocne osiedle • przemysłowa dzielnica",
+    "side": 42,
+    "mood": "night",
+    "ground": "asphalt",
+    "accent": "#9faaa7",
+    "obstacles": [
+      {
+        "x": -43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 12,
+        "mat": "dark",
+        "kind": "perimeter"
+      },
+      {
+        "x": 43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 12,
+        "mat": "dark",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": -43,
+        "w": 88,
+        "d": 2,
+        "h": 12,
+        "mat": "dark",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": 43,
+        "w": 88,
+        "d": 2,
+        "h": 12,
+        "mat": "dark",
+        "kind": "perimeter"
+      },
+      {
+        "x": -22,
+        "z": -17,
+        "w": 14,
+        "d": 14,
+        "h": 9,
+        "mat": "dark",
+        "kind": "building"
+      },
+      {
+        "x": 22,
+        "z": 17,
+        "w": 14,
+        "d": 14,
+        "h": 9,
+        "mat": "dark",
+        "kind": "building"
+      },
+      {
+        "x": -22,
+        "z": 19,
+        "w": 11,
+        "d": 10,
+        "h": 7,
+        "mat": "concrete",
+        "kind": "building"
+      },
+      {
+        "x": 22,
+        "z": -19,
+        "w": 11,
+        "d": 10,
+        "h": 7,
+        "mat": "concrete",
+        "kind": "building"
+      },
+      {
+        "x": -1,
+        "z": 0,
+        "w": 10,
+        "d": 10,
+        "h": 4,
+        "mat": "dark",
+        "kind": "station"
+      },
+      {
+        "x": -1,
+        "z": -25,
+        "w": 12,
+        "d": 5,
+        "h": 4,
+        "mat": "blue",
+        "kind": "container"
+      },
+      {
+        "x": 1,
+        "z": 25,
+        "w": 12,
+        "d": 5,
+        "h": 4,
+        "mat": "orange",
+        "kind": "container"
+      },
+      {
+        "x": -10,
+        "z": 15,
+        "w": 5,
+        "d": 8,
+        "h": 3,
+        "mat": "steel",
+        "kind": "cover"
+      },
+      {
+        "x": 10,
+        "z": -15,
+        "w": 5,
+        "d": 8,
+        "h": 3,
+        "mat": "steel",
+        "kind": "cover"
+      },
+      {
+        "x": -12,
+        "z": -4,
+        "w": 7,
+        "d": 5,
+        "h": 3,
+        "mat": "concrete",
+        "kind": "cover"
+      },
+      {
+        "x": 12,
+        "z": 4,
+        "w": 7,
+        "d": 5,
+        "h": 3,
+        "mat": "concrete",
+        "kind": "cover"
+      },
+      {
+        "x": -32,
+        "z": 0,
+        "w": 7,
+        "d": 6,
+        "h": 3,
+        "mat": "dark",
+        "kind": "kiosk"
+      },
+      {
+        "x": 32,
+        "z": 0,
+        "w": 7,
+        "d": 6,
+        "h": 3,
+        "mat": "dark",
+        "kind": "kiosk"
+      },
+      {
+        "x": -3,
+        "z": 35,
+        "w": 9,
+        "d": 4,
+        "h": 4,
+        "mat": "steel",
+        "kind": "barrier"
+      },
+      {
+        "x": 3,
+        "z": -35,
+        "w": 9,
+        "d": 4,
+        "h": 4,
+        "mat": "steel",
+        "kind": "barrier"
+      }
+    ],
+    "spawnBlue": [
+      [
+        -34,
+        32
+      ],
+      [
+        -32,
+        24
+      ],
+      [
+        -25,
+        33
+      ],
+      [
+        -34,
+        15
+      ],
+      [
+        -34,
+        9
+      ]
+    ],
+    "spawnRed": [
+      [
+        34,
+        -32
+      ],
+      [
+        32,
+        -24
+      ],
+      [
+        25,
+        -33
+      ],
+      [
+        34,
+        -15
+      ],
+      [
+        34,
+        -9
+      ]
+    ],
+    "sites": [
+      {
+        "id": "A",
+        "x": -17,
+        "z": 5
+      },
+      {
+        "id": "B",
+        "x": 17,
+        "z": -5
+      }
+    ]
+  },
+  {
+    "id": "foundry",
+    "name": "STALOWY WĘZEŁ",
+    "tag": "Odlewnia • suwnice i piece",
+    "side": 42,
+    "mood": "dusk",
+    "ground": "asphalt",
+    "accent": "#ff9b49",
+    "obstacles": [
+      {
+        "x": -43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 9,
+        "mat": "concrete",
+        "kind": "perimeter"
+      },
+      {
+        "x": 43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 9,
+        "mat": "concrete",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": -43,
+        "w": 88,
+        "d": 2,
+        "h": 9,
+        "mat": "concrete",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": 43,
+        "w": 88,
+        "d": 2,
+        "h": 9,
+        "mat": "concrete",
+        "kind": "perimeter"
+      },
+      {
+        "x": -22,
+        "z": -18,
+        "w": 14,
+        "d": 13,
+        "h": 11,
+        "mat": "brick",
+        "kind": "warehouse"
+      },
+      {
+        "x": 21,
+        "z": 19,
+        "w": 15,
+        "d": 14,
+        "h": 10,
+        "mat": "brick",
+        "kind": "warehouse"
+      },
+      {
+        "x": -22,
+        "z": 14,
+        "w": 8,
+        "d": 10,
+        "h": 6,
+        "mat": "steel",
+        "kind": "power"
+      },
+      {
+        "x": 22,
+        "z": -13,
+        "w": 9,
+        "d": 11,
+        "h": 7,
+        "mat": "steel",
+        "kind": "power"
+      },
+      {
+        "x": -9,
+        "z": -10,
+        "w": 9,
+        "d": 5,
+        "h": 4,
+        "mat": "orange",
+        "kind": "container"
+      },
+      {
+        "x": 9,
+        "z": 10,
+        "w": 9,
+        "d": 5,
+        "h": 4,
+        "mat": "blue",
+        "kind": "container"
+      },
+      {
+        "x": 0,
+        "z": -25,
+        "w": 14,
+        "d": 4,
+        "h": 4,
+        "mat": "steel",
+        "kind": "barrier"
+      },
+      {
+        "x": 0,
+        "z": 25,
+        "w": 14,
+        "d": 4,
+        "h": 4,
+        "mat": "steel",
+        "kind": "barrier"
+      },
+      {
+        "x": -9,
+        "z": 19,
+        "w": 5,
+        "d": 5,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 9,
+        "z": -20,
+        "w": 5,
+        "d": 5,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 0,
+        "z": 0,
+        "w": 11,
+        "d": 9,
+        "h": 5,
+        "mat": "dark",
+        "kind": "station"
+      },
+      {
+        "x": -27,
+        "z": 0,
+        "w": 4,
+        "d": 11,
+        "h": 4,
+        "mat": "steel",
+        "kind": "wall"
+      },
+      {
+        "x": 27,
+        "z": 1,
+        "w": 4,
+        "d": 11,
+        "h": 4,
+        "mat": "steel",
+        "kind": "wall"
+      },
+      {
+        "x": -3,
+        "z": 34,
+        "w": 6,
+        "d": 3,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 3,
+        "z": -34,
+        "w": 6,
+        "d": 3,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      }
+    ],
+    "spawnBlue": [
+      [
+        -34,
+        30
+      ],
+      [
+        -31,
+        25
+      ],
+      [
+        -27,
+        31
+      ],
+      [
+        -34,
+        20
+      ],
+      [
+        -25,
+        27
+      ]
+    ],
+    "spawnRed": [
+      [
+        34,
+        -30
+      ],
+      [
+        31,
+        -25
+      ],
+      [
+        27,
+        -31
+      ],
+      [
+        34,
+        -20
+      ],
+      [
+        25,
+        -27
+      ]
+    ],
+    "sites": [
+      {
+        "id": "A",
+        "x": -17,
+        "z": 5
+      },
+      {
+        "id": "B",
+        "x": 0,
+        "z": 16
+      }
+    ]
+  },
+  {
+    "id": "metro",
+    "name": "PODZIEMNA LINIA",
+    "tag": "Tunel • stacja metra",
+    "side": 42,
+    "mood": "night",
+    "ground": "asphalt",
+    "accent": "#a08cff",
+    "obstacles": [
+      {
+        "x": -43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 9,
+        "mat": "steel",
+        "kind": "perimeter"
+      },
+      {
+        "x": 43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 9,
+        "mat": "steel",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": -43,
+        "w": 88,
+        "d": 2,
+        "h": 9,
+        "mat": "steel",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": 43,
+        "w": 88,
+        "d": 2,
+        "h": 9,
+        "mat": "steel",
+        "kind": "perimeter"
+      },
+      {
+        "x": -24,
+        "z": -18,
+        "w": 14,
+        "d": 12,
+        "h": 8,
+        "mat": "dark",
+        "kind": "building"
+      },
+      {
+        "x": 23,
+        "z": 18,
+        "w": 14,
+        "d": 12,
+        "h": 8,
+        "mat": "dark",
+        "kind": "building"
+      },
+      {
+        "x": 0,
+        "z": -16,
+        "w": 22,
+        "d": 4,
+        "h": 2,
+        "mat": "steel",
+        "kind": "platform"
+      },
+      {
+        "x": 0,
+        "z": 16,
+        "w": 22,
+        "d": 4,
+        "h": 2,
+        "mat": "steel",
+        "kind": "platform"
+      },
+      {
+        "x": -12,
+        "z": 0,
+        "w": 5,
+        "d": 8,
+        "h": 4,
+        "mat": "steel",
+        "kind": "kiosk"
+      },
+      {
+        "x": 12,
+        "z": 0,
+        "w": 5,
+        "d": 8,
+        "h": 4,
+        "mat": "steel",
+        "kind": "kiosk"
+      },
+      {
+        "x": -24,
+        "z": 16,
+        "w": 6,
+        "d": 7,
+        "h": 4,
+        "mat": "dark",
+        "kind": "station"
+      },
+      {
+        "x": 24,
+        "z": -16,
+        "w": 6,
+        "d": 7,
+        "h": 4,
+        "mat": "dark",
+        "kind": "station"
+      },
+      {
+        "x": 0,
+        "z": 0,
+        "w": 8,
+        "d": 7,
+        "h": 4,
+        "mat": "concrete",
+        "kind": "station"
+      },
+      {
+        "x": -1,
+        "z": -32,
+        "w": 9,
+        "d": 4,
+        "h": 3,
+        "mat": "dark",
+        "kind": "barrier"
+      },
+      {
+        "x": 1,
+        "z": 32,
+        "w": 9,
+        "d": 4,
+        "h": 3,
+        "mat": "dark",
+        "kind": "barrier"
+      },
+      {
+        "x": -28,
+        "z": 0,
+        "w": 5,
+        "d": 5,
+        "h": 3,
+        "mat": "concrete",
+        "kind": "cover"
+      },
+      {
+        "x": 28,
+        "z": 0,
+        "w": 5,
+        "d": 5,
+        "h": 3,
+        "mat": "concrete",
+        "kind": "cover"
+      }
+    ],
+    "spawnBlue": [
+      [
+        -34,
+        30
+      ],
+      [
+        -31,
+        25
+      ],
+      [
+        -27,
+        31
+      ],
+      [
+        -34,
+        20
+      ],
+      [
+        -25,
+        27
+      ]
+    ],
+    "spawnRed": [
+      [
+        34,
+        -30
+      ],
+      [
+        31,
+        -25
+      ],
+      [
+        27,
+        -31
+      ],
+      [
+        34,
+        -20
+      ],
+      [
+        25,
+        -27
+      ]
+    ],
+    "sites": [
+      {
+        "id": "A",
+        "x": -17,
+        "z": 17
+      },
+      {
+        "id": "B",
+        "x": 17,
+        "z": -17
+      }
+    ]
+  },
+  {
+    "id": "alpine",
+    "name": "BIAŁY SZLAK",
+    "tag": "Góry • baza radarowa",
+    "side": 42,
+    "mood": "dusk",
+    "ground": "sand",
+    "accent": "#b8f5ff",
+    "obstacles": [
+      {
+        "x": -43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 9,
+        "mat": "concrete",
+        "kind": "perimeter"
+      },
+      {
+        "x": 43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 9,
+        "mat": "concrete",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": -43,
+        "w": 88,
+        "d": 2,
+        "h": 9,
+        "mat": "concrete",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": 43,
+        "w": 88,
+        "d": 2,
+        "h": 9,
+        "mat": "concrete",
+        "kind": "perimeter"
+      },
+      {
+        "x": -21,
+        "z": -15,
+        "w": 13,
+        "d": 11,
+        "h": 7,
+        "mat": "concrete",
+        "kind": "building"
+      },
+      {
+        "x": 22,
+        "z": 16,
+        "w": 15,
+        "d": 11,
+        "h": 7,
+        "mat": "concrete",
+        "kind": "building"
+      },
+      {
+        "x": -23,
+        "z": 18,
+        "w": 8,
+        "d": 8,
+        "h": 7,
+        "mat": "steel",
+        "kind": "tower"
+      },
+      {
+        "x": 23,
+        "z": -18,
+        "w": 8,
+        "d": 8,
+        "h": 7,
+        "mat": "steel",
+        "kind": "tower"
+      },
+      {
+        "x": -7,
+        "z": -4,
+        "w": 9,
+        "d": 8,
+        "h": 3,
+        "mat": "dark",
+        "kind": "station"
+      },
+      {
+        "x": 10,
+        "z": 4,
+        "w": 8,
+        "d": 7,
+        "h": 4,
+        "mat": "steel",
+        "kind": "power"
+      },
+      {
+        "x": 0,
+        "z": -29,
+        "w": 8,
+        "d": 5,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 0,
+        "z": 29,
+        "w": 8,
+        "d": 5,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": -13,
+        "z": 26,
+        "w": 5,
+        "d": 6,
+        "h": 3,
+        "mat": "concrete",
+        "kind": "cover"
+      },
+      {
+        "x": 13,
+        "z": -26,
+        "w": 5,
+        "d": 6,
+        "h": 3,
+        "mat": "concrete",
+        "kind": "cover"
+      },
+      {
+        "x": -30,
+        "z": -4,
+        "w": 5,
+        "d": 6,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 30,
+        "z": 5,
+        "w": 5,
+        "d": 6,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 0,
+        "z": 15,
+        "w": 7,
+        "d": 3,
+        "h": 2,
+        "mat": "steel",
+        "kind": "barrier"
+      },
+      {
+        "x": 0,
+        "z": -15,
+        "w": 7,
+        "d": 3,
+        "h": 2,
+        "mat": "steel",
+        "kind": "barrier"
+      }
+    ],
+    "spawnBlue": [
+      [
+        -34,
+        30
+      ],
+      [
+        -31,
+        25
+      ],
+      [
+        -27,
+        31
+      ],
+      [
+        -34,
+        20
+      ],
+      [
+        -25,
+        27
+      ]
+    ],
+    "spawnRed": [
+      [
+        34,
+        -30
+      ],
+      [
+        31,
+        -25
+      ],
+      [
+        27,
+        -31
+      ],
+      [
+        34,
+        -20
+      ],
+      [
+        25,
+        -27
+      ]
+    ],
+    "sites": [
+      {
+        "id": "A",
+        "x": -17,
+        "z": 5
+      },
+      {
+        "id": "B",
+        "x": 17,
+        "z": -5
+      }
+    ]
+  },
+  {
+    "id": "oldtown",
+    "name": "STARY TRAKT",
+    "tag": "Starówka • kamienne zaułki",
+    "side": 42,
+    "mood": "desert",
+    "ground": "sand",
+    "accent": "#ebb477",
+    "obstacles": [
+      {
+        "x": -43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 9,
+        "mat": "concrete",
+        "kind": "perimeter"
+      },
+      {
+        "x": 43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 9,
+        "mat": "concrete",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": -43,
+        "w": 88,
+        "d": 2,
+        "h": 9,
+        "mat": "concrete",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": 43,
+        "w": 88,
+        "d": 2,
+        "h": 9,
+        "mat": "concrete",
+        "kind": "perimeter"
+      },
+      {
+        "x": -23,
+        "z": -16,
+        "w": 13,
+        "d": 13,
+        "h": 9,
+        "mat": "sandstone",
+        "kind": "building"
+      },
+      {
+        "x": 23,
+        "z": 17,
+        "w": 13,
+        "d": 13,
+        "h": 9,
+        "mat": "sandstone",
+        "kind": "building"
+      },
+      {
+        "x": -22,
+        "z": 17,
+        "w": 9,
+        "d": 10,
+        "h": 7,
+        "mat": "brick",
+        "kind": "building"
+      },
+      {
+        "x": 22,
+        "z": -17,
+        "w": 9,
+        "d": 10,
+        "h": 7,
+        "mat": "brick",
+        "kind": "building"
+      },
+      {
+        "x": 0,
+        "z": 0,
+        "w": 10,
+        "d": 10,
+        "h": 8,
+        "mat": "sandstone",
+        "kind": "temple"
+      },
+      {
+        "x": -10,
+        "z": -25,
+        "w": 8,
+        "d": 4,
+        "h": 3,
+        "mat": "wood",
+        "kind": "market"
+      },
+      {
+        "x": 10,
+        "z": 25,
+        "w": 8,
+        "d": 4,
+        "h": 3,
+        "mat": "wood",
+        "kind": "market"
+      },
+      {
+        "x": -27,
+        "z": 0,
+        "w": 4,
+        "d": 11,
+        "h": 4,
+        "mat": "brick",
+        "kind": "wall"
+      },
+      {
+        "x": 27,
+        "z": 0,
+        "w": 4,
+        "d": 11,
+        "h": 4,
+        "mat": "brick",
+        "kind": "wall"
+      },
+      {
+        "x": -10,
+        "z": 13,
+        "w": 5,
+        "d": 4,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 10,
+        "z": -13,
+        "w": 5,
+        "d": 4,
+        "h": 3,
+        "mat": "wood",
+        "kind": "crate"
+      },
+      {
+        "x": 0,
+        "z": -32,
+        "w": 8,
+        "d": 3,
+        "h": 3,
+        "mat": "sandstone",
+        "kind": "cover"
+      },
+      {
+        "x": 0,
+        "z": 32,
+        "w": 8,
+        "d": 3,
+        "h": 3,
+        "mat": "sandstone",
+        "kind": "cover"
+      }
+    ],
+    "spawnBlue": [
+      [
+        -34,
+        30
+      ],
+      [
+        -31,
+        25
+      ],
+      [
+        -27,
+        31
+      ],
+      [
+        -34,
+        20
+      ],
+      [
+        -25,
+        27
+      ]
+    ],
+    "spawnRed": [
+      [
+        34,
+        -30
+      ],
+      [
+        31,
+        -25
+      ],
+      [
+        27,
+        -31
+      ],
+      [
+        34,
+        -20
+      ],
+      [
+        25,
+        -27
+      ]
+    ],
+    "sites": [
+      {
+        "id": "A",
+        "x": -17,
+        "z": 5
+      },
+      {
+        "id": "B",
+        "x": 17,
+        "z": -5
+      }
+    ]
+  },
+  {
+    "id": "skyline",
+    "name": "WYSOKA DZIELNICA",
+    "tag": "Dachy • wieżowce",
+    "side": 42,
+    "mood": "night",
+    "ground": "asphalt",
+    "accent": "#64d9ff",
+    "obstacles": [
+      {
+        "x": -43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 9,
+        "mat": "steel",
+        "kind": "perimeter"
+      },
+      {
+        "x": 43,
+        "z": 0,
+        "w": 2,
+        "d": 88,
+        "h": 9,
+        "mat": "steel",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": -43,
+        "w": 88,
+        "d": 2,
+        "h": 9,
+        "mat": "steel",
+        "kind": "perimeter"
+      },
+      {
+        "x": 0,
+        "z": 43,
+        "w": 88,
+        "d": 2,
+        "h": 9,
+        "mat": "steel",
+        "kind": "perimeter"
+      },
+      {
+        "x": -23,
+        "z": -17,
+        "w": 13,
+        "d": 12,
+        "h": 13,
+        "mat": "dark",
+        "kind": "building"
+      },
+      {
+        "x": 23,
+        "z": 17,
+        "w": 13,
+        "d": 12,
+        "h": 13,
+        "mat": "dark",
+        "kind": "building"
+      },
+      {
+        "x": -23,
+        "z": 17,
+        "w": 10,
+        "d": 10,
+        "h": 8,
+        "mat": "steel",
+        "kind": "building"
+      },
+      {
+        "x": 23,
+        "z": -17,
+        "w": 10,
+        "d": 10,
+        "h": 8,
+        "mat": "steel",
+        "kind": "building"
+      },
+      {
+        "x": 0,
+        "z": -22,
+        "w": 13,
+        "d": 5,
+        "h": 4,
+        "mat": "blue",
+        "kind": "container"
+      },
+      {
+        "x": 0,
+        "z": 22,
+        "w": 13,
+        "d": 5,
+        "h": 4,
+        "mat": "orange",
+        "kind": "container"
+      },
+      {
+        "x": -12,
+        "z": -4,
+        "w": 6,
+        "d": 8,
+        "h": 3,
+        "mat": "glass",
+        "kind": "station"
+      },
+      {
+        "x": 12,
+        "z": 4,
+        "w": 6,
+        "d": 8,
+        "h": 3,
+        "mat": "glass",
+        "kind": "station"
+      },
+      {
+        "x": -6,
+        "z": 13,
+        "w": 7,
+        "d": 5,
+        "h": 3,
+        "mat": "concrete",
+        "kind": "cover"
+      },
+      {
+        "x": 6,
+        "z": -13,
+        "w": 7,
+        "d": 5,
+        "h": 3,
+        "mat": "concrete",
+        "kind": "cover"
+      },
+      {
+        "x": -30,
+        "z": 0,
+        "w": 4,
+        "d": 6,
+        "h": 4,
+        "mat": "dark",
+        "kind": "kiosk"
+      },
+      {
+        "x": 30,
+        "z": 0,
+        "w": 4,
+        "d": 6,
+        "h": 4,
+        "mat": "dark",
+        "kind": "kiosk"
+      },
+      {
+        "x": 0,
+        "z": 0,
+        "w": 9,
+        "d": 9,
+        "h": 3,
+        "mat": "steel",
+        "kind": "power"
+      }
+    ],
+    "spawnBlue": [
+      [
+        -34,
+        30
+      ],
+      [
+        -31,
+        25
+      ],
+      [
+        -27,
+        31
+      ],
+      [
+        -34,
+        20
+      ],
+      [
+        -25,
+        27
+      ]
+    ],
+    "spawnRed": [
+      [
+        34,
+        -30
+      ],
+      [
+        31,
+        -25
+      ],
+      [
+        27,
+        -31
+      ],
+      [
+        34,
+        -20
+      ],
+      [
+        25,
+        -27
+      ]
+    ],
+    "sites": [
+      {
+        "id": "A",
+        "x": -17,
+        "z": 5
+      },
+      {
+        "id": "B",
+        "x": 17,
+        "z": -5
+      }
+    ]
+  }
+]
