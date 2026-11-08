@@ -875,14 +875,13 @@ function localFire(){const p=state.player,w=GUNS[state.weapon];const t=performan
  if(p.ammo[state.weapon]<=0){reload();return;}
  state.lastFire=t;p.ammo[state.weapon]--;
  state.recoil=state.weapon==='rail'?1.65:.8;
- if(state.weapon==='rail'){
-  state.player.pitch=clamp(state.player.pitch+.025+(random()*.012),-1.28,1.28);
-  state.recoilShotAt=t;
- }
+ if(state.weapon==='rail'){state.recoilShotAt=t;}
  sfx('shot');
  const eye=[p.x,1.55+p.y,p.z],co=Math.cos(p.pitch),spread=state.weapon==='storm'?.008:state.weapon==='rail'?0:.002;
  const yaw=p.yaw+(random()-.5)*spread,pitch=p.pitch+(random()-.5)*spread;
  const direction=[Math.sin(yaw)*co,Math.sin(pitch),-Math.cos(yaw)*co];
+ // Visual kick is applied after locking the current shot direction.
+ if(state.weapon==='rail')state.player.pitch=clamp(state.player.pitch+.025+random()*.012,-1.28,1.28);
  let nearest=rayWall(eye,direction,95),hit=null,critical=false;
  if(state.mode==='solo')for(const bot of state.bots){if(bot.team===state.team||bot.hp<=0)continue;
    const body=raySphere(eye,direction,{x:bot.x,y:bot.y+1.1,z:bot.z},.84);
@@ -984,7 +983,7 @@ function tick(t){const dt=clamp((t-(state.lastFrame||t))/1000,0,.05);state.lastF
   let actors=state.mode==='solo'?state.bots:state.other;
   const effects=state.particles.map(e=>({...e,size:e.size*(e.life/.5)}));
   state.renderer.scopeActive=state.weapon==='rail'&&state.zoom;
-  state.renderer.zoom+=((state.zoom?1:0)-state.renderer.zoom)*Math.min(1,dt*12);
+  state.renderer.zoom+=((state.zoom?(state.weapon==='rail'?1.66:1):0)-state.renderer.zoom)*Math.min(1,dt*12);
   if(!$('sniperScope').classList.contains('hidden'))$('sniperScopeView').style.setProperty('--scope-kick',Math.round(state.recoil*8)+'px');
   state.renderer.draw(cam,actors,state.tracers,effects,state.playing?state.weapon:null,state.recoil,state.moving,state.time);
  }
