@@ -59,6 +59,9 @@ jobs:
           set -o pipefail
           /tmp/godot --headless --path godot --editor --import --quit 2>&1 | tee /tmp/godot-import.log
           /tmp/godot --headless --path godot --editor             --script res://tools/configure_android_export.gd 2>&1 | tee /tmp/godot-sdk.log
+          # Godot probes the Android ADB service even when exporting without a device.
+          "$ANDROID_HOME/platform-tools/adb" start-server
+          "$ANDROID_HOME/platform-tools/adb" devices
           /tmp/godot --headless --path godot --editor --install-android-build-template             --quit 2>&1 | tee /tmp/godot-template.log
           test -f godot/android/build/build.gradle
       - name: Export signed native test APK (NEVER publishes official release)
