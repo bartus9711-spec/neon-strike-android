@@ -2,12 +2,15 @@ extends Node3D
 ## Native Godot 4 mobile 3D foundation. Distinct from legacy HTML game.
 ## Goal: fluid movement, touch / gamepad, render settings and real lit 3D level.
 const HUD = preload("res://scripts/hud.gd")
+const ARENAS = preload("res://scripts/arenas.gd")
 
 var hero: CharacterBody3D
 var camera: Camera3D
 var sun: DirectionalLight3D
 var atmosphere: Environment
 var hud
+var arena
+var map_index := 0
 var heading := 0.0
 var elevation := 0.0
 var jump_queued := false
@@ -24,13 +27,19 @@ func _ready() -> void:
     Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
     _setup_palette()
     _setup_lighting()
-    _make_city()
+    arena = ARENAS.new()
+    add_child(arena)
+    arena.configure(sun, atmosphere)
+    arena.load_arena(0)
     _make_hero()
     hud = HUD.new()
     add_child(hud)
     hud.jump_requested.connect(func(): jump_queued = true)
     hud.action_requested.connect(func(): action_queued = true)
     hud.graphics_changed.connect(_apply_graphics)
+    hud.map_requested.connect(switch_map)
+    hud.configure_maps(arena.maps)
+    switch_map(0)
     _apply_graphics(2, 120, 1.0, true, 2)
     hud.set_message("DOTYK: LEWY DRĄŻEK + PRZECIĄGNIJ PO PRAWEJ  |  PAD: L / R", 6.0)
 
@@ -249,6 +258,25 @@ func _make_beacon(p: Vector3) -> void:
     lamp.light_energy = 1.5
     anchor.add_child(lamp)
     beacons.append(anchor)
+
+func switch_map(index: int) -> void:
+    map_index = posmod(index, arena.maps.size())
+    arena.load_arena(map_index)
+    for item in beacons:
+        if is_instance_valid(item):
+            item.queue_free()
+    beacons.clear()
+    collected = 0
+    for pos in [Vector3(-15,.95,-12),Vector3(15,.95,-12),Vector3(-12,.95,14),Vector3(14,.95,13)]:
+        _make_beacon(pos)
+    if is_instance_valid(hero):
+        hero.velocity = Vector3.ZERO
+        hero.global_position = Vector3(0,1.8,31)
+        hero.rotation = Vector3.ZERO
+    heading = 0.0
+    elevation = 0.0
+    if is_instance_valid(hud):
+        hud.set_map(map_index, str(arena.current_map.get("name", "ARENA")))
 
 func _make_hero() -> void:
     hero = CharacterBody3D.new()
