@@ -9,6 +9,7 @@ var current_index := 0
 var current_map: Dictionary = {}
 var world: Node3D
 var batches: Dictionary = {}
+var round_batches: Dictionary = {}
 var materials: Dictionary = {}
 var sunshine: DirectionalLight3D
 var atmosphere: Environment
@@ -37,6 +38,7 @@ func load_arena(index: int) -> void:
     world.name = str(current_map.get("id", "Arena"))
     add_child(world)
     batches.clear()
+    round_batches.clear()
     scene_lights.clear()
     _materials()
     _base()
@@ -128,6 +130,13 @@ func _piece(position: Vector3, dims: Vector3, mat: String) -> void:
         batches[mat] = []
     batches[mat].append(Transform3D(Basis.IDENTITY.scaled(dims), position))
 
+func _round(position: Vector3, radius: float, height: float, mat: String, tapered: bool = false) -> void:
+    # Cylinders and cones are genuine meshes (not square cardboard), instanced on GPU.
+    var key := ("cone:" if tapered else "cylinder:") + mat
+    if not round_batches.has(key):
+        round_batches[key] = []
+    round_batches[key].append(Transform3D(Basis.IDENTITY.scaled(Vector3(radius,height,radius)),position))
+
 func _solid(position: Vector3, dims: Vector3, mat: String, collision: bool = true) -> void:
     _piece(position,dims,mat)
     if collision:
@@ -159,6 +168,28 @@ func _flush() -> void:
         holder.material_override = materials[key]
         world.add_child(holder)
     batches.clear()
+    for key in round_batches:
+        var transforms: Array = round_batches[key]
+        if transforms.is_empty():
+            continue
+        var cylinder := CylinderMesh.new()
+        cylinder.height = 1
+        cylinder.bottom_radius = 1
+        cylinder.top_radius = 0 if str(key).begins_with("cone:") else 1
+        cylinder.radial_segments = 12
+        cylinder.rings = 1
+        var multi := MultiMesh.new()
+        multi.transform_format = MultiMesh.TRANSFORM_3D
+        multi.mesh = cylinder
+        multi.instance_count = transforms.size()
+        for j in range(transforms.size()):
+            multi.set_instance_transform(j,transforms[j])
+        var instance := MultiMeshInstance3D.new()
+        instance.name = "Round_Instanced_" + str(key)
+        instance.multimesh = multi
+        instance.material_override = materials[str(key).split(":")[1]]
+        world.add_child(instance)
+    round_batches.clear()
 
 func _base() -> void:
     var id := str(current_map.get("id",""))
@@ -304,6 +335,11 @@ func _port() -> void:
         for z in [-27.0,27.0]:
             _tower_light(x,z,"yellow")
     _piece(Vector3(0,.04,-39),Vector3(70,.09,.42),"cyan")
+    for i in range(22):
+        var x := -29.0+float(i%11)*5.5
+        var z := 34.0 if i<11 else -34.0
+        _round(Vector3(x,.49,z),.42,.98,"blue" if i%3==0 else "orange")
+        _round(Vector3(x,.99,z),.45,.11,"steel")
 
 func _dunes() -> void:
     # Sand-colored courtyards, crenellated parapets, arcade colonnades and bazaars.
@@ -321,6 +357,14 @@ func _dunes() -> void:
             _piece(Vector3(x,8.5,z),Vector3(1.8,.35,1.8),"sand")
     for x in [-37.0,37.0]:
         _tower_light(x,-2,"yellow")
+    for x in [-27.0,-16.0,16.0,27.0]:
+        for z in [-22.0,22.0]:
+            _round(Vector3(x,2.3,z),.44,4.6,"stone")
+            _round(Vector3(x,4.72,z),.78,.25,"sand")
+    for i in range(20):
+        var x := -39.0+float(i%10)*8.7
+        var z := 39.0 if i<10 else -39.0
+        _round(Vector3(x,.31,z),.65,.57,"sand")
 
 func _neon() -> void:
     # Dense night market: emissive signs, vertical light strips, kiosks.
@@ -335,6 +379,11 @@ func _neon() -> void:
         _piece(Vector3(0,.05,z),Vector3(5,.10,.15),"cyan")
     for x in [-38.0,38.0]:
         _tower_light(x,0,"cyan")
+    for i in range(22):
+        var x := -37.0+float(i%11)*7.2
+        var z := -37.0 if i<11 else 37.0
+        _round(Vector3(x,1.75,z),.16,3.5,"magenta" if i%4==0 else "cyan")
+        _round(Vector3(x,3.5,z),.25,.25,"dark")
 
 func _foundry() -> void:
     # Steelwork: furnace pipes, gantries, overhead rails and hazard patterns.
@@ -349,6 +398,13 @@ func _foundry() -> void:
     for x in [-39.0,39.0]:
         for z in [-24.0,24.0]:
             _tower_light(x,z,"yellow")
+    for x in [-29.0,-20.0,20.0,29.0]:
+        _round(Vector3(x,5.4,0),.73,10.8,"rail")
+        _round(Vector3(x,11,0),1.2,.3,"orange")
+    for i in range(10):
+        var z := -35.0+float(i)*7.4
+        _round(Vector3(-33,.72,z),.52,1.45,"orange")
+        _round(Vector3(-33,1.46,z),.56,.09,"steel")
 
 func _metro() -> void:
     # Two tracks, third rail, tiled platforms and a roofed station with signal lighting.
@@ -364,6 +420,10 @@ func _metro() -> void:
     for z in [-30.0,-12.0,7.0,27.0]:
         _piece(Vector3(0,8.75,z),Vector3(33,.12,.43),"cyan")
         _lamp(Vector3(0,8.4,z),Color(.65,.84,1),10,.9)
+    for z in range(-35,36,9):
+        for x in [-17.0,17.0]:
+            _round(Vector3(x,2.65,float(z)),.22,5.30,"steel")
+            _round(Vector3(x,5.4,float(z)),.46,.31,"cyan")
 
 func _alpine() -> void:
     # Snow radar base with mountain silhouettes, floodlights and signal masts.
@@ -385,6 +445,13 @@ func _alpine() -> void:
         _piece(Vector3(x,11.5,0),Vector3(3.5,.19,3.5),"cyan")
     _tower_light(-36,23,"cyan")
     _tower_light(36,-23,"cyan")
+    for i in range(24):
+        var x := -39.0+float(i%12)*7.0
+        var z := -36.0 if i<12 else 36.0
+        _round(Vector3(x,1.0,z),.25,2.0,"wood")
+        _round(Vector3(x,2.5,z),1.5,2.6,"foliage",true)
+        _round(Vector3(x,4.05,z),1.16,1.6,"foliage",true)
+        _round(Vector3(x,5.03,z),.72,.8,"snow",true)
 
 func _oldtown() -> void:
     # Old quarter with narrow alley details, arcades, timber stalls and warm lights.
@@ -399,6 +466,11 @@ func _oldtown() -> void:
             _lamp(Vector3(x,5.65,z),Color(1,.71,.38),8.0,.9)
     for i in range(12):
         _piece(Vector3(-7.5+float(i)*1.35,.02,0),Vector3(.09,.026,72),"stone")
+    for z in range(-35,36,7):
+        for x in [-32.0,32.0]:
+            _round(Vector3(x,2.65,float(z)),.27,5.3,"stone")
+            _round(Vector3(x,5.38,float(z)),.57,.18,"sand")
+            _round(Vector3(x,5.67,float(z)),.35,.4,"yellow")
 
 func _skyline() -> void:
     # High-rise glazing, edge rails, rooftop HVAC units and vertical beacons.
@@ -416,6 +488,11 @@ func _skyline() -> void:
         _piece(Vector3(0,.09,z),Vector3(67,.15,.13),"cyan")
     for x in [-39.0,39.0]:
         _tower_light(x,0,"cyan")
+    for i in range(16):
+        var x := -38.0+float(i%8)*10.7
+        var z := -33.0 if i<8 else 33.0
+        _round(Vector3(x,16.2,z),.17,12.0,"rail")
+        _round(Vector3(x,22.4,z),.34,.4,"cyan" if i%3==0 else "magenta")
 
 func _lighting() -> void:
     var id := str(current_map.get("id",""))
