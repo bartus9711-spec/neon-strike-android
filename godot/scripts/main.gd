@@ -271,10 +271,14 @@ func switch_map(index: int) -> void:
         _make_beacon(pos)
     if is_instance_valid(hero):
         hero.velocity = Vector3.ZERO
-        hero.global_position = Vector3(0,1.8,31)
+        var authored_spawn: Vector3 = arena.spawn_position()
+        hero.global_position = authored_spawn
         hero.rotation = Vector3.ZERO
-    heading = 0.0
-    elevation = 0.0
+        # Aim across the level from the faction spawn, not into nearby cover.
+        heading = atan2(authored_spawn.x, authored_spawn.z)
+    else:
+        heading = 0.0
+    elevation = -.10
     if is_instance_valid(hud):
         hud.set_map(map_index, str(arena.current_map.get("name", "ARENA")))
 
