@@ -6,7 +6,6 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.os.SystemClock;
-import androidx.annotation.NonNull;
 import org.godotengine.godot.Godot;
 import org.godotengine.godot.plugin.GodotPlugin;
 import org.godotengine.godot.plugin.UsedByGodot;
@@ -30,7 +29,7 @@ public final class TeamCSNetwork extends GodotPlugin {
     private String lastReason = "Android wybiera sieć";
 
     public TeamCSNetwork(Godot godot) { super(godot); }
-    @NonNull @Override public String getPluginName() { return "TeamCSNetwork"; }
+    @Override public String getPluginName() { return "TeamCSNetwork"; }
 
     private ConnectivityManager manager() {
         Activity activity = getActivity();
@@ -85,7 +84,7 @@ public final class TeamCSNetwork extends GodotPlugin {
         if (!first && now - lastSwitch < COOLDOWN_MS) return false;
         Network defaultNetwork = cm.getActiveNetwork();
         Network baseline = selected != null ? selected : defaultNetwork;
-        float baselineScore = score(cm.getNetworkCapabilities(baseline));
+        float baselineScore = score(baseline == null ? null : cm.getNetworkCapabilities(baseline));
         Network best = null;
         float bestScore = -1f;
         boolean wifi = false, mobile = false;
@@ -135,7 +134,7 @@ public final class TeamCSNetwork extends GodotPlugin {
             }
             if (smart) maybeSwitch(cm,false);
             Network active = selected != null ? selected : cm.getActiveNetwork();
-            NetworkCapabilities activeCaps = cm.getNetworkCapabilities(active);
+            NetworkCapabilities activeCaps = active == null ? null : cm.getNetworkCapabilities(active);
             boolean wifi = false, mobile = false;
             for (Network n : cm.getAllNetworks()) {
                 NetworkCapabilities caps = cm.getNetworkCapabilities(n);
