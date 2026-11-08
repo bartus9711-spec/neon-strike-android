@@ -1,0 +1,92 @@
+name: TeamCS Native Godot 4.7.2 Android QA APK
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "godot/**"
+      - ".github/workflows/godot-android-qa-apk.yml"
+jobs:
+  native-android-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+      - name: Verify native Android build environment
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          test -d "$ANDROID_HOME"
+          command -v keytool
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -alias androiddebugkey             -keyalg RSA -keysize 2048 -validity 1800 -storepass android -keypass android             -dname "CN=TeamCS QA,OU=Testing,O=TeamCS,C=PL" -noprompt
+          if [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.1"
+          fi
+      - name: Build app-only Wi-Fi and mobile network plugin
+        run: |
+          gradle -p godot/network-android --no-daemon :network:assembleDebug
+          mkdir -p godot/addons/teamcs_network/bin
+          cp godot/network-android/network/build/outputs/aar/network-debug.aar             godot/addons/teamcs_network/bin/teamcs-network-debug.aar
+          test -s godot/addons/teamcs_network/bin/teamcs-network-debug.aar
+      - name: Download matching Godot 4.7.2 editor and Android templates
+        run: |
+          set -euo pipefail
+          curl -fL --retry 4 -o /tmp/godot.zip             https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot-bin
+          chmod +x /tmp/godot-bin/Godot_v4.7.2-stable_linux.x86_64
+          ln -s /tmp/godot-bin/Godot_v4.7.2-stable_linux.x86_64 /tmp/godot
+          /tmp/godot --version
+          curl -fL --retry 4 --retry-delay 3 -o /tmp/templates.tpz             https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz
+          mkdir -p /tmp/templates-extracted "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          unzip -q /tmp/templates.tpz             'templates/android_source.zip' 'templates/android_debug.apk'             'templates/android_release.apk' 'templates/version.txt'             -d /tmp/templates-extracted
+          cp /tmp/templates-extracted/templates/{android_source.zip,android_debug.apk,android_release.apk,version.txt}             "$HOME/.local/share/godot/export_templates/4.7.2.stable/"
+          ls -lh "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+      - name: Fetch legally reusable PBR texture set for all eight native arenas
+        run: |
+          python3 godot/tools/fetch_cc0_textures.py
+          test -s godot/assets/asphalt_01_diff.jpg
+      - name: Import Godot project, enable plugin and install Android Gradle template
+        run: |
+          set -o pipefail
+          /tmp/godot --headless --path godot --editor --import --quit 2>&1 | tee /tmp/godot-import.log
+          /tmp/godot --headless --path godot --editor             --script res://tools/configure_android_export.gd 2>&1 | tee /tmp/godot-sdk.log
+          /tmp/godot --headless --path godot --editor --install-android-build-template             --quit 2>&1 | tee /tmp/godot-template.log
+          test -f godot/android/build/build.gradle
+      - name: Export signed native test APK (NEVER publishes official release)
+        run: |
+          set -o pipefail
+          /tmp/godot --headless --path godot --editor --export-debug "Android GT7 QA"             "$GITHUB_WORKSPACE/TeamCS_Godot_GT7_QA.apk" 2>&1 | tee /tmp/godot-export.log
+          test -s TeamCS_Godot_GT7_QA.apk
+          grep -q "BUILD SUCCESSFUL" /tmp/godot-export.log || echo "Gradle summary not found, verifying APK directly"
+      - name: Validate APK is native Godot and includes Android network plugin
+        run: |
+          set -euo pipefail
+          unzip -l TeamCS_Godot_GT7_QA.apk | grep -E 'lib/arm64-v8a/libgodot_android.so|lib/arm64-v8a/libgodot'
+          unzip -p TeamCS_Godot_GT7_QA.apk classes.dex > /tmp/teamcs-classes.dex
+          if ! strings /tmp/teamcs-classes.dex | grep -q 'TeamCSNetwork'; then
+            echo "Native Wi-Fi/mobile plugin class missing from APK" >&2
+            exit 1
+          fi
+          ls -lh TeamCS_Godot_GT7_QA.apk
+      - name: Upload native Android QA APK and export logs (private test artifact, not Play Store release)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TeamCS-Godot-GT7-QA
+          path: |
+            TeamCS_Godot_GT7_QA.apk
+            /tmp/godot-import.log
+            /tmp/godot-sdk.log
+            /tmp/godot-template.log
+            /tmp/godot-export.log
+          if-no-files-found: warn
+          retention-days: 14
