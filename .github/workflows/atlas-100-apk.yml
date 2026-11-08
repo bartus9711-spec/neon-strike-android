@@ -24,23 +24,43 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Sprawdź JavaScript gry
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class Scripts(HTMLParser):
+              def __init__(self):
+                  super().__init__(); self.in_script=False; self.scripts=[]
+              def handle_starttag(self,tag,attrs):
+                  if tag=='script': self.in_script=True
+              def handle_endtag(self,tag):
+                  if tag=='script': self.in_script=False
+              def handle_data(self,data):
+                  if self.in_script: self.scripts.append(data)
+          html=Path('atlas-app/app/src/main/assets/arcade100.html').read_text()
+          assert 'levelDown' in html and 'bonusBoard' in html and 'reelSpeed' in html
+          p=Scripts();p.feed(html)
+          Path('/tmp/atlas100.js').write_text('\n'.join(p.scripts))
+          PY
+          node --check /tmp/atlas100.js
       - name: Zbuduj prawdziwy instalator APK
         run: gradle -p atlas-app --no-daemon --stacktrace assembleDebug
       - name: Przygotuj plik instalacyjny
-        run: cp atlas-app/app/build/outputs/apk/debug/app-debug.apk ATLAS_ARCADE_100_V2.apk
+        run: cp atlas-app/app/build/outputs/apk/debug/app-debug.apk ATLAS_ARCADE_100_2_1.apk
       - name: Udostepnij APK jako artefakt
         uses: actions/upload-artifact@v4
         with:
           name: ATLAS-ARCADE-100-ANDROID
-          path: ATLAS_ARCADE_100_V2.apk
+          path: ATLAS_ARCADE_100_2_1.apk
           if-no-files-found: error
           retention-days: 14
       - name: Opublikuj APK do pobrania
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view atlas-arcade-100-v2.0 >/dev/null 2>&1; then
-            gh release upload atlas-arcade-100-v2.0 ATLAS_ARCADE_100_V2.apk --clobber
+          if gh release view atlas-arcade-100-v2.1 >/dev/null 2>&1; then
+            gh release upload atlas-arcade-100-v2.1 ATLAS_ARCADE_100_2_1.apk --clobber
           else
-            gh release create atlas-arcade-100-v2.0 ATLAS_ARCADE_100_V2.apk --target "${GITHUB_SHA}" --title "ATLAS ARCADE 100 - Android 2.0" --notes "Offline gra zręcznościowa na punkty: 100 maszyn, 10 rodzin reguł, 15 misji, bonusowe re-spiny, koło refleksu i ustawienia. Bez stawek, wpłat, wypłat i konta. Osobny pakiet instalacyjny, nie zastępuje poprzedniej gry."
+            gh release create atlas-arcade-100-v2.1 ATLAS_ARCADE_100_2_1.apk --target "${GITHUB_SHA}" --title "ATLAS ARCADE 100 - Android 2.1" --notes "Offline gra zręcznościowa na punkty: 100 maszyn, 10 rodzin reguł, 15 misji, bonusowe re-spiny, koło refleksu i ustawienia. Bez stawek, wpłat, wypłat i konta. Osobny pakiet instalacyjny, nie zastępuje poprzedniej gry."
           fi
