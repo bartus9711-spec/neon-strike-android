@@ -38,13 +38,13 @@ async function runTest(name,params){
   if(params.isMobile){
     assert.equal(await page.locator('#btnFire').isVisible(),false,'Mobile controls visible too early');
   }
+  await page.locator('#qualitySelect').selectOption('low');
   await page.locator('#soloButton').click();
   await page.waitForTimeout(550);
   assert.equal(await page.locator('#gameOverlay').isVisible(),true,'Solo overlay not visible');
   assert.equal(await page.locator('#mainMenu').isVisible(),false,'Main menu not dismissed');
   assert.notEqual(await page.locator('#weaponTitle').innerText(),'','Missing weapon HUD');
   log(name+': SOLO launched and HUD rendered');
-  await page.screenshot({path:'test-results/'+name+'-solo.png',animations:'disabled'});
   await page.locator('#shopHudButton').click();
   assert.equal(await page.locator('#shopOverlay').isVisible(),true,'Shop did not open');
   assert.equal(await page.locator('#shopWallet').innerText(),'$800','Initial match budget incorrect');
@@ -54,12 +54,14 @@ async function runTest(name,params){
   assert.equal(await page.locator('#shopWallet').innerText(),'$150','Purchase did not change funds');
   assert.equal(await page.locator('#weaponTitle').innerText(),'TEC-9','Purchased item not selected');
   log(name+': shop buy and cash deduction');
-  await item.locator('button').nth(1).click();
+  console.log('QA sale phase:',await page.locator('#shopClock').innerText(),'; enabled:',await item.locator('button').nth(1).isEnabled());
+  await item.locator('button').nth(1).click({timeout:6500});
   assert.equal(await page.locator('#shopWallet').innerText(),'$572','Sell refund incorrect');
   log(name+': shop sell and refund');
   await page.locator('#shopClose').click();
   assert.equal(await page.locator('#shopOverlay').isVisible(),false,'Shop still open');
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(350);
+  await page.screenshot({path:'test-results/'+name+'-solo.png',animations:'disabled'});
   assert.ok(errors.length===0,'Uncaught JS errors: '+errors.join('\n'));
   log(name+': no uncaught runtime errors');
   await page.close();
