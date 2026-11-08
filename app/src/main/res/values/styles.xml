@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources><style name="NeonTheme" parent="android:style/Theme.Material.NoActionBar">
+  <item name="android:windowActionModeOverlay">true</item>
+  <item name="android:windowLightStatusBar">false</item>
+  <item name="android:colorAccent">#24F3DC</item>
+  <item name="android:windowBackground">#06101A</item>
+</style></resources>
