@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="ATLAS ARCADE 100"
+        android:label="ATLAS WORLDS"
         android:icon="@drawable/atlas_icon"
         android:allowBackup="false"
         android:usesCleartextTraffic="false"
