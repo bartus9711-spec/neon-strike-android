@@ -54,6 +54,26 @@ func load_arena(index: int) -> void:
     _lighting()
     _flush()
 
+func spawn_position() -> Vector3:
+    # Use each arena's authored spawn positions, never an arbitrary position inside cover.
+    for xy in current_map.get("spawnBlue", []):
+        var sx := float(xy[0])
+        var sz := float(xy[1])
+        if not _spot_obstructed(sx, sz, 1.3):
+            return Vector3(sx, 1.9, sz)
+    for xy in [[-33.0,33.0],[0.0,34.0],[33.0,33.0],[-31.0,-31.0]]:
+        if not _spot_obstructed(float(xy[0]), float(xy[1]), 1.3):
+            return Vector3(float(xy[0]), 1.9, float(xy[1]))
+    return Vector3(-34, 1.9, 34)
+
+func _spot_obstructed(x: float, z: float, radius: float) -> bool:
+    for item in current_map.get("obstacles", []):
+        if str(item.get("kind", "")) == "perimeter":
+            continue
+        if absf(x-float(item.get("x",0))) < float(item.get("w",1))*.5+radius and absf(z-float(item.get("z",0))) < float(item.get("d",1))*.5+radius:
+            return true
+    return false
+
 func _material(color: Color, roughness: float = .76, metallic: float = .0, emissive: bool = false) -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
     mat.albedo_color = color
