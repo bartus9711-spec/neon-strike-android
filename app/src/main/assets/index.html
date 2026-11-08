@@ -84,6 +84,24 @@ body{background:#151d22}.menu-screen{background:radial-gradient(circle at 80% 27
 .scope-info{position:absolute;bottom:3.5%;left:50%;transform:translateX(-50%);font:800 clamp(8px,1.5vmin,12px) system-ui;letter-spacing:1.3px;color:#c1c5baa8;text-shadow:0 1px 3px black;white-space:nowrap}
 .sniper-scope:not(.hidden)~.crosshair{display:none!important}
 @media(max-height:480px){.scope-view{width:min(93vh,85vw);height:min(93vh,85vw)}}
+
+/* TeamCS economy overlay */
+.economy-strip{display:flex;align-items:center;gap:8px;color:#9df0b8;font:800 12px system-ui;white-space:nowrap}
+.economy-strip span:last-child{color:#bfcacf}
+.buy-hud{background:#364c40;color:#f5f8ed;border:1px solid #91a991;padding:8px;border-radius:4px;font-size:10px;font-weight:900}
+.shop-overlay{position:absolute;inset:0;z-index:48;background:#060b0fd9;display:flex;align-items:center;justify-content:center;padding:12px;backdrop-filter:blur(6px)}
+.shop-panel{background:#152028;border:1px solid #73867a;width:min(920px,97vw);max-height:96vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 80px #000d}
+.shop-top{display:flex;justify-content:space-between;gap:9px;align-items:center;padding:12px 17px;background:#26343b}.shop-top strong{font-size:19px}.shop-top small{font-size:10px;color:#b7c5bd}
+.shop-top button{background:#384c54;color:#fff;border:1px solid #859a9e;border-radius:4px;padding:9px}
+.shop-info{display:flex;gap:12px;justify-content:space-between;padding:9px 15px;background:#11232b;font-size:12px;color:#aab9ae}.shop-info strong{color:#89efb2}
+.shop-tiles{overflow:auto;touch-action:pan-y;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:12px}
+.shop-tile{min-width:0;min-height:121px;padding:11px;background:linear-gradient(130deg,#29363b,#1c2a33);border:1px solid #61737c88;display:flex;flex-direction:column;gap:7px}
+.shop-tile strong{font-size:13px}.shop-tile small{color:#b0c0c8;font-size:10px}.shop-tile>div:first-child{font-size:21px;color:#d5c9b4}
+.shop-commands{display:flex;gap:5px;margin-top:auto}.shop-commands button{flex:1;background:#3c6957;border:1px solid #82a992;border-radius:3px;color:white;font-size:10px;font-weight:850;padding:7px 4px}
+.shop-commands button:nth-child(2){background:#47505a}.shop-commands button:disabled{opacity:.35}
+.shop-footer{padding:8px 14px;font-size:10px;color:#a6b1b2;background:#101c24}
+@media(max-width:700px){.economy-strip{gap:3px;font-size:10px}.buy-hud{padding:5px;font-size:9px}.shop-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:7px}.shop-tile{padding:7px;min-height:98px}.shop-top{padding:7px 12px}.shop-top strong{font-size:15px}.shop-info{padding:6px 10px}}
+@media(max-height:480px){.shop-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.shop-tile{min-height:90px}.shop-tile>div:first-child{font-size:15px}}
 </style>
 </head>
 <body>
@@ -94,7 +112,7 @@ body{background:#151d22}.menu-screen{background:radial-gradient(circle at 80% 27
     <div class="hud-top">
       <div class="hud-logo"><span class="logo-mark">T<span>CS</span></span><span>TEAM<br><strong>CS</strong></span></div>
       <div class="scoreblock"><div class="team-chip blue">CT • NOVA <strong id="blueScore">00</strong></div><div class="timer" id="clock">04:00</div><div class="team-chip orange"><strong id="redScore">00</strong> T • RIFT</div></div>
-      <div class="top-right"><div class="signal" id="netHealth" title="Stan połączenia">● SOLO</div><div class="signal" id="netLabel"><i></i> SOLO</div><button class="icon-button hidden" id="inviteOpen" aria-label="Zaproszenie">↗</button><button class="icon-button" id="scoreboardButton" aria-label="Tabela wyników">☷</button><button class="icon-button" id="menuButton" aria-label="Ustawienia w trakcie gry">⚙</button></div>
+      <div class="top-right"><div class="signal" id="netHealth" title="Stan połączenia">● SOLO</div><div class="signal" id="netLabel"><i></i> SOLO</div><button class="icon-button hidden" id="inviteOpen" aria-label="Zaproszenie">↗</button><div class="economy-strip"><span id="walletHud">$800</span><span id="armorHud">PANCERZ 0</span></div><button id="shopHudButton" type="button" class="buy-hud">SKLEP [B]</button><button class="icon-button" id="scoreboardButton" aria-label="Tabela wyników">☷</button><button class="icon-button" id="menuButton" aria-label="Ustawienia w trakcie gry">⚙</button></div>
     </div>
     <div class="hud-info"><span id="mapLabel">NABRZEŻE 17</span><span id="roundLabel">Runda 01</span><span id="padHud">🎮 —</span></div>
     <div id="killFeed"></div>
@@ -109,6 +127,12 @@ body{background:#151d22}.menu-screen{background:radial-gradient(circle at 80% 27
     <div id="notice" class="notice hidden"></div>
     <div id="deathOverlay" class="center-notice hidden"><span>WYŁĄCZONO PANCERZ</span><strong>ODRODZENIE ZA CHWILĘ</strong></div>
     <div id="roundOverlay" class="center-notice hidden"><span>KONIEC RUNDY</span><strong id="winnerLabel">NOVA WYGRYWA</strong></div>
+    <div id="shopOverlay" class="shop-overlay hidden" role="dialog" aria-label="Sklep wyposażenia" aria-modal="true">
+      <div class="shop-panel"><div class="shop-top"><div><small>TEAMCS · MATCH ECONOMY</small><strong>SKLEP RUNDOWY</strong></div><button id="shopClose" type="button">✕ ZAMKNIJ</button></div>
+      <div class="shop-info"><span>ŚRODKI <strong id="shopWallet">$800</strong></span><span id="shopClock">ZAKUPY 24 S</span></div>
+      <div id="shopTiles" class="shop-tiles"></div>
+      <div class="shop-footer">Pieniądze wyłącznie meczowe: eliminacja +$300, wygrana +$3000, przegrana +$1650. Sprzedaż przed końcem fazy zakupów. Bez płatności.</div>
+      </div></div>
     <div id="settingsPanel" class="settings-modal hidden" role="dialog" aria-modal="true" aria-label="Ustawienia w trakcie gry">
       <div class="settings-card">
         <div class="settings-heading"><div><small>TeamCS / OPCJE</small><h2>USTAWIENIA W GRZE</h2></div><button id="resumeTop" aria-label="Wróć do gry">✕</button></div>
@@ -538,13 +562,21 @@ const $=id=>document.getElementById(id);
 const mobile=matchMedia('(pointer:coarse)').matches||matchMedia('(hover:none)').matches;
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
 const weapons=['pulse','storm','rail','usp','tec'];
+const SHOP_CATALOG=[
+ {id:'usp',name:'PISTOLET',cost:0,icon:'◧',desc:'Wyposażenie standardowe'},
+ {id:'tec',name:'TEC · LEKKI',cost:650,icon:'◩',desc:'Pistolet dodatkowy'},
+ {id:'pulse',name:'AK · KARABIN',cost:2700,icon:'▰',desc:'Sprzęt długi'},
+ {id:'storm',name:'M4 · KARABIN',cost:3100,icon:'▱',desc:'Karabin drużyny CT'},
+ {id:'rail',name:'AWP · SNAJPER',cost:4750,icon:'◉',desc:'Z lunetą i regulowaną czułością'},
+ {id:'armor',name:'PANCERZ TAKTYCZNY',cost:700,icon:'⬡',desc:'Osłona do 100 punktów'}
+];
 const state={maps:[],selected:'port',map:null,renderer:null,playing:false,mode:'menu',ws:null,peer:null,conn:null,hostRoom:null,hostTimer:null,room:'',ownId:'',team:0,
   player:{x:0,y:0,z:0,yaw:0,pitch:0,hp:100,ammo:{pulse:30,storm:30,rail:10,usp:12,tec:18},kills:0,deaths:0},
   bots:[],other:[],tracers:[],particles:[],weapon:'pulse',lastFire:0,reloadEnd:0,reloading:false,
   keys:{},stick:{x:0,y:0},fireHeld:false,sprint:false,crouch:false,jumpVel:0,grounded:true,
   lastFrame:0,time:0,elapsed:0,roundMs:240000,soloScores:[0,0],scores:[0,0],round:1,roundEnd:0,deadUntil:0,
   paused:false,autoReconnect:true,retryCode:'',retryCount:0,retryTimer:null,installPrompt:null,networkLast:'',recoil:0,moving:0,sens:1,lastNet:0,lastHud:0,lastLook:0,lookPointer:null,lookLastX:0,lookLastY:0,
-  audio:null,hitTimeout:0,quality:'medium',noticeUntil:0,chatOpen:false,joinedFromLink:false,gamepadIndex:null,padButtons:[],padStick:{x:0,y:0},padSens:.85,padDead:.18,zoom:false,scopeSens:.45,scopePadSens:.55,objective:{phase:'idle',site:null,deadline:0},interactHeld:false,interactProgress:0,objectiveBotReady:0,credits:250,cases:2,mmr:1000,wins:0,losses:0,matchType:'casual',matchRewarded:false,ownedSkins:{pulse:['default'],storm:['default'],rail:['default'],usp:['default'],tec:['default']},equippedSkins:{pulse:'default',storm:'default',rail:'default',usp:'default',tec:'default'}};
+  audio:null,hitTimeout:0,quality:'medium',noticeUntil:0,chatOpen:false,joinedFromLink:false,gamepadIndex:null,padButtons:[],padStick:{x:0,y:0},padSens:.85,padDead:.18,zoom:false,cash:800,armor:0,gear:['usp'],buyDeadline:0,buyLeftMs:0,shopOpen:false,scopeSens:.45,scopePadSens:.55,objective:{phase:'idle',site:null,deadline:0},interactHeld:false,interactProgress:0,objectiveBotReady:0,credits:250,cases:2,mmr:1000,wins:0,losses:0,matchType:'casual',matchRewarded:false,ownedSkins:{pulse:['default'],storm:['default'],rail:['default'],usp:['default'],tec:['default']},equippedSkins:{pulse:'default',storm:'default',rail:'default',usp:'default',tec:'default'}};
 const META={port:'◈',dunes:'◆',neon:'⬡',foundry:'⚙',metro:'▥',alpine:'▲',oldtown:'⌂',skyline:'◇'};
 
 const SKIN_POOL={
@@ -595,17 +627,85 @@ function storePref(){try{localStorage.setItem('neon-strike-rejoin',String(state.
 function setupQuality(){const value=$('qualitySelect').value;const quality=value==='auto'?'medium':value;if(state.quality!==quality){state.quality=quality;state.renderer.setQuality(quality);}state.sens=Number($('sensSelect').value)||1;state.scopeSens=Number($('scopeSens').value)||.45;state.scopePadSens=Number($('scopePadSens').value)||.55;state.padSens=Number($('padSens').value)||.85;state.padDead=Number($('padDead').value)||.18;refreshSliderLabels();}
 function refreshSliderLabels(){for(const [a,b,fmt] of [['sensSelect','sensValue',x=>x.toFixed(2).replace('.',',')+'×'],['scopeSens','scopeSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['scopePadSens','scopePadSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['inScopeSens','inScopeSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['inScopePadSens','inScopePadSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['padSens','padSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['padDead','padDeadValue',x=>Math.round(x*100)+'%'],['inSens','inSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['inPadSens','inPadSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['inPadDead','inPadDeadValue',x=>Math.round(x*100)+'%']])$(b).textContent=fmt(Number($(a).value));}
 function syncSettingsFromMenu(){for(const [a,b] of [['sensSelect','inSens'],['scopeSens','inScopeSens'],['scopePadSens','inScopePadSens'],['padSens','inPadSens'],['padDead','inPadDead'],['qualitySelect','inQuality']])$(b).value=$(a).value;refreshSliderLabels();}
-function setPaused(on){if(!state.playing)return;state.paused=!!on;state.interactHeld=false;state.interactProgress=0;state.keys={};state.fireHeld=false;state.touchFireHeld=false;state.mouseFireHeld=false;state.padStick={x:0,y:0};state.stick={x:0,y:0};$('settingsPanel').classList.toggle('hidden',!state.paused);if(state.paused){$('invitePanel').classList.add('hidden');$('scoreboard').classList.add('hidden');if(document.pointerLockElement)document.exitPointerLock?.();syncSettingsFromMenu();updateConnectionInfo();$('pauseMessage').textContent=state.mode==='solo'?'SOLO: gra zatrzymana. Możesz bezpiecznie dostroić sterowanie.':'MULTI: zmieniasz ustawienia bez opuszczania pokoju. Inni gracze nadal grają.';}else state.lastFrame=performance.now();}
+function setPaused(on){if(!state.playing)return;closeShop();state.paused=!!on;state.interactHeld=false;state.interactProgress=0;state.keys={};state.fireHeld=false;state.touchFireHeld=false;state.mouseFireHeld=false;state.padStick={x:0,y:0};state.stick={x:0,y:0};$('settingsPanel').classList.toggle('hidden',!state.paused);if(state.paused){$('invitePanel').classList.add('hidden');$('scoreboard').classList.add('hidden');if(document.pointerLockElement)document.exitPointerLock?.();syncSettingsFromMenu();updateConnectionInfo();$('pauseMessage').textContent=state.mode==='solo'?'SOLO: gra zatrzymana. Możesz bezpiecznie dostroić sterowanie.':'MULTI: zmieniasz ustawienia bez opuszczania pokoju. Inni gracze nadal grają.';}else state.lastFrame=performance.now();}
 function updateConnectionInfo(){const conn=navigator.connection||navigator.mozConnection||navigator.webkitConnection;let network=navigator.onLine?'Internet aktywny':'Brak internetu';if(navigator.onLine&&conn){const name=conn.type==='wifi'?'Wi‑Fi':conn.type==='cellular'?'Sieć komórkowa':conn.type==='ethernet'?'Ethernet':'Połączenie online';network=name+(conn.effectiveType?' · '+conn.effectiveType.toUpperCase():'')+(conn.saveData?' · oszczędzanie danych':'');}if(state.mode==='online'){network+=(state.conn?.open||state.hostRoom?' · P2P aktywne':' · P2P rozłączone');}for(const id of ['netMenuStatus','networkSettingStatus']){const el=$(id);if(el)el.textContent=(navigator.onLine?'📡 ':'⚠ ')+network;}const badge=$('netHealth');if(badge){badge.textContent=navigator.onLine?'● '+(state.mode==='online'?'SIEĆ':'ONLINE'):'● OFFLINE';badge.style.color=navigator.onLine?'#24f3dc':'#ff9a7d';}state.networkLast=network;}
 function cancelRejoin(){if(state.retryTimer)clearTimeout(state.retryTimer);state.retryTimer=null;state.retryCode='';state.retryCount=0;}
 function scheduleRejoin(code){if(!state.autoReconnect||!code||state.playing)return;if(state.retryCount>=3){error('Nie udało się wrócić do pokoju. Spróbuj ręcznie kodem '+code+'.');return;}state.retryCode=code;if(state.retryTimer)clearTimeout(state.retryTimer);state.retryCount++;const attempt=state.retryCount;error('Próba ponownego dołączenia '+attempt+'/3 do '+code+'…');state.retryTimer=setTimeout(()=>{state.retryTimer=null;if(state.playing||!state.retryCode)return;if(!navigator.onLine){state.retryCount--;return;}connect('join',code,true);},attempt*1800);}
 
-function resetPlayer(){const spots=state.map.spawnBlue;const spot=spots[0];state.player.x=spot[0];state.player.y=0;state.player.z=spot[1];state.player.yaw=.78;state.player.pitch=0;state.player.hp=100;state.player.ammo={pulse:30,storm:30,rail:10,usp:12,tec:18};state.player.kills=0;state.player.deaths=0;state.deadUntil=0;state.jumpVel=0;state.grounded=true;state.reloading=false;state.reloadEnd=0;state.weapon='pulse';}
+
+function canShop(){return state.playing&&!state.roundEnd&&state.player.hp>0&&(state.mode==='solo'?performance.now()<state.buyDeadline:state.buyLeftMs>0);}
+function closeShop(){state.shopOpen=false;$('shopOverlay').classList.add('hidden');}
+function openShop(){if(!state.playing)return;state.shopOpen=true;state.fireHeld=false;state.mouseFireHeld=false;state.touchFireHeld=false;state.keys={};$('shopOverlay').classList.remove('hidden');if(document.pointerLockElement)document.exitPointerLock?.();renderShop();}
+function renderShop(){
+ const grid=$('shopTiles');if(!grid)return;
+ grid.replaceChildren();
+ const buyAllowed=canShop();
+ $('shopWallet').textContent='$'+Math.floor(state.cash);
+ $('shopClock').textContent=buyAllowed?'ZAKUPY '+Math.ceil((state.mode==='solo'?state.buyDeadline-performance.now():state.buyLeftMs)/1000)+' S':'FAZA ZAKUPÓW ZAKOŃCZONA';
+ for(const item of SHOP_CATALOG){
+  const owned=item.id==='armor'?state.armor>0:state.gear.includes(item.id);
+  const tile=document.createElement('div');tile.className='shop-tile';
+  const art=document.createElement('div');art.textContent=item.icon;
+  const label=document.createElement('strong');label.textContent=item.name;
+  const desc=document.createElement('small');desc.textContent=item.desc+' · $'+item.cost;
+  const row=document.createElement('div');row.className='shop-commands';
+  const buy=document.createElement('button');buy.textContent=owned?'POSIADANE':'KUP $'+item.cost;buy.disabled=owned||!buyAllowed||state.cash<item.cost||item.id==='usp';buy.addEventListener('click',()=>shopAction('buy',item.id));
+  const sell=document.createElement('button');sell.textContent='ODSPRZEDAJ';sell.disabled=!owned||!buyAllowed||item.id==='usp';sell.addEventListener('click',()=>shopAction('sell',item.id));
+  row.append(buy,sell);tile.append(art,label,desc,row);grid.append(tile);
+ }
+}
+function updateWallet(){
+ if(!$('walletHud'))return;
+ $('walletHud').textContent='$'+Math.floor(state.cash);
+ $('armorHud').textContent='PANCERZ '+Math.floor(state.armor);
+ if(state.shopOpen)renderShop();
+}
+function shopAction(op,id){
+ const item=SHOP_CATALOG.find(x=>x.id===id);
+ if(!canShop()||!item||item.id==='usp')return;
+ if(state.mode==='online'){netSend({type:'shop',op,id});return;}
+ const owned=item.id==='armor'?state.armor>0:state.gear.includes(item.id);
+ if(op==='buy'){
+  if(owned||state.cash<item.cost)return;
+  state.cash-=item.cost;
+  if(id==='armor')state.armor=100;
+  else{state.gear.push(id);setWeapon(id);}
+ }else if(op==='sell'){
+  if(!owned)return;
+  state.cash=Math.min(16000,state.cash+Math.floor(item.cost*.65));
+  if(id==='armor')state.armor=0;
+  else{state.gear=state.gear.filter(x=>x!==id);if(state.weapon===id)setWeapon('usp');}
+ }else return;
+ toast((op==='buy'?'KUPIONO':'ODSPRZEDANO')+' · '+item.name);
+ updateWallet();updateHud();
+}
+function hostShop(p,msg){
+ const r=state.hostRoom,now=performance.now();if(!r||r.roundEnds||now>r.buyDeadline||p.hp<=0)return;
+ const item=SHOP_CATALOG.find(x=>x.id===msg.id);if(!item||item.id==='usp')return;
+ const owned=item.id==='armor'?p.armor>0:p.gear.includes(item.id);
+ if(msg.op==='buy'){
+  if(owned||item.cost>p.cash)return;
+  p.cash-=item.cost;
+  if(item.id==='armor')p.armor=100;else{p.gear.push(item.id);p.weapon=item.id;}
+ }else if(msg.op==='sell'){
+  if(!owned)return;
+  p.cash=Math.min(16000,p.cash+Math.floor(item.cost*.65));
+  if(item.id==='armor')p.armor=0;
+  else{p.gear=p.gear.filter(x=>x!==item.id);if(p.weapon===item.id)p.weapon='usp';}
+ }else return;
+ messageTo(p.id,{type:'shopResult',cash:p.cash,armor:p.armor,gear:p.gear,weapon:p.weapon,info:item.name});
+}
+function matchCashRound(winner){
+ if(state.mode!=='solo')return;
+ const bonus=winner<0?1600:winner===state.team?3000:1650;
+ state.cash=Math.min(16000,state.cash+bonus);toast('BONUS RUNDY +$'+bonus);updateWallet();
+}
+function resetPlayer(){const spots=state.map.spawnBlue;const spot=spots[0];state.player.x=spot[0];state.player.y=0;state.player.z=spot[1];state.player.yaw=.78;state.player.pitch=0;state.player.hp=100;state.player.ammo={pulse:30,storm:30,rail:10,usp:12,tec:18};state.player.kills=0;state.player.deaths=0;state.deadUntil=0;state.jumpVel=0;state.grounded=true;state.reloading=false;state.reloadEnd=0;state.weapon='usp';}
 function startView(mode,mapId){state.paused=false;state.matchRewarded=false;state.objective={phase:'idle',site:null,deadline:0};state.interactHeld=false;state.interactProgress=0;state.objectiveBotReady=performance.now()+27000;$('objectivePanel').classList.toggle('hidden',state.matchType!=='objective');$('settingsPanel').classList.add('hidden');state.mode=mode;state.map=state.maps.find(m=>m.id===mapId)||state.maps[0];state.selected=state.map.id;state.renderer.loadMap(state.map);state.playing=true;state.elapsed=0;state.roundMs=240000;state.roundEnd=0;state.round=1;state.tracers=[];state.particles=[];state.scores=[0,0];state.soloScores=[0,0];state.other=[];state.bots=[];state.keys={};state.stick={x:0,y:0};state.fireHeld=false;state.sprint=false;state.crouch=false;state.zoom=false;state.padStick={x:0,y:0};state.touchZoomHeld=false;state.mouseZoomHeld=false;state.mouseFireHeld=false;state.touchFireHeld=false;state.padButtons=[];
  $('mainMenu').classList.add('hidden');$('gameOverlay').classList.remove('hidden');$('deathOverlay').classList.add('hidden');$('roundOverlay').classList.add('hidden');$('invitePanel').classList.add('hidden');$('scoreboard').classList.add('hidden');$('mapLabel').textContent=state.map.name;$('roundLabel').textContent='Runda 01';
  $('netLabel').textContent=mode==='online'?'● ONLINE':'● SOLO';$('netLabel').style.color=mode==='online'?'#25f3df':'#9fbdc8';
  $('inviteOpen').classList.toggle('hidden',mode!=='online');
- resetPlayer();setWeapon('pulse');setZoom(false);updateHud();
+ resetPlayer();state.cash=800;state.armor=0;state.gear=['usp'];state.buyDeadline=performance.now()+24000;state.buyLeftMs=24000;closeShop();setWeapon('usp');setZoom(false);updateHud();updateWallet();
  if(mobile&&document.fullscreenEnabled&&!document.fullscreenElement)document.documentElement.requestFullscreen?.().catch(()=>{});
 }
 function addBot(team,index){const spots=team===0?state.map.spawnBlue:state.map.spawnRed,pt=spots[index%spots.length];const id=`bot${team}_${index}`;
@@ -649,14 +749,14 @@ function makeHostPlayer(id,name){
  const totals=[0,0];for(const p of r.players.values())totals[p.team]++;
  if(r.players.size>=10)return null;
  const team=totals[0]<=totals[1]&&totals[0]<5?0:totals[1]<5?1:0;
- const p={id,name:safeName(name),team,kills:0,deaths:0,x:0,y:0,z:0,yaw:0,pitch:0,hp:100,weapon:'pulse',ammo:ammoFull(),lastFire:0,lastMove:performance.now(),respawnAt:0,reloading:false,reloadFinish:0};
+ const p={id,name:safeName(name),team,kills:0,deaths:0,x:0,y:0,z:0,yaw:0,pitch:0,hp:100,weapon:'usp',ammo:ammoFull(),cash:800,armor:0,gear:['usp'],lastFire:0,lastMove:performance.now(),respawnAt:0,reloading:false,reloadFinish:0};
  r.players.set(id,p);return p;
 }
 function hostSpawn(p){
  const r=state.hostRoom;if(!r)return;
  const pt=(p.team===0?r.map.spawnBlue:r.map.spawnRed)[Math.floor(random()*5)];
- Object.assign(p,{x:pt[0],y:0,z:pt[1],yaw:p.team===0?2.4:-.7,pitch:0,hp:100,ammo:ammoFull(),weapon:'pulse',reloading:false,reloadFinish:0,respawnAt:0,lastFire:0,lastMove:performance.now()});
- messageTo(p.id,{type:'spawn',x:p.x,y:p.y,z:p.z,yaw:p.y,team:p.team,ammo:p.ammo});
+ Object.assign(p,{x:pt[0],y:0,z:pt[1],yaw:p.team===0?2.4:-.7,pitch:0,hp:100,ammo:ammoFull(),weapon:p.gear.find(x=>x!=='usp')||'usp',reloading:false,reloadFinish:0,respawnAt:0,lastFire:0,lastMove:performance.now()});
+ messageTo(p.id,{type:'spawn',x:p.x,y:p.y,z:p.z,yaw:p.y,team:p.team,ammo:p.ammo,cash:p.cash,armor:p.armor,gear:p.gear,weapon:p.weapon});
 }
 function hostJoin(id,name,conn){
  const r=state.hostRoom;if(!r)return;
@@ -708,9 +808,9 @@ function hostFire(p){
  const end=[o[0]+d[0]*near,o[1]+d[1]*near,o[2]+d[2]*near];
  roomBroadcast({type:'shot',id:p.id,from:o,to:end,hit:!!target});
  if(!target)return;
- target.hp=Math.max(0,target.hp-Math.round(w.damage*(critical?1.35:1)));
+ const dealt=Math.round(w.damage*(critical?1.35:1)),absorbed=Math.min(target.armor||0,Math.floor(dealt*.4));target.armor=Math.max(0,(target.armor||0)-absorbed);target.hp=Math.max(0,target.hp-dealt+absorbed);
  messageTo(p.id,{type:'hit',critical,down:!target.hp});messageTo(target.id,{type:'damage',hp:target.hp});
- if(target.hp<=0){p.kills++;target.deaths++;r.scores[p.team]++;target.respawnAt=now+2400;messageTo(target.id,{type:'dead',respawnMs:2400});roomBroadcast({type:'frag',killer:p.name,victim:target.name,team:p.team});}
+ if(target.hp<=0){p.cash=Math.min(16000,p.cash+300);p.kills++;target.deaths++;r.scores[p.team]++;target.respawnAt=now+2400;messageTo(target.id,{type:'dead',respawnMs:2400});roomBroadcast({type:'frag',killer:p.name,victim:target.name,team:p.team});}
 }
 // Fictional uplink objective: hold ACTION in marked zone A or B.
 function nearbySite(p){if(!state.map?.sites)return null;return state.map.sites.find(site=>Math.hypot((p.x||0)-site.x,(p.z||0)-site.z)<5)||null;}
@@ -733,14 +833,15 @@ function hostObjectiveAction(p,msg){const r=state.hostRoom;if(!r||r.matchType!==
  const site=r.map.sites.find(s=>s.id===msg.site);if(!site||Math.hypot(p.x-site.x,p.z-site.z)>5.5)return;
  if(msg.action==='activate'&&p.team===1&&o.phase==='idle'){r.objective={phase:'active',site:site.id,deadline:performance.now()+36000};roomBroadcast({type:'objective',phase:'active',site:site.id,remainingMs:36000});}
  if(msg.action==='deactivate'&&p.team===0&&o.phase==='active'&&o.site===site.id){r.objective={phase:'idle',site:null,deadline:0};roomBroadcast({type:'objective',phase:'idle',site:null,remainingMs:0});hostEndRound(0);}}
-function hostEndRound(winner){const r=state.hostRoom;if(!r||r.roundEnds)return;r.roundEnds=performance.now();roomBroadcast({type:'roundEnd',winner});}
+function hostEndRound(winner){const r=state.hostRoom;if(!r||r.roundEnds)return;r.roundEnds=performance.now();for(const p of r.players.values())p.cash=Math.min(16000,p.cash+(winner<0?1600:winner===p.team?3000:1650));roomBroadcast({type:'roundEnd',winner});}
 function hostMessage(id,msg){
  if(!state.hostRoom||!msg||typeof msg!=='object'||Array.isArray(msg))return;
  const r=state.hostRoom,p=r.players.get(id);if(!p)return;
  if(msg.type==='objectiveAction')return hostObjectiveAction(p,msg);
+ if(msg.type==='shop')return hostShop(p,msg);
  if(msg.type==='move')return hostMove(p,msg);
  if(msg.type==='fire')return hostFire(p);
- if(msg.type==='weapon'){if(GUNS[msg.weapon]){p.weapon=msg.weapon;p.reloading=false;p.reloadFinish=0;}return;}
+ if(msg.type==='weapon'){if(GUNS[msg.weapon]&&p.gear.includes(msg.weapon)){p.weapon=msg.weapon;p.reloading=false;p.reloadFinish=0;}return;}
  if(msg.type==='reload'){const w=GUNS[p.weapon];if(p.hp&&!p.reloading&&p.ammo[p.weapon]<w.capacity){p.reloading=true;p.reloadFinish=performance.now()+w.reload;}return;}
  if(msg.type==='chat'){const text=String(msg.text||'').replace(/[\x00-\x1F\x7F]/g,' ').trim().slice(0,90);if(!text)return;const now=performance.now();if(now-(p.lastChat||0)<550)return;p.lastChat=now;roomBroadcast({type:'chat',name:p.name,text,team:p.team});}
 }
@@ -753,13 +854,13 @@ function hostTick(){
  }else if(r.matchType!=='objective'&&!r.roundEnds&&(now-r.started>=240000||r.scores[0]>=25||r.scores[1]>=25)){
   hostEndRound(r.scores[0]===r.scores[1]?-1:r.scores[0]>r.scores[1]?0:1);
  }
- if(r.roundEnds&&now-r.roundEnds>8500){r.round++;r.scores=[0,0];r.started=now;r.roundEnds=0;r.objective={phase:'idle',site:null,deadline:0};for(const p of r.players.values()){p.kills=0;p.deaths=0;hostSpawn(p);}roomBroadcast({type:'newRound'});}
+ if(r.roundEnds&&now-r.roundEnds>8500){r.round++;r.scores=[0,0];r.started=now;r.buyDeadline=now+24000;r.roundEnds=0;r.objective={phase:'idle',site:null,deadline:0};for(const p of r.players.values()){p.kills=0;p.deaths=0;hostSpawn(p);}roomBroadcast({type:'newRound'});}
  for(const p of r.players.values()){
   if(!p.hp&&p.respawnAt&&now>=p.respawnAt&&!r.roundEnds)hostSpawn(p);
   if(p.reloading&&now>=p.reloadFinish){p.reloading=false;p.ammo[p.weapon]=GUNS[p.weapon].capacity;messageTo(p.id,{type:'reloaded',weapon:p.weapon,ammo:p.ammo[p.weapon]});}
  }
- const players=[...r.players.values()].map(p=>({id:p.id,name:p.name,team:p.team,x:p.x,y:p.y,z:p.z,yaw:p.yaw,pitch:p.pitch,weapon:p.weapon,hp:p.hp,kills:p.kills,deaths:p.deaths}));
- for(const p of r.players.values())messageTo(p.id,{type:'snapshot',players,scores:[...r.scores],timeLeft:Math.max(0,(r.matchType==='objective'?105000:240000)-(now-r.started)),objective:r.matchType==='objective'?{phase:r.objective.phase,site:r.objective.site,remainingMs:Math.max(0,r.objective.deadline-now)}:null,ammo:p.ammo[p.weapon],reloading:p.reloading});
+ const players=[...r.players.values()].map(p=>({id:p.id,name:p.name,team:p.team,x:p.x,y:p.y,z:p.z,yaw:p.yaw,pitch:p.pitch,weapon:p.weapon,hp:p.hp,cash:p.cash,armor:p.armor,gear:p.gear,kills:p.kills,deaths:p.deaths}));
+ for(const p of r.players.values())messageTo(p.id,{type:'snapshot',players,scores:[...r.scores],buyLeftMs:Math.max(0,r.buyDeadline-now),timeLeft:Math.max(0,(r.matchType==='objective'?105000:240000)-(now-r.started)),objective:r.matchType==='objective'?{phase:r.objective.phase,site:r.objective.site,remainingMs:Math.max(0,r.objective.deadline-now)}:null,ammo:p.ammo[p.weapon],reloading:p.reloading});
 }
 function networkError(msg){buttonsEnable();error(msg);if(state.playing)toast(msg,3400);else if(state.retryCode&&state.retryCount<3){peerClean();scheduleRejoin(state.retryCode);}updateConnectionInfo();}
 async function connect(action,roomCode='',retry=false){
@@ -772,7 +873,7 @@ async function connect(action,roomCode='',retry=false){
   const peer=new Peer(codeId(code),{debug:0});state.peer=peer;
   let ready=false;
   peer.on('open',()=>{
-   if(state.peer!==peer||state.playing)return;ready=true;state.hostRoom={hostId:peer.id,code,map:state.maps.find(m=>m.id===state.selected)||state.maps[0],players:new Map(),connections:new Map(),scores:[0,0],started:performance.now(),roundEnds:0,round:1,ranked:state.matchType==='ranked',matchType:state.matchType,objective:{phase:'idle',site:null,deadline:0}};
+   if(state.peer!==peer||state.playing)return;ready=true;state.hostRoom={hostId:peer.id,code,map:state.maps.find(m=>m.id===state.selected)||state.maps[0],players:new Map(),connections:new Map(),scores:[0,0],started:performance.now(),buyDeadline:performance.now()+24000,roundEnds:0,round:1,ranked:state.matchType==='ranked',matchType:state.matchType,objective:{phase:'idle',site:null,deadline:0}};
    hostJoin(peer.id,roomName());state.hostTimer=setInterval(hostTick,110);buttonsEnable();error('');
   });
   peer.on('connection',conn=>{
@@ -812,13 +913,14 @@ function handleNet(msg){switch(msg.type){
   $('invitePanel').classList.remove('hidden');toast(`DOŁĄCZONO · DRUŻYNA ${state.team===0?'NOVA':'RIFT'}`,3000);
   break;}
  case 'spawn':{
+  state.cash=Number(msg.cash)||0;state.armor=Number(msg.armor)||0;state.gear=Array.isArray(msg.gear)?msg.gear:['usp'];state.weapon=msg.weapon||'usp';
   state.player.x=msg.x;state.player.z=msg.z;state.player.y=msg.y;state.player.yaw=msg.yaw;state.player.pitch=0;state.player.hp=100;state.player.ammo=msg.ammo;state.team=msg.team;state.deadUntil=0;state.reloading=false;state.jumpVel=0;
   $('deathOverlay').classList.add('hidden');break;}
  case 'snapshot':{
-  state.other=msg.players.filter(p=>p.id!==state.ownId);state.scores=msg.scores;state.roundMs=msg.timeLeft;
+  state.other=msg.players.filter(p=>p.id!==state.ownId);state.scores=msg.scores;state.roundMs=msg.timeLeft;state.buyLeftMs=msg.buyLeftMs||0;
   if(msg.objective){const o=msg.objective;state.objective={phase:o.phase,site:o.site,deadline:performance.now()+o.remainingMs};}
   const own=msg.players.find(p=>p.id===state.ownId);
-  if(own){state.player.hp=own.hp;state.player.kills=own.kills;state.player.deaths=own.deaths;state.player.ammo[state.weapon]=msg.ammo;state.reloading=msg.reloading;}
+  if(own){state.cash=own.cash||0;state.armor=own.armor||0;state.gear=Array.isArray(own.gear)?own.gear:['usp'];state.weapon=own.weapon||state.weapon;state.player.hp=own.hp;state.player.kills=own.kills;state.player.deaths=own.deaths;state.player.ammo[state.weapon]=msg.ammo;state.reloading=msg.reloading;}
   state.allPlayers=msg.players;break;}
  case 'shot':{
   if(msg.id===state.ownId)break;
@@ -830,17 +932,18 @@ function handleNet(msg){switch(msg.type){
  case 'dead':state.deadUntil=performance.now()+msg.respawnMs;$('deathOverlay').classList.remove('hidden');sfx('dead');break;
  case 'reloaded':state.player.ammo[msg.weapon]=msg.ammo;state.reloading=false;sfx('reloadEnd');break;
  case 'empty':toast('BRAK ŁADUNKU · WCIŚNIJ R');break;
+ case 'shopResult':state.cash=msg.cash;state.armor=msg.armor;state.gear=msg.gear;state.weapon=msg.weapon;toast(msg.info);updateWallet();break;
  case 'objective':state.objective={phase:msg.phase,site:msg.site,deadline:performance.now()+msg.remainingMs};toast(msg.phase==='active'?'NADAJNIK AKTYWNY · STREFA '+msg.site:'NADAJNIK WYŁĄCZONY',2100);break;
  case 'roundEnd':finishRound(msg.winner);break;
- case 'newRound':state.round++;$('roundLabel').textContent=`Runda ${String(state.round).padStart(2,'0')}`;$('roundOverlay').classList.add('hidden');state.roundEnd=0;state.matchRewarded=false;state.objective={phase:'idle',site:null,deadline:0};state.interactProgress=0;toast('NOWA RUNDA');break;
+ case 'newRound':state.round++;state.buyLeftMs=24000;$('roundLabel').textContent=`Runda ${String(state.round).padStart(2,'0')}`;$('roundOverlay').classList.add('hidden');state.roundEnd=0;state.matchRewarded=false;state.objective={phase:'idle',site:null,deadline:0};state.interactProgress=0;toast('NOWA RUNDA');break;
  case 'left':toast(`${msg.name} opuścił grę`);break;
  case 'notice':toast(msg.text,1500);break;
  case 'chat':pushChat(msg.name,msg.text,msg.team);break;
  case 'pong':break;
 }}
-function setWeapon(id){if(!GUNS[id])return;state.weapon=id;setZoom(false);state.reloading=false;state.reloadEnd=0;
+function setWeapon(id){if(!GUNS[id]||state.playing&&!state.gear.includes(id))return;state.weapon=id;setZoom(false);state.reloading=false;state.reloadEnd=0;
  if(state.mode==='online')netSend({type:'weapon',weapon:id});sfx('switch');updateHud();}
-function cycleWeapon(){setWeapon(weapons[(weapons.indexOf(state.weapon)+1)%weapons.length]);}
+function cycleWeapon(){const owned=weapons.filter(id=>state.gear.includes(id));if(!owned.length)return;setWeapon(owned[(owned.indexOf(state.weapon)+1)%owned.length]);}
 function reload(){if(!state.playing||state.player.hp<=0||state.reloading)return;const w=GUNS[state.weapon];if(state.player.ammo[state.weapon]>=w.capacity)return;
  state.reloading=true;state.reloadEnd=performance.now()+w.reload;if(state.mode==='online')netSend({type:'reload'});sfx('reload');}
 function movePlayer(dt){const player=state.player;if(player.hp<=0||state.roundEnd)return;
@@ -892,7 +995,7 @@ function localFire(){const p=state.player,w=GUNS[state.weapon];const t=performan
  const end=[eye[0]+direction[0]*nearest,eye[1]+direction[1]*nearest,eye[2]+direction[2]*nearest];
  state.tracers.push({from:[p.x+.16,1.27+p.y,p.z],to:end,team:state.team,life:.12});addSparks(end,hit?5:2,hit?'red':'cyan');
  if(state.mode==='online'){sendPos();netSend({type:'fire'});}
- else if(hit){hit.hp=Math.max(0,hit.hp-Math.round(w.damage*(critical?1.35:1)));showHit(critical);if(hit.hp<=0){hit.deaths++;hit.respawnAt=t+2400;state.player.kills++;state.soloScores[state.team]++;addFrag($('playerName').value,hit.name,0);sfx('frag');if(state.matchType!=='objective'&&state.soloScores[state.team]>=25)finishRound(state.team);}}
+ else if(hit){hit.hp=Math.max(0,hit.hp-Math.round(w.damage*(critical?1.35:1)));showHit(critical);if(hit.hp<=0){hit.deaths++;hit.respawnAt=t+2400;state.player.kills++;state.cash=Math.min(16000,state.cash+300);state.soloScores[state.team]++;addFrag($('playerName').value,hit.name,0);sfx('frag');if(state.matchType!=='objective'&&state.soloScores[state.team]>=25)finishRound(state.team);}}
 }
 function sfx(type){try{let ctx=state.audio;if(!ctx){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;state.audio=ctx=new A();}if(ctx.state==='suspended')ctx.resume();
  const now=ctx.currentTime,osc=ctx.createOscillator(),gain=ctx.createGain();osc.connect(gain).connect(ctx.destination);
@@ -934,14 +1037,14 @@ function updateBots(dt,now){const all=state.bots;
    const from=[bot.x,1.48,bot.z],to=[target.x+(random()-.5)*.5,target.y+1.1,target.z+(random()-.5)*.5];
    state.tracers.push({from,to,life:.14,team:bot.team});
    if(dist<23)sfx('remote');
-   if(random()<.55 && target.id==='you' && state.player.hp>0){state.player.hp=Math.max(0,state.player.hp-(bot.weapon==='rail'?22:bot.weapon==='storm'?10:13));damageFX();if(!state.player.hp){bot.kills++;state.soloScores[bot.team]++;addFrag(bot.name,$('playerName').value,bot.team);endSoloDeath();}}
+   if(random()<.55 && target.id==='you' && state.player.hp>0){const dealt=bot.weapon==='rail'?22:bot.weapon==='storm'?10:13,absorbed=Math.min(state.armor,Math.floor(dealt*.4));state.armor-=absorbed;state.player.hp=Math.max(0,state.player.hp-dealt+absorbed);damageFX();if(!state.player.hp){bot.kills++;state.soloScores[bot.team]++;addFrag(bot.name,$('playerName').value,bot.team);endSoloDeath();}}
    else if(random()<.32 && target.id!=='you'){const botTarget=state.bots.find(b=>b.id===target.id);if(botTarget){botTarget.hp=Math.max(0,botTarget.hp-20);if(!botTarget.hp){botTarget.respawnAt=now+2400;botTarget.deaths++;bot.kills++;state.soloScores[bot.team]++;addFrag(bot.name,botTarget.name,bot.team);}}}
   }
  }
  if(state.soloScores[1]>=25&&state.matchType!=='objective')finishRound(1);
 }
-function finishRound(winner){if(state.roundEnd)return;state.roundEnd=performance.now();rewardRound(winner);$('roundOverlay').classList.remove('hidden');$('winnerLabel').textContent=winner<0?'REMIS':winner===0?'NOVA WYGRYWA':'RIFT WYGRYWA';sfx('frag');}
-function updateHud(){const p=state.player,w=GUNS[state.weapon],skin=currentSkin(state.weapon);$('hpNumber').textContent=String(Math.max(0,p.hp));$('healthFill').style.width=`${clamp(p.hp,0,100)}%`;$('healthFill').style.background=p.hp<=30?'#ff735e':'#24f3dc';$('weaponTitle').textContent=w.name;$('weaponType').innerHTML=w.type+'<span class="weapon-skin-tag">SKIN · '+skin.name+'</span>';$('ammoNumber').textContent=String(p.ammo[state.weapon]??0);$('ammoCapacity').textContent=w.capacity;$('reloadText').textContent=state.reloading?'PRZEŁADOWYWANIE…':'';document.querySelector('.weapon-pane').style.borderColor=skin.accent;document.querySelector('.weapon-pane').style.boxShadow='0 0 22px '+skin.accent+'22';
+function finishRound(winner){if(state.roundEnd)return;state.roundEnd=performance.now();closeShop();rewardRound(winner);matchCashRound(winner);$('roundOverlay').classList.remove('hidden');$('winnerLabel').textContent=winner<0?'REMIS':winner===0?'NOVA WYGRYWA':'RIFT WYGRYWA';sfx('frag');}
+function updateHud(){const p=state.player,w=GUNS[state.weapon],skin=currentSkin(state.weapon);updateWallet();$('hpNumber').textContent=String(Math.max(0,p.hp));$('healthFill').style.width=`${clamp(p.hp,0,100)}%`;$('healthFill').style.background=p.hp<=30?'#ff735e':'#24f3dc';$('weaponTitle').textContent=w.name;$('weaponType').innerHTML=w.type+'<span class="weapon-skin-tag">SKIN · '+skin.name+'</span>';$('ammoNumber').textContent=String(p.ammo[state.weapon]??0);$('ammoCapacity').textContent=w.capacity;$('reloadText').textContent=state.reloading?'PRZEŁADOWYWANIE…':'';document.querySelector('.weapon-pane').style.borderColor=skin.accent;document.querySelector('.weapon-pane').style.boxShadow='0 0 22px '+skin.accent+'22';
  const scores=state.mode==='solo'?state.soloScores:state.scores;$('blueScore').textContent=String(scores[0]).padStart(2,'0');$('redScore').textContent=String(scores[1]).padStart(2,'0');
  const ms=state.mode==='solo'?Math.max(0,(state.matchType==='objective'?105000:240000)-state.elapsed):state.roundMs;
  $('clock').textContent=`${String(Math.floor(ms/60000)).padStart(2,'0')}:${String(Math.floor(ms/1000)%60).padStart(2,'0')}`;
@@ -951,7 +1054,7 @@ function updateScoreboard(){const players=state.mode==='solo'?[{name:$('playerNa
 }
 function pushChat(name,message,team){const row=document.createElement('div');row.className='chat-line';const n=document.createElement('b');n.textContent=name+': ';if(team===1)n.style.color='#ffa88d';row.append(n,document.createTextNode(message));$('chatFeed').append(row);while($('chatFeed').children.length>4)$('chatFeed').firstChild.remove();setTimeout(()=>row.remove(),10000);}
 function showInvite(){if(state.mode==='online'){state.room&&($('roomCode').textContent=state.room);$('invitePanel').classList.remove('hidden');}}
-function leaveGame(disconnected=false){if(!disconnected)cancelRejoin();state.paused=false;$('settingsPanel').classList.add('hidden');state.playing=false;state.mode='menu';state.fireHeld=false;state.interactHeld=false;$('objectivePanel').classList.add('hidden');state.bots=[];state.other=[];state.allPlayers=[];$('gameOverlay').classList.add('hidden');$('mainMenu').classList.remove('hidden');$('invitePanel').classList.add('hidden');buttonsEnable();if(document.pointerLockElement)document.exitPointerLock?.();
+function leaveGame(disconnected=false){if(!disconnected)cancelRejoin();state.paused=false;$('settingsPanel').classList.add('hidden');state.playing=false;closeShop();state.mode='menu';state.fireHeld=false;state.interactHeld=false;$('objectivePanel').classList.add('hidden');state.bots=[];state.other=[];state.allPlayers=[];$('gameOverlay').classList.add('hidden');$('mainMenu').classList.remove('hidden');$('invitePanel').classList.add('hidden');buttonsEnable();if(document.pointerLockElement)document.exitPointerLock?.();
  peerClean();updateConnectionInfo();if(!disconnected){const u=new URL(location.href);u.searchParams.delete('room');try{history.replaceState(null,'',u);}catch{}}uiMapCards();}
 function gameStep(dt,now){if(!state.playing)return;if(state.paused){pollGamepad(0);return;}
  if(state.mode==='solo'){
@@ -963,7 +1066,7 @@ function gameStep(dt,now){if(!state.playing)return;if(state.paused){pollGamepad(
   }else if(state.elapsed>=240000&&!state.roundEnd)finishRound(state.soloScores[0]===state.soloScores[1]?-1:state.soloScores[0]>state.soloScores[1]?0:1);
   if(!state.roundEnd)updateBots(dt,now);
   if(state.player.hp===0&&state.deadUntil&&now>=state.deadUntil&&!state.roundEnd)respawnSolo();
-  if(state.roundEnd&&now-state.roundEnd>8500){state.round++;state.roundEnd=0;state.matchRewarded=false;state.objective={phase:'idle',site:null,deadline:0};state.interactProgress=0;state.interactHeld=false;state.objectiveBotReady=now+27000;state.elapsed=0;state.soloScores=[0,0];state.bots=[...Array.from({length:4},(_,i)=>addBot(0,i+1)),...Array.from({length:5},(_,i)=>addBot(1,i))];respawnSolo();state.player.kills=0;state.player.deaths=0;$('roundOverlay').classList.add('hidden');$('roundLabel').textContent=`Runda ${String(state.round).padStart(2,'0')}`;toast('NOWA RUNDA');}
+  if(state.roundEnd&&now-state.roundEnd>8500){state.round++;state.roundEnd=0;state.buyDeadline=now+24000;state.matchRewarded=false;state.objective={phase:'idle',site:null,deadline:0};state.interactProgress=0;state.interactHeld=false;state.objectiveBotReady=now+27000;state.elapsed=0;state.soloScores=[0,0];state.bots=[...Array.from({length:4},(_,i)=>addBot(0,i+1)),...Array.from({length:5},(_,i)=>addBot(1,i))];respawnSolo();state.player.kills=0;state.player.deaths=0;$('roundOverlay').classList.add('hidden');$('roundLabel').textContent=`Runda ${String(state.round).padStart(2,'0')}`;toast('NOWA RUNDA');}
  }
  if(state.reloading&&now>=state.reloadEnd&&state.mode==='solo'){state.reloading=false;state.player.ammo[state.weapon]=GUNS[state.weapon].capacity;sfx('reloadEnd');}
  pollGamepad(dt);if(state.player.hp>0)movePlayer(dt);updateObjectiveHUD(dt,now);
@@ -1040,11 +1143,11 @@ function setupControls(){
  document.addEventListener('keydown',e=>{
   if(document.activeElement?.tagName==='INPUT'||document.activeElement?.tagName==='SELECT'){
    if(e.key==='Enter'&&document.activeElement===$('chatInput'))sendChat();return;}
-  if(e.code==='Escape'&&state.playing){e.preventDefault();setPaused(!state.paused);return;}if(state.paused)return;
+  if(e.code==='Escape'&&state.playing){e.preventDefault();state.shopOpen?closeShop():setPaused(!state.paused);return;}if(state.paused)return;
   state.keys[e.code]=true;
   if(e.code==='Tab'){e.preventDefault();if(state.playing){$('scoreboard').classList.remove('hidden');updateScoreboard();}};
   if(e.code==='Space'){e.preventDefault();jump();}if(e.code==='KeyQ')setZoom(true);
-  if(e.code==='KeyR')reload();if(e.code==='KeyE')state.interactHeld=true;
+  if(e.code==='KeyB'){e.preventDefault();state.shopOpen?closeShop():openShop();}if(e.code==='KeyR')reload();if(e.code==='KeyE')state.interactHeld=true;
   if(e.code==='Digit1')setWeapon('pulse');if(e.code==='Digit2')setWeapon('storm');if(e.code==='Digit3')setWeapon('rail');if(e.code==='Digit4')setWeapon('usp');if(e.code==='Digit5')setWeapon('tec');
   if(e.code==='KeyC')state.crouch=!state.crouch;
 
@@ -1074,7 +1177,7 @@ function setupControls(){
  $('btnSprint').addEventListener('pointerdown',eventSafe(()=>{state.sprintTouch=!state.sprintTouch;state.sprint=state.sprintTouch;$('btnSprint').classList.toggle('active',state.sprint);}));
  $('btnCrouch').addEventListener('pointerdown',eventSafe(()=>{state.crouch=!state.crouch;$('btnCrouch').classList.toggle('active',state.crouch);}));
  const interact=$('btnInteract');interact.addEventListener('pointerdown',eventSafe(e=>{state.interactHeld=true;try{interact.setPointerCapture(e.pointerId);}catch{}}));for(const evt of ['pointerup','pointercancel','lostpointercapture'])interact.addEventListener(evt,()=>{state.interactHeld=false;});
- $('menuButton').addEventListener('click',()=>setPaused(true));$('resumeGame').addEventListener('click',()=>setPaused(false));$('resumeTop').addEventListener('click',()=>setPaused(false));$('leaveGameButton').addEventListener('click',()=>leaveGame());$('scoreboardButton').addEventListener('click',()=>{$('scoreboard').classList.toggle('hidden');updateScoreboard();});
+ $('shopHudButton').addEventListener('click',()=>state.shopOpen?closeShop():openShop());$('shopClose').addEventListener('click',closeShop);$('shopOverlay').addEventListener('click',e=>{if(e.target.id==='shopOverlay')closeShop();});$('menuButton').addEventListener('click',()=>setPaused(true));$('resumeGame').addEventListener('click',()=>setPaused(false));$('resumeTop').addEventListener('click',()=>setPaused(false));$('leaveGameButton').addEventListener('click',()=>leaveGame());$('scoreboardButton').addEventListener('click',()=>{$('scoreboard').classList.toggle('hidden');updateScoreboard();});
  $('inviteOpen').addEventListener('click',showInvite);$('netLabel').addEventListener('click',showInvite);$('netLabel').style.pointerEvents='auto';
  $('chatToggle').addEventListener('click',openChat);$('chatSend').addEventListener('click',sendChat);
  $('soloButton').addEventListener('click',startSolo);
