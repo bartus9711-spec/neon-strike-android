@@ -3,6 +3,7 @@ extends CanvasLayer
 signal jump_requested
 signal action_requested
 signal graphics_changed(profile: int, fps: int, scale: float, shadows: bool, aa: int)
+signal map_requested(index: int)
 
 var touch_move := Vector2.ZERO
 var look_sensitivity := 1.0
@@ -22,6 +23,8 @@ var _beacons_total := 4
 
 var ui: Control
 var status_label: Label
+var map_select: OptionButton
+var map_title := "NABRZEŻE 17"
 var fps_label: Label
 var hint_label: Label
 var touch_base: Panel
@@ -58,6 +61,13 @@ func _ready() -> void:
     status_label.position = Vector2(22, 9)
     status_label.size = Vector2(680, 46)
     ui.add_child(status_label)
+    map_select = OptionButton.new()
+    map_select.name = "EightMapPicker"
+    map_select.position = Vector2(15, 66)
+    map_select.custom_minimum_size = Vector2(266, 38)
+    map_select.add_theme_font_size_override("font_size", 16)
+    map_select.item_selected.connect(func(index: int): map_requested.emit(index))
+    ui.add_child(map_select)
     fps_label = _label("FPS ...", 18, Color(.67,1,.91))
     fps_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
     fps_label.position = Vector2(-225, 10)
@@ -367,13 +377,26 @@ func set_message(value: String, seconds: float) -> void:
     hint_label.visible = true
     _message_left = seconds
 
+func configure_maps(options: Array) -> void:
+    map_select.clear()
+    for entry in options:
+        map_select.add_item(str(entry.get("name", "ARENA")))
+    if map_select.item_count > 0:
+        map_select.select(0)
+
+func set_map(index: int, name: String) -> void:
+    map_title = name
+    if map_select.item_count > index and index >= 0:
+        map_select.select(index)
+    set_message("ARENA %d / 8  ·  %s" % [index+1, name], 2.4)
+
 func _process(delta: float) -> void:
     _fps_timer += delta
     if _fps_timer >= .4:
         current_fps = roundi(Engine.get_frames_per_second())
         fps_label.text = "%d FPS" % current_fps
         fps_label.add_theme_color_override("font_color", Color(.67,1,.91) if current_fps >= _fps * .80 else Color(1,.77,.49))
-        status_label.text = "TEAMCS 3D   |   ◈ %d/%d   |   %s" % [_beacons_collected, _beacons_total, "PAD" if not Input.get_connected_joypads().is_empty() else "DOTYK"]
+        status_label.text = "TEAMCS 3D   |   %s   |   ◈ %d/%d" % [map_title, _beacons_collected, _beacons_total]
         _fps_timer = 0
     if _message_left > 0:
         _message_left -= delta
