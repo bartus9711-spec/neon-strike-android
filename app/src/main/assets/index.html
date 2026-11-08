@@ -72,11 +72,24 @@ body{background:#151d22}.menu-screen{background:radial-gradient(circle at 80% 27
 .map-card.selected{outline:1px solid #9fada366!important}
 .version,.eyebrow,.map-counter{color:#bdc2b5}.fire-button{background:#51443fcc!important;border-color:#bcae92!important}
 #vignette{background:radial-gradient(ellipse 77% 71% at center,transparent 47%,#080b0b98 100%)}
+
+/* TeamCS precision scope — UI simulation for sniper rifle */
+.sniper-scope{pointer-events:none;position:absolute;inset:0;z-index:8;overflow:hidden;display:grid;place-items:center}
+.scope-view{position:relative;width:min(93vh,85vw);height:min(93vh,85vw);max-width:100vw;max-height:100vw;aspect-ratio:1;border-radius:50%;border:clamp(5px,1.2vmin,13px) solid #0b0f12;outline:2px solid #495359;box-shadow:0 0 0 110vmax rgba(0,0,0,.95),inset 0 0 34px #010506b8,0 0 18px #050a0ecc;transform:translateY(var(--scope-kick,0px));transition:transform .065s ease-out}
+.scope-view:before,.scope-view:after{content:'';position:absolute;pointer-events:none;background:#151d1da8}
+.scope-view:before{height:1px;left:0;right:0;top:50%}
+.scope-view:after{width:1px;top:0;bottom:0;left:50%}
+.scope-center{position:absolute;left:50%;top:50%;width:4px;height:4px;transform:translate(-50%,-50%);background:#b4a78c;border:1px solid #253337;border-radius:50%;box-shadow:0 0 5px #000}
+.scope-ring{position:absolute;inset:13%;border:1px solid #161d214d;border-radius:50%}
+.scope-info{position:absolute;bottom:3.5%;left:50%;transform:translateX(-50%);font:800 clamp(8px,1.5vmin,12px) system-ui;letter-spacing:1.3px;color:#c1c5baa8;text-shadow:0 1px 3px black;white-space:nowrap}
+.sniper-scope:not(.hidden)~.crosshair{display:none!important}
+@media(max-height:480px){.scope-view{width:min(93vh,85vw);height:min(93vh,85vw)}}
 </style>
 </head>
 <body>
   <canvas id="gameCanvas" aria-label="Arena 3D"></canvas>
   <div id="vignette"></div><div class="cinematic-bars hidden" id="aimVignette"></div>
+  <div class="sniper-scope hidden" id="sniperScope" aria-hidden="true"><div class="scope-view" id="sniperScopeView"><div class="scope-ring"></div><div class="scope-center"></div><span class="scope-info">LUNETA · AWP</span></div></div>
   <div id="gameOverlay" class="hidden">
     <div class="hud-top">
       <div class="hud-logo"><span class="logo-mark">T<span>CS</span></span><span>TEAM<br><strong>CS</strong></span></div>
@@ -102,6 +115,8 @@ body{background:#151d22}.menu-screen{background:radial-gradient(circle at 80% 27
         <p id="pauseMessage" class="settings-description">SOLO: gra zatrzymana. MULTI: inni gracze grają dalej.</p>
         <div class="settings-grid">
           <label>CZUŁOŚĆ DOTYKU I MYSZY <output id="inSensValue">1,00×</output><input id="inSens" type="range" min="0.35" max="2.8" step="0.05" value="1"></label>
+          <label>LUNETA: CZUŁOŚĆ DOTYKU / MYSZY <output id="inScopeSensValue">0,45×</output><input id="inScopeSens" type="range" min="0.15" max="1.30" step="0.05" value="0.45"></label>
+          <label>LUNETA: CZUŁOŚĆ PADA <output id="inScopePadSensValue">0,55×</output><input id="inScopePadSens" type="range" min="0.15" max="1.30" step="0.05" value="0.55"></label>
           <label>CZUŁOŚĆ PADA <output id="inPadSensValue">0,85×</output><input id="inPadSens" type="range" min="0.3" max="2.2" step="0.05" value="0.85"></label>
           <label>MARTWA STREFA ANALOGU <output id="inPadDeadValue">18%</output><input id="inPadDead" type="range" min="0.05" max="0.35" step="0.01" value="0.18"></label>
           <label>JAKOŚĆ GRAFIKI <select id="inQuality"><option value="auto">AUTO</option><option value="low">PŁYNNOŚĆ</option><option value="medium">WYSOKA</option><option value="ultra">ULTRA</option></select></label>
@@ -123,7 +138,7 @@ body{background:#151d22}.menu-screen{background:radial-gradient(circle at 80% 27
     <div class="menu-content">
       <div class="menu-left"><div class="eyebrow"><span class="online-dot"></span> PRZYGOTUJ SIĘ DO WALKI</div><h1>WEJDŹ<br>NA <em>ARENĘ.</em></h1><p class="lead">Jedna gra, dwa tryby. SOLO 5v5 z dziewięcioma botami albo MULTI dla 10 graczy przez kod pokoju. Do tego prototyp skrzynek, skórek i ranked beta ze statystykami zapisanymi lokalnie na urządzeniu.</p>
         <div class="profile-strip"><div class="mini-stat rank"><b>RANGA</b><strong id="rankValue">BRĄZ I</strong><small id="mmrValue">MMR 1000</small></div><div class="mini-stat"><b>KREDYTY</b><strong id="creditsValue">250</strong><small>waluta za rundy i skrzynki</small></div><div class="mini-stat"><b>SKRZYNKI</b><strong id="caseValue">2</strong><small>otwieraj i odblokuj skiny</small></div><div class="mini-stat"><b>STATYSTYKI</b><strong id="wlValue">0W / 0P</strong><small id="playlistBadge">TRYB: CASUAL</small></div></div>
-        <div class="player-panel"><label for="playerName">TWÓJ PSEUDONIM</label><input id="playerName" maxlength="18" placeholder="np. Atlas_01" autocomplete="nickname" value="Operator"><div class="fields-inline"><div><label for="qualitySelect">GRAFIKA</label><select id="qualitySelect"><option value="auto">AUTO — ZALECANA</option><option value="low">PŁYNNOŚĆ</option><option value="medium">WYSOKA</option><option value="ultra">ULTRA</option></select></div><div><label for="sensSelect">CZUŁOŚĆ <output id="sensValue">1,00×</output></label><input id="sensSelect" type="range" min="0.35" max="2.80" step="0.05" value="1"></div></div><div class="pad-options"><label for="padSens">PAD: CZUŁOŚĆ CELOWANIA</label><input id="padSens" type="range" min="0.30" max="2.20" step="0.05" value="0.85"><output id="padSensValue">0,85×</output><label for="padDead">MARTWA STREFA ANALOGÓW</label><input id="padDead" type="range" min="0.05" max="0.35" step="0.01" value="0.18"><output id="padDeadValue">18%</output></div><div class="status-inline"><span class="status-dot"></span><span id="queueModeText">Kolejka online: CASUAL 5v5</span></div><div class="sub-actions"><button id="playlistButton" class="micro-button">TRYB CASUAL</button><button id="openCaseBtn" class="micro-button">OTWÓRZ SKRZYNKĘ</button><button id="inventoryBtn" class="micro-button">EKWIPUNEK</button></div><div class="playlist-note">Wybierz CASUAL, RANKED BETA lub SABOTAŻ (wirtualny nadajnik). Ranking nadal jest lokalny; globalny matchmaking wymaga odrębnego serwera.</div><div id="controllerStatus" class="controller-status">🎮 Po sparowaniu pada naciśnij dowolny przycisk.</div></div>
+        <div class="player-panel"><label for="playerName">TWÓJ PSEUDONIM</label><input id="playerName" maxlength="18" placeholder="np. Atlas_01" autocomplete="nickname" value="Operator"><div class="fields-inline"><div><label for="qualitySelect">GRAFIKA</label><select id="qualitySelect"><option value="auto">AUTO — ZALECANA</option><option value="low">PŁYNNOŚĆ</option><option value="medium">WYSOKA</option><option value="ultra">ULTRA</option></select></div><div><label for="sensSelect">CZUŁOŚĆ <output id="sensValue">1,00×</output></label><input id="sensSelect" type="range" min="0.35" max="2.80" step="0.05" value="1"></div></div><div class="pad-options"><label for="padSens">PAD: CZUŁOŚĆ CELOWANIA</label><input id="padSens" type="range" min="0.30" max="2.20" step="0.05" value="0.85"><output id="padSensValue">0,85×</output><label for="padDead">MARTWA STREFA ANALOGÓW</label><input id="padDead" type="range" min="0.05" max="0.35" step="0.01" value="0.18"><output id="padDeadValue">18%</output></div><div class="pad-options"><label for="scopeSens">LUNETA: CZUŁOŚĆ DOTYKU</label><input id="scopeSens" type="range" min="0.15" max="1.30" step="0.05" value="0.45"><output id="scopeSensValue">0,45×</output><label for="scopePadSens">LUNETA: CZUŁOŚĆ PADA</label><input id="scopePadSens" type="range" min="0.15" max="1.30" step="0.05" value="0.55"><output id="scopePadSensValue">0,55×</output></div><div class="status-inline"><span class="status-dot"></span><span id="queueModeText">Kolejka online: CASUAL 5v5</span></div><div class="sub-actions"><button id="playlistButton" class="micro-button">TRYB CASUAL</button><button id="openCaseBtn" class="micro-button">OTWÓRZ SKRZYNKĘ</button><button id="inventoryBtn" class="micro-button">EKWIPUNEK</button></div><div class="playlist-note">Wybierz CASUAL, RANKED BETA lub SABOTAŻ (wirtualny nadajnik). Ranking nadal jest lokalny; globalny matchmaking wymaga odrębnego serwera.</div><div id="controllerStatus" class="controller-status">🎮 Po sparowaniu pada naciśnij dowolny przycisk.</div></div>
         <div class="primary-actions"><button class="primary-button" id="soloButton"><span>▶</span> GRAJ SOLO <small>5v5 · 9 BOTÓW</small></button><button class="secondary-button" id="hostButton"><span>⌁</span> GRAJ MULTI <small>5v5 · KOD POKOJU</small></button></div>
         <div class="join-panel"><span>MASZ LINK LUB KOD OD ZNAJOMEGO?</span><div><input id="roomInput" maxlength="6" placeholder="KOD POKOJU" autocapitalize="characters"><button id="joinButton">DOŁĄCZ →</button></div><div class="rank-chip"><i>RANKED BETA</i> działa obecnie jako prywatne lobby 5v5 z lokalnym rankingiem. Globalny matchmaking i serwerowe konto to kolejny etap.</div></div>
         <div id="menuError" role="status" class="menu-error"></div><div id="netMenuStatus" class="net-menu-status">📡 Sprawdzanie połączenia…</div><button id="installGame" class="install-game-button">＋ ZAINSTALUJ JAKO APLIKACJĘ</button><p class="network-info">MULTI P2P korzysta z zewnętrznej usługi sygnalizacyjnej. Kody działają tylko przy połączeniu z internetem. W niektórych sieciach połączenie graczy może się nie udać.</p>
@@ -470,7 +485,7 @@ class ArenaRenderer {
  }
 
  draw(cam,actors=[],tracers=[],effects=[],gun='pulse',recoil=0,movement=0,time=0){
-  this.resize();this.eye=cam;this.proj=perspective(Math.PI/180*(75-29*this.zoom),this.width/this.height,.04,280);const gl=this.gl, mood=this.map?.mood==='night'?2:this.map?.mood==='desert'?1:0;
+  this.resize();this.eye=cam;this.proj=perspective(Math.PI/180*(75-(this.scopeActive?55:29)*this.zoom),this.width/this.height,.04,280);const gl=this.gl, mood=this.map?.mood==='night'?2:this.map?.mood==='desert'?1:0;
   gl.disable(gl.DEPTH_TEST);gl.useProgram(this.skyP);gl.bindBuffer(gl.ARRAY_BUFFER,this.skyBuf);gl.enableVertexAttribArray(this.skyLoc);gl.vertexAttribPointer(this.skyLoc,2,gl.FLOAT,false,0,0);gl.uniform1f(this.skyMood,mood);gl.uniform1f(this.skyTime,time);gl.drawArrays(gl.TRIANGLES,0,6);
   gl.enable(gl.DEPTH_TEST);gl.clear(gl.DEPTH_BUFFER_BIT);
   const view=viewMat(cam.x,cam.y,cam.z,cam.yaw,cam.pitch);this.useWorld(view,time,mood);this.bindBuffer(this.buf);gl.drawArrays(gl.TRIANGLES,0,this.staticCount);
@@ -483,7 +498,7 @@ class ArenaRenderer {
   const data=g.data;if(data.length){gl.bindBuffer(gl.ARRAY_BUFFER,this.dynamicBuf);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);this.bindBuffer(this.dynamicBuf);gl.drawArrays(gl.TRIANGLES,0,data.length/10);}
   if(tracers.length){const lines=new Geometry();for(const t of tracers)lines.line(t.from,t.to,t.team===0?'cyan':'red');const d=lines.data;gl.bindBuffer(gl.ARRAY_BUFFER,this.lineBuf);gl.bufferData(gl.ARRAY_BUFFER,d,gl.DYNAMIC_DRAW);this.bindBuffer(this.lineBuf);gl.drawArrays(gl.LINES,0,d.length/10);}
   // Fully 3D first-person blaster model, always rendered in front of world.
-  if(!gun)return;
+  if(!gun||gun==='rail'&&this.zoom>.88)return;
   gl.clear(gl.DEPTH_BUFFER_BIT);const w=new Geometry();const move=Math.sin(movement*11)*Math.min(.025,movement*.018),kick=recoil*.14;
   const zoom=this.zoom||0;const x=.38+move-zoom*.32,y=-.30+Math.cos(movement*11)*.009-kick-zoom*.04,z=-.82+recoil*.10-zoom*.08;
   const skin=currentSkin(gun),accent=skin.tier==='legendary'?'orange':skin.tier==='epic'?'purple':skin.tier==='rare'?'blue':gun==='rail'?'purple':gun==='storm'?'red':'cyan',size=gun==='rail'?1.15:gun==='storm'?.85:gun==='usp'?.56:gun==='tec'?.67:1;
@@ -529,7 +544,7 @@ const state={maps:[],selected:'port',map:null,renderer:null,playing:false,mode:'
   keys:{},stick:{x:0,y:0},fireHeld:false,sprint:false,crouch:false,jumpVel:0,grounded:true,
   lastFrame:0,time:0,elapsed:0,roundMs:240000,soloScores:[0,0],scores:[0,0],round:1,roundEnd:0,deadUntil:0,
   paused:false,autoReconnect:true,retryCode:'',retryCount:0,retryTimer:null,installPrompt:null,networkLast:'',recoil:0,moving:0,sens:1,lastNet:0,lastHud:0,lastLook:0,lookPointer:null,lookLastX:0,lookLastY:0,
-  audio:null,hitTimeout:0,quality:'medium',noticeUntil:0,chatOpen:false,joinedFromLink:false,gamepadIndex:null,padButtons:[],padStick:{x:0,y:0},padSens:.85,padDead:.18,zoom:false,objective:{phase:'idle',site:null,deadline:0},interactHeld:false,interactProgress:0,objectiveBotReady:0,credits:250,cases:2,mmr:1000,wins:0,losses:0,matchType:'casual',matchRewarded:false,ownedSkins:{pulse:['default'],storm:['default'],rail:['default'],usp:['default'],tec:['default']},equippedSkins:{pulse:'default',storm:'default',rail:'default',usp:'default',tec:'default'}};
+  audio:null,hitTimeout:0,quality:'medium',noticeUntil:0,chatOpen:false,joinedFromLink:false,gamepadIndex:null,padButtons:[],padStick:{x:0,y:0},padSens:.85,padDead:.18,zoom:false,scopeSens:.45,scopePadSens:.55,objective:{phase:'idle',site:null,deadline:0},interactHeld:false,interactProgress:0,objectiveBotReady:0,credits:250,cases:2,mmr:1000,wins:0,losses:0,matchType:'casual',matchRewarded:false,ownedSkins:{pulse:['default'],storm:['default'],rail:['default'],usp:['default'],tec:['default']},equippedSkins:{pulse:'default',storm:'default',rail:'default',usp:'default',tec:'default'}};
 const META={port:'◈',dunes:'◆',neon:'⬡',foundry:'⚙',metro:'▥',alpine:'▲',oldtown:'⌂',skyline:'◇'};
 
 const SKIN_POOL={
@@ -576,10 +591,10 @@ function uiMapCards(){const panel=$('mapCards');panel.replaceChildren();state.ma
  btn.addEventListener('click',()=>{state.selected=m.id;uiMapCards();if(!state.playing&&state.renderer)(state.map=m,state.renderer.loadMap(m));});panel.append(btn);
  });$('mapCount').textContent=`0${Math.max(1,state.maps.findIndex(m=>m.id===state.selected)+1)} / 0${state.maps.length}`;
 }
-function storePref(){try{localStorage.setItem('neon-strike-rejoin',String(state.autoReconnect));localStorage.setItem('neon-strike-name',$('playerName').value.slice(0,18));localStorage.setItem('neon-strike-quality',$('qualitySelect').value);localStorage.setItem('neon-strike-sens',$('sensSelect').value);localStorage.setItem('neon-strike-pad-sens',$('padSens').value);localStorage.setItem('neon-strike-pad-dead',$('padDead').value);localStorage.setItem('neon-strike-playlist',state.matchType);}catch{}}
-function setupQuality(){const value=$('qualitySelect').value;const quality=value==='auto'?'medium':value;if(state.quality!==quality){state.quality=quality;state.renderer.setQuality(quality);}state.sens=Number($('sensSelect').value)||1;state.padSens=Number($('padSens').value)||.85;state.padDead=Number($('padDead').value)||.18;refreshSliderLabels();}
-function refreshSliderLabels(){for(const [a,b,fmt] of [['sensSelect','sensValue',x=>x.toFixed(2).replace('.',',')+'×'],['padSens','padSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['padDead','padDeadValue',x=>Math.round(x*100)+'%'],['inSens','inSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['inPadSens','inPadSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['inPadDead','inPadDeadValue',x=>Math.round(x*100)+'%']])$(b).textContent=fmt(Number($(a).value));}
-function syncSettingsFromMenu(){for(const [a,b] of [['sensSelect','inSens'],['padSens','inPadSens'],['padDead','inPadDead'],['qualitySelect','inQuality']])$(b).value=$(a).value;refreshSliderLabels();}
+function storePref(){try{localStorage.setItem('neon-strike-rejoin',String(state.autoReconnect));localStorage.setItem('neon-strike-name',$('playerName').value.slice(0,18));localStorage.setItem('neon-strike-quality',$('qualitySelect').value);localStorage.setItem('neon-strike-sens',$('sensSelect').value);localStorage.setItem('teamcs-scope-sens',$('scopeSens').value);localStorage.setItem('teamcs-scope-pad-sens',$('scopePadSens').value);localStorage.setItem('neon-strike-pad-sens',$('padSens').value);localStorage.setItem('neon-strike-pad-dead',$('padDead').value);localStorage.setItem('neon-strike-playlist',state.matchType);}catch{}}
+function setupQuality(){const value=$('qualitySelect').value;const quality=value==='auto'?'medium':value;if(state.quality!==quality){state.quality=quality;state.renderer.setQuality(quality);}state.sens=Number($('sensSelect').value)||1;state.scopeSens=Number($('scopeSens').value)||.45;state.scopePadSens=Number($('scopePadSens').value)||.55;state.padSens=Number($('padSens').value)||.85;state.padDead=Number($('padDead').value)||.18;refreshSliderLabels();}
+function refreshSliderLabels(){for(const [a,b,fmt] of [['sensSelect','sensValue',x=>x.toFixed(2).replace('.',',')+'×'],['scopeSens','scopeSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['scopePadSens','scopePadSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['inScopeSens','inScopeSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['inScopePadSens','inScopePadSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['padSens','padSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['padDead','padDeadValue',x=>Math.round(x*100)+'%'],['inSens','inSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['inPadSens','inPadSensValue',x=>x.toFixed(2).replace('.',',')+'×'],['inPadDead','inPadDeadValue',x=>Math.round(x*100)+'%']])$(b).textContent=fmt(Number($(a).value));}
+function syncSettingsFromMenu(){for(const [a,b] of [['sensSelect','inSens'],['scopeSens','inScopeSens'],['scopePadSens','inScopePadSens'],['padSens','inPadSens'],['padDead','inPadDead'],['qualitySelect','inQuality']])$(b).value=$(a).value;refreshSliderLabels();}
 function setPaused(on){if(!state.playing)return;state.paused=!!on;state.interactHeld=false;state.interactProgress=0;state.keys={};state.fireHeld=false;state.touchFireHeld=false;state.mouseFireHeld=false;state.padStick={x:0,y:0};state.stick={x:0,y:0};$('settingsPanel').classList.toggle('hidden',!state.paused);if(state.paused){$('invitePanel').classList.add('hidden');$('scoreboard').classList.add('hidden');if(document.pointerLockElement)document.exitPointerLock?.();syncSettingsFromMenu();updateConnectionInfo();$('pauseMessage').textContent=state.mode==='solo'?'SOLO: gra zatrzymana. Możesz bezpiecznie dostroić sterowanie.':'MULTI: zmieniasz ustawienia bez opuszczania pokoju. Inni gracze nadal grają.';}else state.lastFrame=performance.now();}
 function updateConnectionInfo(){const conn=navigator.connection||navigator.mozConnection||navigator.webkitConnection;let network=navigator.onLine?'Internet aktywny':'Brak internetu';if(navigator.onLine&&conn){const name=conn.type==='wifi'?'Wi‑Fi':conn.type==='cellular'?'Sieć komórkowa':conn.type==='ethernet'?'Ethernet':'Połączenie online';network=name+(conn.effectiveType?' · '+conn.effectiveType.toUpperCase():'')+(conn.saveData?' · oszczędzanie danych':'');}if(state.mode==='online'){network+=(state.conn?.open||state.hostRoom?' · P2P aktywne':' · P2P rozłączone');}for(const id of ['netMenuStatus','networkSettingStatus']){const el=$(id);if(el)el.textContent=(navigator.onLine?'📡 ':'⚠ ')+network;}const badge=$('netHealth');if(badge){badge.textContent=navigator.onLine?'● '+(state.mode==='online'?'SIEĆ':'ONLINE'):'● OFFLINE';badge.style.color=navigator.onLine?'#24f3dc':'#ff9a7d';}state.networkLast=network;}
 function cancelRejoin(){if(state.retryTimer)clearTimeout(state.retryTimer);state.retryTimer=null;state.retryCode='';state.retryCount=0;}
@@ -823,7 +838,7 @@ function handleNet(msg){switch(msg.type){
  case 'chat':pushChat(msg.name,msg.text,msg.team);break;
  case 'pong':break;
 }}
-function setWeapon(id){if(!GUNS[id])return;state.weapon=id;state.reloading=false;state.reloadEnd=0;
+function setWeapon(id){if(!GUNS[id])return;state.weapon=id;setZoom(false);state.reloading=false;state.reloadEnd=0;
  if(state.mode==='online')netSend({type:'weapon',weapon:id});sfx('switch');updateHud();}
 function cycleWeapon(){setWeapon(weapons[(weapons.indexOf(state.weapon)+1)%weapons.length]);}
 function reload(){if(!state.playing||state.player.hp<=0||state.reloading)return;const w=GUNS[state.weapon];if(state.player.ammo[state.weapon]>=w.capacity)return;
@@ -847,13 +862,24 @@ function movePlayer(dt){const player=state.player;if(player.hp<=0||state.roundEn
 }
 function sendPos(){netSend({type:'move',x:state.player.x,y:state.player.y,z:state.player.z,yaw:state.player.yaw,pitch:state.player.pitch});}
 function jump(){if(state.playing&&!state.paused&&state.grounded&&state.player.hp>0){state.jumpVel=6.5;state.grounded=false;sfx('jump');}}
-function aim(dx,dy,scale=1){if(!state.playing||state.paused)return;state.player.yaw+=dx*.0026*(state.sens||1)*scale;state.player.pitch=clamp(state.player.pitch-dy*.0023*(state.sens||1)*scale,-1.28,1.28);}
+function aim(dx,dy,scale=1,fromPad=false){
+ if(!state.playing||state.paused)return;
+ const sensitivity=state.zoom&&state.weapon==='rail'?(fromPad?state.scopePadSens:state.scopeSens):1;
+ state.player.yaw+=dx*.0026*(state.sens||1)*scale*sensitivity;
+ state.player.pitch=clamp(state.player.pitch-dy*.0023*(state.sens||1)*scale*sensitivity,-1.28,1.28);
+}
 function addSparks(to,count,mat){for(let i=0;i<count;i++){state.particles.push({x:to[0]+(random()-.5)*.75,y:Math.max(.1,to[1]+(random()-.5)*.75),z:to[2]+(random()-.5)*.75,size:.06+random()*.14,mat,life:.3+random()*.2});}}
 function raySphere(o,d,t,r){const lx=t.x-o[0],ly=t.y-o[1],lz=t.z-o[2],dist=lx*d[0]+ly*d[1]+lz*d[2];if(dist<0)return Infinity;const sep=lx*lx+ly*ly+lz*lz-dist*dist;if(sep>r*r)return Infinity;return dist-Math.sqrt(Math.max(0,r*r-sep));}
 function rayWall(o,d,max){const step=.65;for(let t=.5;t<max;t+=step){const x=o[0]+d[0]*t,y=o[1]+d[1]*t,z=o[2]+d[2]*t;if(y<0)return t;for(const b of state.map.obstacles){if(x>b.x-b.w/2&&x<b.x+b.w/2&&z>b.z-b.d/2&&z<b.z+b.d/2&&y>=0&&y<b.h)return t;}}return max;}
 function localFire(){const p=state.player,w=GUNS[state.weapon];const t=performance.now();if(!state.playing||state.paused||p.hp<=0||state.roundEnd||state.reloading||t-state.lastFire<w.fireRate)return;
  if(p.ammo[state.weapon]<=0){reload();return;}
- state.lastFire=t;p.ammo[state.weapon]--;state.recoil=.8;sfx('shot');
+ state.lastFire=t;p.ammo[state.weapon]--;
+ state.recoil=state.weapon==='rail'?1.65:.8;
+ if(state.weapon==='rail'){
+  state.player.pitch=clamp(state.player.pitch+.025+(random()*.012),-1.28,1.28);
+  state.recoilShotAt=t;
+ }
+ sfx('shot');
  const eye=[p.x,1.55+p.y,p.z],co=Math.cos(p.pitch),spread=state.weapon==='storm'?.008:state.weapon==='rail'?0:.002;
  const yaw=p.yaw+(random()-.5)*spread,pitch=p.pitch+(random()-.5)*spread;
  const direction=[Math.sin(yaw)*co,Math.sin(pitch),-Math.cos(yaw)*co];
@@ -957,11 +983,22 @@ function tick(t){const dt=clamp((t-(state.lastFrame||t))/1000,0,.05);state.lastF
     {x:26*Math.sin(t*.00012),y:11,z:24*Math.cos(t*.00012),yaw:Math.atan2(-26*Math.sin(t*.00012),24*Math.cos(t*.00012)),pitch:-.29};
   let actors=state.mode==='solo'?state.bots:state.other;
   const effects=state.particles.map(e=>({...e,size:e.size*(e.life/.5)}));
-  state.renderer.zoom+=((state.zoom?1:0)-state.renderer.zoom)*Math.min(1,dt*12);state.renderer.draw(cam,actors,state.tracers,effects,state.playing?state.weapon:null,state.recoil,state.moving,state.time);
+  state.renderer.scopeActive=state.weapon==='rail'&&state.zoom;
+  state.renderer.zoom+=((state.zoom?1:0)-state.renderer.zoom)*Math.min(1,dt*12);
+  if(!$('sniperScope').classList.contains('hidden'))$('sniperScopeView').style.setProperty('--scope-kick',Math.round(state.recoil*8)+'px');
+  state.renderer.draw(cam,actors,state.tracers,effects,state.playing?state.weapon:null,state.recoil,state.moving,state.time);
  }
  requestAnimationFrame(tick);
 }
-function setZoom(on){state.zoom=!!on;if($('crosshair'))$('crosshair').classList.toggle('aimed',state.zoom);$('aimVignette').classList.toggle('hidden',!state.zoom);$('btnAim').classList.toggle('active',state.zoom);}
+function setZoom(on){
+ state.zoom=!!on;
+ const scoped=state.zoom&&state.weapon==='rail'&&state.playing;
+ $('sniperScope').classList.toggle('hidden',!scoped);
+ $('crosshair').classList.toggle('hidden',scoped);
+ $('crosshair').classList.toggle('aimed',state.zoom&&!scoped);
+ $('aimVignette').classList.toggle('hidden',!state.zoom||scoped);
+ $('btnAim').classList.toggle('active',state.zoom);
+}
 function padStatus(connected,name=''){
  const el=$('controllerStatus');if(!el)return;
  el.textContent=connected?'🎮 WYKRYTO: '+name.slice(0,52):'🎮 Pad nieaktywny. Sparuj Bluetooth i wciśnij przycisk.';
@@ -987,7 +1024,7 @@ function pollGamepad(dt){
  // Standard Gamepad mapping: left stick movement, right stick look, triggers aim/fire.
  const lookX=axisDead(gp.axes[2]||0),lookY=axisDead(gp.axes[3]||0);
  const lookRate=225*state.padSens;
- aim(lookX*lookRate*dt,lookY*lookRate*dt,1);
+ aim(lookX*lookRate*dt,lookY*lookRate*dt,1,true);
  const pressed=i=>(gp.buttons[i]?.pressed||false)||(gp.buttons[i]?.value||0)>.55;
  const edge=(i,fn)=>{const current=pressed(i);if(current&&!state.padButtons[i])fn();state.padButtons[i]=current;};
  const firing=pressed(7);state.fireHeld=firing||state.touchFireHeld||state.mouseFireHeld||false;
@@ -1046,7 +1083,7 @@ function setupControls(){
  $('hostButton').addEventListener('click',()=>connect('create'));
  $('joinButton').addEventListener('click',()=>{const code=$('roomInput').value.trim().toUpperCase();if(!/^[A-Z2-9]{6}$/.test(code)){error('Wpisz sześcioliterowy kod pokoju.');return;}connect('join',code);});
  $('roomInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('joinButton').click();});
- for(const [a,b] of [['qualitySelect','inQuality'],['sensSelect','inSens'],['padSens','inPadSens'],['padDead','inPadDead']]){
+ for(const [a,b] of [['qualitySelect','inQuality'],['sensSelect','inSens'],['scopeSens','inScopeSens'],['scopePadSens','inScopePadSens'],['padSens','inPadSens'],['padDead','inPadDead']]){
   const refresh=(src,dst)=>{dst.value=src.value;setupQuality();storePref();};
   $(a).addEventListener('input',()=>refresh($(a),$(b)));
   $(b).addEventListener('input',()=>refresh($(b),$(a)));
@@ -1063,7 +1100,7 @@ function sendChat(){const msg=$('chatInput').value.trim();if(msg){if(state.mode=
 async function init(){try{
   state.maps=JSON.parse($('neonMapData').textContent);
   state.renderer=new ArenaRenderer($('gameCanvas'));
-  try{const name=localStorage.getItem('neon-strike-name'),quality=localStorage.getItem('neon-strike-quality'),sens=localStorage.getItem('neon-strike-sens'),playlist=localStorage.getItem('neon-strike-playlist');if(name)$('playerName').value=name;if(quality&&[...$('qualitySelect').options].some(o=>o.value===quality))$('qualitySelect').value=quality;if(sens&&Number(sens)>=.35&&Number(sens)<=2.8)$('sensSelect').value=sens;for(const [key,id,min,max] of [['neon-strike-pad-sens','padSens',.3,2.2],['neon-strike-pad-dead','padDead',.05,.35]]){const v=Number(localStorage.getItem(key));if(v>=min&&v<=max)$(id).value=v;}state.autoReconnect=localStorage.getItem('neon-strike-rejoin')!=='false';$('autoReconnect').checked=state.autoReconnect;if(['ranked','casual','objective'].includes(playlist))state.matchType=playlist;loadProfile();}catch{}
+  try{const name=localStorage.getItem('neon-strike-name'),quality=localStorage.getItem('neon-strike-quality'),sens=localStorage.getItem('neon-strike-sens'),playlist=localStorage.getItem('neon-strike-playlist');if(name)$('playerName').value=name;for(const [key,id] of [['teamcs-scope-sens','scopeSens'],['teamcs-scope-pad-sens','scopePadSens']]){const val=Number(localStorage.getItem(key));if(val>=.15&&val<=1.30)$(id).value=val;}if(quality&&[...$('qualitySelect').options].some(o=>o.value===quality))$('qualitySelect').value=quality;if(sens&&Number(sens)>=.35&&Number(sens)<=2.8)$('sensSelect').value=sens;for(const [key,id,min,max] of [['neon-strike-pad-sens','padSens',.3,2.2],['neon-strike-pad-dead','padDead',.05,.35]]){const v=Number(localStorage.getItem(key));if(v>=min&&v<=max)$(id).value=v;}state.autoReconnect=localStorage.getItem('neon-strike-rejoin')!=='false';$('autoReconnect').checked=state.autoReconnect;if(['ranked','casual','objective'].includes(playlist))state.matchType=playlist;loadProfile();}catch{}
   state.sens=Number($('sensSelect').value);state.map=state.maps[0];setupQuality();uiMapCards();state.renderer.loadMap(state.map);setupControls();syncSettingsFromMenu();updateConnectionInfo();updateProfileUI();renderInventory();
   window.addEventListener('online',()=>{updateConnectionInfo();if(state.retryCode&&!state.retryTimer&&!state.playing)scheduleRejoin(state.retryCode);});
   window.addEventListener('offline',()=>updateConnectionInfo());
