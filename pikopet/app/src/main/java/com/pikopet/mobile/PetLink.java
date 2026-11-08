@@ -263,8 +263,8 @@ public final class PetLink {
     StringBuilder s=new StringBuilder();
     for(int i=0;i<2048;i++){
       int c=r.read();if(c==-1)return null;
-      if(c=='\\n')return s.toString();
-      if(c!='\\r')s.append((char)c);
+      if(c=='\n')return s.toString();
+      if(c!='\r')s.append((char)c);
     }
     throw new java.io.IOException("Message too long");
   }
@@ -279,7 +279,7 @@ public final class PetLink {
   }
   private void sendWire(JSONObject payload){
     synchronized(writeLock){
-      try{if(writer!=null){writer.write(payload.toString());writer.write("\\n");writer.flush();}}
+      try{if(writer!=null){writer.write(payload.toString());writer.write("\n");writer.flush();}}
       catch(Exception e){status("Nie można wysłać wiadomości.");}
     }
   }
