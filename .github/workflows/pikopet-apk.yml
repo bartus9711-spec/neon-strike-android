@@ -25,20 +25,20 @@ jobs:
       - name: Buduj aplikacje Android
         run: gradle --no-daemon -p pikopet :app:assembleDebug --stacktrace
       - name: Przygotuj APK
-        run: cp pikopet/app/build/outputs/apk/debug/app-debug.apk PikoPet_1_1_BT_WiFi.apk
+        run: cp pikopet/app/build/outputs/apk/debug/app-debug.apk PikoPet_DUO_BT_WiFi.apk
       - name: APK do pobrania
         uses: actions/upload-artifact@v4
         with:
-          name: PikoPet-1.1-Bluetooth-WiFi-APK
-          path: PikoPet_1_1_BT_WiFi.apk
+          name: PikoPet-Duo-1.1-APK
+          path: PikoPet_DUO_BT_WiFi.apk
           if-no-files-found: error
           retention-days: 30
       - name: Publiczny instalator w Releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view pikopet-v1.1 >/dev/null 2>&1; then
-            gh release upload pikopet-v1.1 PikoPet_1_1_BT_WiFi.apk --clobber
+          if gh release view pikopet-duo-v1.1 >/dev/null 2>&1; then
+            gh release upload pikopet-duo-v1.1 PikoPet_DUO_BT_WiFi.apk --clobber
           else
-            gh release create pikopet-v1.1 PikoPet_1_1_BT_WiFi.apk --target "${GITHUB_SHA}" --title "PikoPet 1.1 Bluetooth i Wi-Fi" --notes "Instalator Android (APK). Pikselowy pupil, 32 gatunki, 32 obudowy, zapis offline i powiadomienia systemowe. Odwiedziny na sparowanym Bluetooth lub w tej samej sieci Wi-Fi po kodzie i zgodzie gospodarza. Budowa testowa z podpisem debug."
+            gh release create pikopet-duo-v1.1 PikoPet_DUO_BT_WiFi.apk --target "${GITHUB_SHA}" --title "PikoPet Duo 1.1 Bluetooth i Wi-Fi" --notes "Instalator Android (APK). Pikselowy pupil, 32 gatunki, 32 obudowy, zapis offline i powiadomienia systemowe. Odwiedziny na sparowanym Bluetooth lub w tej samej sieci Wi-Fi po kodzie i zgodzie gospodarza. Budowa testowa z podpisem debug."
           fi
