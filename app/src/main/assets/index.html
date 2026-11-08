@@ -450,6 +450,24 @@ class Geometry {
    this.a.push(...v(x,y,back,0,0,1,0,0),...b0,...b1);
   }
  }
+
+ addLimb(a,b,radius,mat='steel',tint=0,segments=8){
+  const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2],length=Math.hypot(dx,dy,dz);
+  if(length<.00001)return;
+  const dir=[dx/length,dy/length,dz/length],u=[0,0,0];
+  if(Math.abs(dir[1])>.96){u[0]=1;}else{const n=Math.hypot(dir[0],dir[2]);u[0]=-dir[2]/n;u[2]=dir[0]/n;}
+  const v=[dir[1]*u[2]-dir[2]*u[1],dir[2]*u[0]-dir[0]*u[2],dir[0]*u[1]-dir[1]*u[0]];
+  const id=M[mat]??M.steel;
+  const vertex=(point,ang,uv)=>{
+   const c=Math.cos(ang),si=Math.sin(ang),nx=u[0]*c+v[0]*si,ny=u[1]*c+v[1]*si,nz=u[2]*c+v[2]*si;
+   return [point[0]+nx*radius,point[1]+ny*radius,point[2]+nz*radius,nx,ny,nz,ang*radius,uv,id,tint];
+  };
+  for(let i=0;i<segments;i++){
+   const a0=i*Math.PI*2/segments,a1=(i+1)*Math.PI*2/segments;
+   const p0=vertex(a,a0,0),p1=vertex(a,a1,0),p2=vertex(b,a1,length),p3=vertex(b,a0,length);
+   this.a.push(...p0,...p1,...p2,...p0,...p2,...p3);
+  }
+ }
  line(from,to,mat='cyan'){const id=M[mat]??9;for(const p of [from,to])this.a.push(p[0],p[1],p[2],0,1,0,0,0,id,1);}
  get data(){return new Float32Array(this.a);}
 }
@@ -641,58 +659,68 @@ class ArenaRenderer {
  avatar(g,p,time){
   if(p.hp<=0)return;
   const {x,z}=p,y=p.y||0,rot=p.yaw||0,ct=p.team===0;
-  const armor=ct?'blue':'sandstone',edge=ct?'steel':'wood',cloth=ct?'steel':'wood',dark=ct?'dark':'shade';
-  const move=(p.moving||0),step=Math.sin(time*9+(x+z)*.22)*Math.min(.13,move*.12);
-  const part=(lx,ly,lz,w,h,d,mat,tint=0)=>{const co=Math.cos(rot),si=Math.sin(rot);g.addBox(x+lx*co+lz*si,y+ly,z-lx*si+lz*co,w,h,d,mat,tint,rot);};
-  const round=(lx,ly,lz,rx,ry,rz,mat,tint=0)=>{const co=Math.cos(rot),si=Math.sin(rot);g.addEllipsoid(x+lx*co+lz*si,y+ly,z-lx*si+lz*co,rx,ry,rz,mat,tint,8,5);};
-  // Tactical silhouette: leg motion, boots, knee plates, chest rig, shoulder armor.
-  part(0,.015,0,.93,.02,.78,'shade',-.5);
+  const id=p.id||p.name||(String(p.team)+':'+Math.round(x)+':'+Math.round(z));
+  if(!this.avatarTracks)this.avatarTracks=new Map();
+  let track=this.avatarTracks.get(id);
+  if(!track){track={x,z,t:time,phase:(x+z)*.31,speed:0};this.avatarTracks.set(id,track);}
+  const dt=Math.max(0,Math.min(.08,time-track.t)),distance=Math.hypot(x-track.x,z-track.z);
+  const instant=dt>.00001&&distance<2?Math.min(8,distance/dt):0;
+  const blend=1-Math.exp(-dt*10);
+  track.speed+=(instant-track.speed)*blend;
+  track.phase+=dt*(4.8+track.speed*.6)*Math.min(1,track.speed/2.8);
+  track.x=x;track.z=z;track.t=time;
+  if(this.avatarTracks.size>40){for(const [k,v] of this.avatarTracks){if(time-v.t>30)this.avatarTracks.delete(k);}}
+  const gait=Math.min(1,track.speed/5.6),phase=track.phase;
+  const bounce=Math.abs(Math.sin(phase))*gait*.025;
+  const breath=Math.sin(time*2+(x+z)*.12)*.010;
+  const lift=Math.min(.18,Math.max(0,Math.sin(phase+Math.PI/2)))*gait;
+  const c=Math.cos(rot),si=Math.sin(rot),lean=Math.min(.07,track.speed*.008);
+  const cloth=ct?'blue':'sandstone',vest=ct?'steel':'wood',pants=ct?'steel':'shade',skin=ct?'shade':'sandstone',trim=ct?'dark':'wood';
+  const P=(lx,ly,lz)=>[x+lx*c+lz*si,y+ly+bounce,z-lx*si+lz*c];
+  const box=(lx,ly,lz,w,h,d,mat,tint=0)=>{const q=P(lx,ly,lz);g.addBox(q[0],q[1],q[2],w,h,d,mat,tint,rot);};
+  const ell=(lx,ly,lz,rx,ry,rz,mat,tint=0)=>{const q=P(lx,ly,lz);g.addEllipsoid(q[0],q[1],q[2],rx,ry,rz,mat,tint,9,6);};
+  const limb=(a,b,r,mat,tint=0)=>g.addLimb(P(...a),P(...b),r,mat,tint,8);
+  // Local procedural rig: separate hips / knees / ankles and shoulders / elbows / hands.
+  // Velocity-derived gait phase smoothly returns to an idle stance.
+  ell(0,.96,.025,.32,.22,.245,pants,-.16);
+  ell(0,1.27+breath,.0,.37,.405,.265,cloth,-.21);
+  ell(0,1.30+breath,-.19,.375,.345,.155,vest,-.12);
+  ell(0,1.23,.27,.285,.29,.15,trim,-.19); // backpack
+  box(0,1.31,-.33,.40,.10,.055,trim,-.12); // chest webbing
   for(const side of [-1,1]){
-   const off=side*step;
-   part(side*.22,.47+Math.max(0,off),off*.35,.28,.70,.31,cloth,-.5);
-   round(side*.22,.18+Math.max(0,off),-.04+off*.35,.16,.11,.20,dark,-.2);
-   part(side*.22,.52+Math.max(0,off),-.175+off*.35,.29,.19,.09,armor,.1);
-   part(side*.45,1.03,0,.26,.67,.33,dark,.4);
-   part(side*.48,1.08,-.23,.20,.35,.1,armor,.2);
-   part(side*.44,.86,-.01,.19,.17,.31,'steel',-.3);
+   const swing=Math.sin(phase+(side>0?Math.PI:0))*gait;
+   const hip=[side*.21,.87,-.01],knee=[side*.22,.53+Math.max(0,-swing)*.06,-.035+swing*.18];
+   const foot=[side*.23,.17+Math.max(0,-swing)*.12,-.10+swing*.42];
+   limb(hip,knee,.15,pants,-.16);
+   ell(...knee,.163,.145,.153,vest,-.19);
+   limb(knee,foot,.121,pants,-.32);
+   ell(foot[0],foot[1]-.065,foot[2]-.08,.17,.12,.245,'dark',-.17);
+   box(side*.21,.71,-.26,.20,.19,.06,vest,-.3); // soft thigh pocket
+   const shoulder=[side*.40,1.48+breath,-.005],elbow=[side*.54,1.23+breath,-.14+swing*.11];
+   const hand=[side*.225,1.16+breath,-.49+swing*.03];
+   ell(...shoulder,.175,.188,.178,cloth,-.20);
+   limb(shoulder,elbow,.146,cloth,-.11);
+   limb(elbow,hand,.104,cloth,-.23);
+   ell(...elbow,.125,.122,.127,vest,-.17);
+   ell(...hand,.11,.118,.11,'dark',-.13);
+   box(side*.48,1.48,-.19,.11,.16,.048,ct?'steel':'wood',.12); // unit patch
   }
-  part(0,.93,0,.75,.43,.48,cloth,-.25);
-  part(0,1.23,0,.80,.53,.55,dark);
-  part(0,1.24,-.301,.60,.42,.08,armor,.2);
-  for(const side of [-1,1]){
-   part(side*.31,1.34,-.318,.13,.19,.05,edge,.55);
-   part(side*.29,.97,-.27,.13,.26,.11,'shade');
-   round(side*.52,1.44,-.01,.175,.19,.235,armor,.25);
-   part(side*.44,1.13,-.23,.17,.27,.13,cloth);
+  ell(0,1.675+breath,0,.223,.255,.215,ct?'dark':'shade',-.07);
+  if(ct){
+   ell(0,1.898+breath,.01,.290,.155,.278,'steel',-.12); // rounded protective helmet
+   box(0,1.74+breath,-.217,.42,.145,.09,'dark',-.35);
+   box(0,1.79+breath,-.250,.36,.085,.055,'glass',.1);
+   box(.30,1.77+breath,.04,.065,.19,.09,'dark',-.12);
+  }else{
+   ell(0,1.892+breath,.01,.245,.12,.253,'dark',-.19); // balaclava
+   box(0,1.75+breath,-.224,.38,.11,.05,'shade',-.06);
+   ell(0,1.51+breath,-.02,.27,.12,.28,'wood',-.14); // scarf / collar
   }
-  part(0,1.07,.34,.54,.44,.21,'steel',-.2); // backpack
-  part(0,1.42,.30,.45,.20,.12,edge,-.2);
-  round(0,1.64,0,.24,.255,.235,dark,.08);part(0,1.72,-.20,.36,.20,.11,ct?'dark':'shade');
-  round(0,1.91,.01,.29,.16,.285,ct?'steel':'wood',-.18);
-  part(0,1.69,-.26,.40,.20,.08,ct?'glass':'dark',ct?.6:.25);for(const side of [-1,1])part(side*.105,1.725,-.312,.085,.035,.035,'white',-.35);
-  part(0,1.54,-.255,.32,.08,.05,edge,.65);
-  part(-.26,1.73,-.05,.13,.20,.36,ct?'steel':'orange',-.3);
-  part(.26,1.73,-.05,.13,.20,.36,ct?'steel':'orange',-.3);
-  // Faction-specific armor detailing, suit patches, radio and helmet profile.
-  part(0,1.90,-.03,.56,.15,.53,ct?'blue':'orange',-.30);
-  part(0,2.025,.03,.28,.08,.33,'dark');
-  part(ct?-.34:.34,1.81,.07,.07,.19,.10,'steel',.3);
-  part(-.56,1.23,-.01,.07,.27,.18,edge,.3);
-  part(.56,1.23,-.01,.07,.27,.18,edge,.3);
-  part(-.15,1.19,-.36,.08,.23,.045,'steel',.25);
-  part(.15,1.19,-.36,.08,.23,.045,'steel',.25);
-  if(!ct){part(0,1.80,-.30,.39,.10,.07,'wood',-.2);part(0,1.66,.34,.30,.27,.18,'orange',-.35);}
-  else{part(0,1.73,-.29,.43,.13,.065,'glass',.25);part(0,1.50,.34,.26,.20,.15,'steel',.15);}
-  round(-.05,1.19,-.37,.11,.12,.12,ct?'dark':'shade',-.1);
-  round(.24,1.18,-.36,.11,.12,.12,ct?'dark':'shade',-.1);
-  // Held stylized sci-fi blaster and hand grips.
-  part(.10,1.26,-.49,.21,.18,.72,'dark');
-  part(.11,1.33,-.78,.12,.13,.41,'steel',.15);
-  part(.11,1.34,-1.01,.08,.09,.16,edge,.65);
-  part(-.05,1.21,-.36,.12,.16,.18,cloth);
-  part(.24,1.19,-.35,.12,.16,.18,cloth);
-  part(.10,1.43,-.44,.08,.1,.22,edge,.3);
-  if(p.hp<30)part(0,2.18,0,.31,.055,.31,'red',.65);
+  // Fictional hand-held game prop, compact to preserve readable movement silhouette.
+  box(.025,1.20+breath,-.57,.18,.16,.49,'dark',-.15);
+  box(.025,1.26+breath,-.83,.115,.115,.37,'steel',-.2);
+  box(.025,1.35+breath,-.63,.11,.06,.25,trim,.05);
+  if(p.hp<30)ell(0,2.18,0,.15,.04,.15,'red',.45);
  }
 
  draw(cam,actors=[],tracers=[],effects=[],gun='pulse',recoil=0,movement=0,time=0){
@@ -979,7 +1007,7 @@ function hostGrenade(p,msg){
   }
  },700);
 }
-function resetPlayer(){const spots=state.map.spawnBlue;const spot=spots[0];state.player.x=spot[0];state.player.y=0;state.player.z=spot[1];state.player.yaw=.78;state.player.pitch=0;state.player.hp=100;state.player.ammo={pulse:30,storm:30,rail:10,usp:12,tec:18,knife:1};state.player.kills=0;state.player.deaths=0;state.deadUntil=0;state.jumpVel=0;state.grounded=true;state.reloading=false;state.reloadEnd=0;state.weapon='usp';}
+function resetPlayer(){const spots=state.map.spawnBlue;const spot=spots[0];state.player.x=spot[0];state.player.y=0;state.player.z=spot[1];state.player.yaw=.78;state.player.pitch=0;state.player.hp=100;state.player.ammo={pulse:30,storm:30,rail:10,usp:12,tec:18,knife:1};state.player.kills=0;state.player.deaths=0;state.deadUntil=0;state.jumpVel=0;state.grounded=true;state.velocity2D={x:0,z:0};state.reloading=false;state.reloadEnd=0;state.weapon='usp';}
 function startView(mode,mapId){state.paused=false;state.matchRewarded=false;state.objective={phase:'idle',site:null,deadline:0};state.interactHeld=false;state.interactProgress=0;state.objectiveBotReady=performance.now()+27000;$('objectivePanel').classList.toggle('hidden',state.matchType!=='objective');$('settingsPanel').classList.add('hidden');state.mode=mode;state.map=state.maps.find(m=>m.id===mapId)||state.maps[0];state.selected=state.map.id;state.renderer.loadMap(state.map);state.playing=true;state.elapsed=0;state.roundMs=240000;state.roundEnd=0;state.round=1;state.tracers=[];state.particles=[];state.scores=[0,0];state.soloScores=[0,0];state.other=[];state.bots=[];state.keys={};state.stick={x:0,y:0};state.fireHeld=false;state.sprint=false;state.crouch=false;state.zoom=false;state.padStick={x:0,y:0};state.touchZoomHeld=false;state.mouseZoomHeld=false;state.mouseFireHeld=false;state.touchFireHeld=false;state.padButtons=[];
  $('mainMenu').classList.add('hidden');$('gameOverlay').classList.remove('hidden');$('deathOverlay').classList.add('hidden');$('roundOverlay').classList.add('hidden');$('invitePanel').classList.add('hidden');$('scoreboard').classList.add('hidden');$('mapLabel').textContent=state.map.name;$('roundLabel').textContent='Runda 01';
  $('netLabel').textContent=mode==='online'?'● ONLINE':'● SOLO';$('netLabel').style.color=mode==='online'?'#25f3df':'#9fbdc8';
@@ -1237,10 +1265,16 @@ function movePlayer(dt){const player=state.player;if(player.hp<=0||state.roundEn
  const amount=Math.hypot(forward,right);const normalized=amount>1?1/amount:1;
  forward*=normalized;right*=normalized;
  const speed=(state.crouch?3.6:(state.sprint||state.keys.ShiftLeft||state.keys.ShiftRight)?10.3:7.5)*Math.min(1,amount);
- const v=player.yaw,dx=(Math.sin(v)*forward+Math.cos(v)*right)*speed*dt,dz=(-Math.cos(v)*forward+Math.sin(v)*right)*speed*dt;
- if(!mapPointBlocked(state.map,player.x+dx,player.z))player.x+=dx;
- if(!mapPointBlocked(state.map,player.x,player.z+dz))player.z+=dz;
- if(amount>.02)state.moving+=dt*(state.sprint?1.7:1);else state.moving=0;
+ const v=player.yaw,targetX=(Math.sin(v)*forward+Math.cos(v)*right)*speed,targetZ=(-Math.cos(v)*forward+Math.sin(v)*right)*speed;
+ if(!state.velocity2D)state.velocity2D={x:0,z:0};
+ const smoothing=1-Math.exp(-dt*(amount>.02?12:18));
+ state.velocity2D.x+=(targetX-state.velocity2D.x)*smoothing;
+ state.velocity2D.z+=(targetZ-state.velocity2D.z)*smoothing;
+ const dx=state.velocity2D.x*dt,dz=state.velocity2D.z*dt;
+ if(!mapPointBlocked(state.map,player.x+dx,player.z))player.x+=dx;else state.velocity2D.x=0;
+ if(!mapPointBlocked(state.map,player.x,player.z+dz))player.z+=dz;else state.velocity2D.z=0;
+ const actualSpeed=Math.hypot(state.velocity2D.x,state.velocity2D.z);
+ if(actualSpeed>.1)state.moving+=dt*actualSpeed/7.5;else state.moving=0;
  player.y+=state.jumpVel*dt;
  if(player.y>0||state.jumpVel>0){state.jumpVel-=16.1*dt;state.grounded=false;}
  if(player.y<=0){player.y=0;state.jumpVel=0;state.grounded=true;}
