@@ -3,6 +3,9 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+    paths:
+      - 'app/**'
+      - '.github/workflows/build-apk.yml'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -35,7 +38,9 @@ jobs:
           path: TeamCS_Android.apk
           if-no-files-found: error
           retention-days: 14
+      # No automatic public release while Godot 3D visuals are below the quality gate.
       - name: Opublikuj bezposredni APK w GitHub Releases
+        if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
