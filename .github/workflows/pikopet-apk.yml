@@ -1,4 +1,4 @@
-name: Build PikoPet Deluxe 2.1 APK
+name: Build PikoPet Deluxe 2.2 APK
 on:
   push:
     branches: [ pikopet-apk-build ]
@@ -25,6 +25,7 @@ jobs:
           node --check pikopet/app/src/main/assets/themes.js
           node --check pikopet/app/src/main/assets/games.js
           node --check pikopet/app/src/main/assets/duo.js
+          node --check pikopet/app/src/main/assets/navigation.js
           python3 - <<'PY'
           import re, subprocess
           from pathlib import Path
@@ -33,6 +34,9 @@ jobs:
           assert '<script src="./themes.js"></script>' in html
           assert '<script src="./games.js"></script>' in html
           assert '<script src="./duo.js"></script>' in html
+          assert '<script src="./navigation.js"></script>' in html
+          assert "addEventListener('click',()=>hideSheet())" in html
+          assert 'PikoNavigation' in (p/'navigation.js').read_text()
           main=re.search(r'<script>(.*?)</script>',html,re.S).group(1)
           subprocess.run(['node','--check','-'],input=main,text=True,check=True)
           assert 'function renderUI()' in main and 'function showVisits()' in main
@@ -40,27 +44,27 @@ jobs:
           assert 'const classics=THEMES.map' in (p/'themes.js').read_text()
           assert '64 wymienne obudowy' in (p/'themes.js').read_text()
           assert 'const BONUS=[' in (p/'games.js').read_text()
-          print('PikoPet Deluxe 2.1: wszystkie skrypty i pliki są dostępne offline')
+          print('PikoPet Deluxe 2.2: wszystkie skrypty i pliki są dostępne offline')
           PY
       - name: Android SDK 35
         run: test -f "$ANDROID_HOME/platforms/android-35/android.jar"
       - name: Buduj aplikacje Android
         run: gradle --no-daemon -p pikopet :app:assembleDebug --stacktrace
       - name: Przygotuj APK
-        run: cp pikopet/app/build/outputs/apk/debug/app-debug.apk PikoPet_DELUXE_64_APK.apk
+        run: cp pikopet/app/build/outputs/apk/debug/app-debug.apk PikoPet_DELUXE_64_WSTECZ.apk
       - name: APK do pobrania
         uses: actions/upload-artifact@v4
         with:
-          name: PikoPet-Deluxe-64-APK
-          path: PikoPet_DELUXE_64_APK.apk
+          name: PikoPet-Deluxe-64-Back-APK
+          path: PikoPet_DELUXE_64_WSTECZ.apk
           if-no-files-found: error
           retention-days: 30
       - name: Publiczny instalator w Releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view pikopet-deluxe64-v2.1 >/dev/null 2>&1; then
-            gh release upload pikopet-deluxe64-v2.1 PikoPet_DELUXE_64_APK.apk --clobber
+          if gh release view pikopet-deluxe64-v2.2 >/dev/null 2>&1; then
+            gh release upload pikopet-deluxe64-v2.2 PikoPet_DELUXE_64_WSTECZ.apk --clobber
           else
-            gh release create pikopet-deluxe64-v2.1 PikoPet_DELUXE_64_APK.apk --target "${GITHUB_SHA}" --title "PikoPet Deluxe 2.1 — obudowy, minigry i odwiedziny" --notes "Instalator Android (APK). Pikselowy pupil, 64 obudowy (32 klasyczne, 32 nowe Deluxe), 32 gatunki, 16 minigier, 12 zabaw, album pamiątek, zapis offline i przypomnienia o opiece. Odwiedziny na sparowanym Bluetooth lub w tej samej sieci Wi-Fi po kodzie i zgodzie gospodarza. Budowa testowa z podpisem debug."
+            gh release create pikopet-deluxe64-v2.2 PikoPet_DELUXE_64_WSTECZ.apk --target "${GITHUB_SHA}" --title "PikoPet Deluxe 2.2 — obudowy, minigry i odwiedziny" --notes "Instalator Android (APK). Pikselowy pupil, 64 obudowy (32 klasyczne, 32 nowe Deluxe), 32 gatunki, 16 minigier, 12 zabaw, album pamiątek, zapis offline i przypomnienia o opiece. Odwiedziny na sparowanym Bluetooth lub w tej samej sieci Wi-Fi po kodzie i zgodzie gospodarza. X cofa do poprzedniego menu, Android Wstecz działa tak samo. Budowa testowa z podpisem debug."
           fi
