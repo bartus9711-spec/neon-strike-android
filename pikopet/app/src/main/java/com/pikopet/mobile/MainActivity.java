@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
  private WebView web;
+ private PetLink link;
  private ValueCallback<Uri[]> fileCallback;
  private static final int PICK_FILE=44;
  private static final int ASK_NOTICE=66;
@@ -48,6 +49,8 @@ public class MainActivity extends Activity {
   ws.setDisplayZoomControls(false);
   ws.setMediaPlaybackRequiresUserGesture(false);
   web.addJavascriptInterface(new NativeBridge(),"PikoNative");
+  link=new PetLink(this,web);
+  web.addJavascriptInterface(link.new Bridge(),"PikoLinkNative");
   web.setWebViewClient(new WebViewClient(){
    @Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest req){
      Uri uri=req.getUrl();
@@ -100,5 +103,5 @@ public class MainActivity extends Activity {
  @Override public void onBackPressed(){
    web.evaluateJavascript("if(!document.getElementById('overlay').hidden){hideSheet()}else{showSettings()}",null);
  }
- @Override public void onDestroy(){if(web!=null){web.destroy();web=null;}super.onDestroy();}
+ @Override public void onDestroy(){if(link!=null)link.close();if(web!=null){web.destroy();web=null;}super.onDestroy();}
 }
