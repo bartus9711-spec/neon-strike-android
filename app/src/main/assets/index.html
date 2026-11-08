@@ -248,6 +248,9 @@ mask-image:linear-gradient(0deg,#000 5%,#000 78%,transparent)}
 }
 
 /* PERFORMANCE PATCH: stable mobile panels and sharp browser text */
+#mainMenu .menu-noise{display:none!important}
+#mainMenu .menu-screen:before{opacity:.08}
+
 .perf-fps-settings{margin:9px 0 5px;background:rgba(8,29,42,.92);border:1px solid rgba(109,162,173,.44);padding:8px 10px;display:grid;gap:5px}
 .perf-fps-settings label{color:#9ed6dc;font-weight:850;letter-spacing:.7px;font-size:9px}
 .perf-fps-settings select{background:#142b39;color:#f0f9f9;border:1px solid #487180;padding:8px;border-radius:4px;max-width:100%}
@@ -519,7 +522,7 @@ function residenceFacade(g,b,detail,rand,night){
  if(detail>1){g.addBox(b.x+b.w*.28,b.h+.48,b.z+b.d*.14,.8,.8,.9,'brick',-.2);g.addBox(b.x+b.w*.28,b.h+.96,b.z+b.d*.14,1,.16,1,'shade');}
 }
 class ArenaRenderer {
- constructor(canvas){this.canvas=canvas;this.gl=canvas.getContext('webgl',{antialias:false,alpha:false,depth:true,powerPreference:'high-performance',preserveDrawingBuffer:false});if(!this.gl)throw Error('WebGL is unavailable');const gl=this.gl;
+ constructor(canvas){this.canvas=canvas;this.gl=canvas.getContext('webgl',{antialias:true,alpha:false,depth:true,powerPreference:'high-performance',preserveDrawingBuffer:false});if(!this.gl)throw Error('WebGL is unavailable');const gl=this.gl;
   this.p=program(gl,VERT,FRAG);this.skyP=program(gl,SKY_V,SKY_F);this.buf=gl.createBuffer();this.dynamicBuf=gl.createBuffer();this.lineBuf=gl.createBuffer();this.skyBuf=gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER,this.skyBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   this.locations={};for(const n of ['aPos','aNormal','aUV','aMat','aTint'])this.locations[n]=gl.getAttribLocation(this.p,n);
