@@ -1,0 +1,64 @@
+name: ATLAS WORLDS 3.0 Android APK
+on:
+  push:
+    branches: [atlas-arcade-worlds-3]
+    paths:
+      - 'atlas-app/**'
+      - '.github/workflows/atlas-worlds-3.yml'
+  workflow_dispatch:
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Skontroluj kod gry
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          class P(HTMLParser):
+              def __init__(self): super().__init__(); self.active=False; self.buf=[]
+              def handle_starttag(self,tag,attrs):
+                  if tag=='script': self.active=True
+              def handle_endtag(self,tag):
+                  if tag=='script': self.active=False
+              def handle_data(self,data):
+                  if self.active:self.buf.append(data)
+          html=Path('atlas-app/app/src/main/assets/arcadeworlds.html').read_text()
+          assert 'const symbolGlyphs=' in html
+          assert 'KSIĘGI TAJEMNIC' in html
+          assert 'SMOCZE CHINY' in html
+          assert 'function buySkin()' in html
+          a=P();a.feed(html)
+          Path('/tmp/atlas-worlds.js').write_text('\n'.join(a.buf))
+          PY
+          node --check /tmp/atlas-worlds.js
+      - name: Zbuduj aplikacje Android
+        run: gradle -p atlas-app --no-daemon --stacktrace assembleDebug
+      - name: Nazwij instalator
+        run: cp atlas-app/app/build/outputs/apk/debug/app-debug.apk ATLAS_WORLDS_3_0.apk
+      - name: Dodaj instalator do artefaktow
+        uses: actions/upload-artifact@v4
+        with:
+          name: ATLAS-WORLDS-3-APK
+          path: ATLAS_WORLDS_3_0.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Opublikuj wydanie
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view atlas-worlds-v3.0 >/dev/null 2>&1; then
+            gh release upload atlas-worlds-v3.0 ATLAS_WORLDS_3_0.apk --clobber
+          else
+            gh release create atlas-worlds-v3.0 ATLAS_WORLDS_3_0.apk --target "${GITHUB_SHA}" --title "ATLAS WORLDS 3.0 - 20 swiatow / 100 maszyn" --notes "Wersja offline gry arcade. 20 autorskich swiatow graficznych, 100 maszyn, unikalne zestawy symboli, 5 regul gry, zadania, bonusowe obroty, kosmetyczne ulepszenia za punkty. Bez wplat, zakladow i wyplat."
+          fi
