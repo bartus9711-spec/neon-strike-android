@@ -677,7 +677,7 @@ function updateWallet(){
  if(!$('walletHud'))return;
  $('walletHud').textContent='$'+Math.floor(state.cash);
  $('armorHud').textContent='PANCERZ '+Math.floor(state.armor);
- if(state.shopOpen)renderShop();
+ if(state.shopOpen){const left=state.mode==='solo'?Math.max(0,state.buyDeadline-performance.now()):state.buyLeftMs;const key=[state.cash,state.armor,state.gear.join(','),Math.ceil(left/1000),state.player.hp].join('|');if(key!==state.lastShopUIKey){state.lastShopUIKey=key;renderShop();}}
 }
 function shopAction(op,id){
  const item=SHOP_CATALOG.find(x=>x.id===id);
@@ -733,7 +733,7 @@ function selectGrenade(){
 }
 function grenadeLanding(p){
  const co=Math.cos(p.yaw),si=Math.sin(p.yaw),distance=10;
- const origin=[p.x,p.y+1.55,p.z],dir=[si*co,0,-co*co],clear=rayWall(origin,dir,distance);
+ const origin=[p.x,p.y+1.55,p.z],dir=[si,0,-co],clear=rayWall(origin,dir,distance);
  const d=Math.max(1.4,Math.min(distance-1,clear-1));
  return {x:p.x+Math.sin(p.yaw)*d,z:p.z-Math.cos(p.yaw)*d,y:1.2};
 }
