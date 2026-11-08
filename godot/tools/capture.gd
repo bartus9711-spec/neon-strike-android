@@ -81,13 +81,45 @@ func _run() -> void:
     right_release.pressed = false
     main.hud._input(right_release)
     print("CI_VISUAL_ASSERTIONS_OK: Godot 3D, dual touch inputs, Ultra and 120 FPS options; real Bluetooth pad still needs device test")
-    await create_timer(3.0).timeout
+    if main.arena.maps.size() != 8:
+        push_error("CI: map selector missing some of the eight original arenas")
+        quit(13)
+        return
     var folder := ProjectSettings.globalize_path("res://visual-qa")
     DirAccess.make_dir_recursive_absolute(folder)
-    var capture := root.get_texture().get_image()
-    var saved := capture.save_png(folder.path_join("teamcs-godot-preview.png"))
-    print("VISUAL_CAPTURE: ", saved, " dimensions: ", capture.get_width(),"x", capture.get_height())
-    if saved != OK or capture.get_width() < 400:
-        quit(8)
+    var ids := {}
+    for i in range(8):
+        main.switch_map(i)
+        await process_frame
+        await process_frame
+        await create_timer(.65).timeout
+        var map_id := str(main.arena.current_map.get("id", ""))
+        ids[map_id] = true
+        if main.arena.current_index != i:
+            push_error("CI: selected map index not loaded")
+            quit(14)
+            return
+        if main.arena.world.get_child_count() < 12:
+            push_error("CI: arena has too little geometry: " + map_id)
+            quit(15)
+            return
+        if main.hud.map_select.selected != i:
+            push_error("CI: map selection HUD mismatch: " + map_id)
+            quit(16)
+            return
+        var capture := root.get_texture().get_image()
+        var filename := "teamcs-" + map_id + ".png"
+        var saved := capture.save_png(folder.path_join(filename))
+        if saved != OK or capture.get_width() < 400:
+            push_error("CI: map screenshot failed: " + filename)
+            quit(17)
+            return
+        print("MAP_VISUAL_CAPTURE_OK: ", map_id, "  render dimensions=", capture.get_width(),"x", capture.get_height())
+        if i == 0:
+            capture.save_png(folder.path_join("teamcs-godot-preview.png"))
+    if ids.size() != 8:
+        push_error("CI: map identifiers are not distinct")
+        quit(18)
         return
+    print("ALL_EIGHT_ARENAS_RENDERED_AND_TESTED")
     quit(0)
