@@ -114,6 +114,138 @@ body{background:#151d22}.menu-screen{background:radial-gradient(circle at 80% 27
 #btnGrenadeThrow,#btnGrenadeSelect{border-color:#9a9a86;background:#383a32bb}
 @media(max-width:650px){.grenade-hud{right:4px;top:37px;font-size:8px;padding:2px 5px}.action-row .action-button.compact{min-width:40px;width:44px;font-size:12px}}
 @media(max-height:500px){.grenade-hud{top:34px;right:5px}.action-row .action-button.compact{width:41px}}
+
+/* TEAMCS / FRONTEND REBUILD V1 — tactical surfaces, compact game HUD, responsive control geometry */
+:root{--ui-ivory:#e9e5dc;--ui-muted:#aeb6b4;--ui-olive:#728270;--ui-red:#c75149;--ui-gold:#bfac82;--ui-ink:#0b1117}
+#mainMenu.menu-screen{background:linear-gradient(0deg,#101820ee 0%,#10182040 60%,#0b1018af 100%),radial-gradient(ellipse at 62% 18%,#80776365,transparent 47%),linear-gradient(125deg,#26343e,#6d6552 50%,#202e34);color:var(--ui-ivory)}
+#mainMenu.menu-screen:before{content:'';position:absolute;inset:8% -4% auto 27%;width:72vw;height:55vh;max-height:450px;border:0;border-radius:0;box-shadow:none;opacity:.25;background:
+linear-gradient(0deg,#13171b 0 4%,transparent 4%),
+repeating-linear-gradient(90deg,transparent 0 6.5%,#0e1922 6.5% 7%,transparent 7% 13%),
+repeating-linear-gradient(90deg,#b7a991 0 9%,#2c3438 9% 10%,#a99a84 10% 15%,#353a3a 15% 16%);
+mask-image:linear-gradient(0deg,#000 5%,#000 78%,transparent)}
+#mainMenu .menu-noise{opacity:.18;background-size:3px 3px;background-image:radial-gradient(#e2c6aa 0.6px,transparent 1px)}
+#mainMenu .menu-top{position:relative;z-index:2;padding:12px 22px;min-height:70px;border-bottom:1px solid #a8ada633;background:#080e15c9;backdrop-filter:blur(12px)}
+#mainMenu .brand{font-size:14px;font-style:italic;letter-spacing:.4px;color:#eceae5;line-height:.85}
+#mainMenu .brand b{color:#c7463e;font-size:22px;font-style:italic}
+#mainMenu .brand-icon{color:#e8e9e7;font-size:32px}
+#mainMenu .brand-icon span{color:#c7463e}
+#mainMenu .version{letter-spacing:1px;color:#a9aeaa;font-size:10px}
+#mainMenu .version span{color:#b8a984}
+#mainMenu .menu-content{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(275px,.8fr);align-items:start;gap:clamp(18px,3vw,52px);max-width:1550px;padding:clamp(12px,2vw,24px) 30px 30px 188px;min-height:calc(100% - 135px)}
+#mainMenu .menu-left{max-width:none;min-width:0}
+#mainMenu .menu-left h1{font-style:normal;letter-spacing:-2.8px;font-size:clamp(36px,4.2vw,69px);margin:7px 0 10px;text-shadow:0 5px 25px #000c}
+#mainMenu .menu-left h1 em{font-style:normal;color:#d1bda0;text-shadow:none}
+#mainMenu .eyebrow{font-size:10px;color:#c3b492;letter-spacing:2px}
+#mainMenu .online-dot{background:#8da88a;box-shadow:0 0 7px #86a88a88}
+#mainMenu .lead{color:#bdc7c4;line-height:1.55;font-size:clamp(10px,1vw,13px);max-width:600px}
+#mainMenu .profile-strip{gap:6px;margin-top:14px}
+#mainMenu .mini-stat{background:#09151de5;border:1px solid #6b7d7b55;border-radius:4px;padding:8px 11px}
+#mainMenu .mini-stat.rank{border-color:#bbaa736e}
+#mainMenu .mini-stat b{color:#8daba9}
+#mainMenu .mini-stat strong{color:#e9e3d6}
+#mainMenu .player-panel{background:#0b151ddc;border:1px solid #677b796b;clip-path:none;border-radius:4px;padding:12px;margin:12px 0}
+#mainMenu .player-panel label{color:#b0bbb8}
+#mainMenu .player-panel input,#mainMenu .player-panel select,#mainMenu .join-panel input{border:1px solid #67776f;background:#121f27;color:#e8e4de;border-radius:3px}
+#mainMenu .primary-button,#mainMenu .secondary-button{clip-path:none;border-radius:4px;min-height:42px;height:47px;font-size:11px;border:1px solid #86918a}
+#mainMenu .primary-button{background:linear-gradient(110deg,#647568,#495b51)!important}
+#mainMenu .secondary-button{background:#1c2c35;color:#eee}
+#mainMenu .maps-heading h2{font-size:22px}
+#mainMenu .menu-right{background:#07111ad9;border:1px solid #6270746a;padding:13px;border-radius:4px;min-width:0;backdrop-filter:blur(5px)}
+#mainMenu .map-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#mainMenu .map-card{height:74px;gap:8px;padding:6px 8px;border:1px solid #52636885;background:linear-gradient(145deg,#1a2931,#0c1922);border-radius:3px}
+#mainMenu .map-thumb{width:42%;border:1px solid #6c6f6755}
+#mainMenu .map-card-text strong{font-size:11px;letter-spacing:.1px}
+#mainMenu .map-card-text small{font-size:8px}
+#mainMenu .map-card-text p{display:none}
+#mainMenu .map-card.selected{background:linear-gradient(135deg,#344b4a,#17272d);border-color:#c3ad77;box-shadow:inset 0 0 0 1px #c3ad7744}
+#mainMenu .map-card.selected:before{background:#c3ad77}
+#mainMenu .menu-footer{border-top:1px solid #5d6a6a55;background:#0b141bc9;padding:10px 20px}
+#mainMenu .feature-row{border-color:#6a786c6a}
+#mainMenu .feature-row strong{color:#bfad88}
+#mainMenu .join-panel{margin-top:10px}
+#mainMenu .menu-rail{position:absolute;top:70px;left:0;bottom:0;width:158px;z-index:5;background:#070f17e6;border-right:1px solid #6e7e7e55;padding:20px 9px;display:flex;flex-direction:column;gap:3px}
+#mainMenu .menu-rail button{width:100%;min-height:41px;text-align:left;border:0;border-left:3px solid transparent;background:transparent;color:#d7d9d3;font-size:11px;font-weight:900;letter-spacing:.45px;padding:9px 9px}
+#mainMenu .menu-rail button:hover,#mainMenu .menu-rail button:focus-visible{background:#52675955;border-left-color:#c0ae82;color:#fff}
+#mainMenu .menu-rail .rail-play{background:#435b50a8;border-left-color:#d8c49a;color:white}
+#mainMenu .menu-rail small{font-size:9px;font-weight:500;color:#899b94;display:block;margin:0 10px 5px}
+#mainMenu .hero-stamp{display:inline-block;background:#6c5440b0;border:1px solid #b7a17b88;color:#f0e3c9;font-size:9px;font-weight:850;letter-spacing:1px;padding:5px 9px;margin:0 0 3px;border-radius:2px}
+#mainMenu .match-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:9px 0}
+#mainMenu .match-card{background:#16232bcf;color:#e8e6dc;border:1px solid #7b858266;padding:7px 4px;min-height:42px;border-radius:3px;text-align:center;font-size:9px;font-weight:850}
+#mainMenu .match-card:focus-visible,#mainMenu .match-card:hover{border-color:#c2ac77;background:#293b3f}
+#mainMenu .match-card .match-pict{font-size:16px;display:block;line-height:1.5;color:#d6c3a4}
+#mainMenu .playlist-note{line-height:1.4}
+#mainMenu .player-panel .status-inline,#mainMenu .player-panel .sub-actions{margin-top:8px}
+#mainMenu .menu-right .feature-row{font-size:10px}
+#gameOverlay .hud-bottom{pointer-events:none}
+#gameOverlay .health-pane,#gameOverlay .weapon-pane{border:1px solid #687a7a77;border-radius:4px;clip-path:none;background:linear-gradient(145deg,#0b151bcf,#0e202acd);box-shadow:0 8px 30px #0005}
+#gameOverlay .health-title{color:#bac3bc}
+#gameOverlay .weapon-pane #weaponType{color:#bbc2bc}
+#gameOverlay .health-track{height:4px;background:#2b3b3b}
+#gameOverlay .health-track div{background:#7aa384}
+#gameOverlay .crosshair span{background:#e9e8d7}
+#gameOverlay .hud-info{color:#d6c7a5}
+#gameOverlay .top-right{gap:5px}
+#gameOverlay .buy-hud{min-width:64px}
+#gameOverlay .economy-strip{background:#09141ccc;border:1px solid #67786a55;padding:5px 8px;border-radius:4px}
+#gameOverlay .economy-strip #walletHud{color:#98dca6}
+#gameOverlay .grenade-hud{border-color:#60726955;background:#0e1c24d5;color:#c8cec6;z-index:4}
+#gameOverlay .fire-button{box-shadow:none!important;border:2px solid #d4b7a1!important;background:#574943ce!important}
+#gameOverlay .joystick-base{box-shadow:none;border-color:#b2c6bd70;background:#16252870}
+#gameOverlay #joystickKnob{background:#43615c8f;border-color:#c1d0c2b3;box-shadow:none}
+#gameOverlay .action-button{border-color:#a5b0a080;background:#1b2b35c6;color:#efeee6}
+#gameOverlay .action-button small{color:#b6bcb9}
+@media(max-width:1100px){
+#mainMenu .menu-content{padding-left:145px;padding-right:12px;gap:10px}
+#mainMenu .menu-rail{width:134px;padding:12px 5px}
+#mainMenu .menu-rail button{font-size:10px;min-height:35px}
+#mainMenu .menu-left h1{font-size:clamp(34px,5vw,54px)}
+#mainMenu .map-card{height:62px}
+}
+@media(max-width:800px){
+#mainMenu .menu-rail{position:relative;top:auto;left:auto;bottom:auto;width:100%;flex-direction:row;overflow-x:auto;border:0;border-bottom:1px solid #77827a55;padding:4px 7px;gap:4px;background:#101a20d9;scrollbar-width:none}
+#mainMenu .menu-rail button{flex:0 0 auto;width:auto;min-height:28px;padding:5px 8px;font-size:9px;white-space:nowrap}
+#mainMenu .menu-rail small{display:none}
+#mainMenu .menu-content{padding:10px 14px 24px;grid-template-columns:1fr}
+#mainMenu .menu-left h1{font-size:clamp(30px,7vw,46px);margin:3px 0 8px}
+#mainMenu .menu-right{padding:9px}
+#mainMenu .map-card{height:67px}
+#mainMenu .version{font-size:8px}
+#mainMenu .menu-top{min-height:44px;padding:7px 12px}
+}
+@media (pointer:coarse) and (orientation:landscape){
+#gameOverlay .mobile-actions{right:clamp(8px,1.5vw,18px);bottom:clamp(60px,18vh,88px);gap:4px;align-items:end}
+#gameOverlay .fire-button{width:clamp(52px,13vh,68px);height:clamp(52px,13vh,68px);margin-right:2px}
+#gameOverlay .fire-button span{font-size:clamp(24px,6vh,33px)}
+#gameOverlay .action-row{gap:4px}
+#gameOverlay .action-button{width:clamp(37px,8.8vh,48px);height:clamp(31px,8.7vh,42px);font-size:clamp(16px,4vh,22px);border-radius:5px}
+#gameOverlay .action-button.compact{width:clamp(37px,8.8vh,48px);height:clamp(30px,8vh,36px);font-size:15px}
+#gameOverlay .action-button small{font-size:6px;margin-top:2px;letter-spacing:0}
+#gameOverlay .joystick-zone{left:9px;bottom:clamp(54px,15vh,76px);width:clamp(110px,24vh,140px);height:clamp(106px,22vh,133px)}
+#gameOverlay .joystick-base{width:clamp(83px,19vh,105px);height:clamp(83px,19vh,105px)}
+#gameOverlay #joystickKnob{width:45px;height:45px}
+#gameOverlay .hud-bottom{left:7px;right:7px;bottom:4px}
+#gameOverlay .health-pane,#gameOverlay .weapon-pane{padding:5px 9px;min-width:100px}
+#gameOverlay .health-number{font-size:20px}
+#gameOverlay .weapon-pane{min-width:165px;max-width:225px}
+#gameOverlay .weapon-pane .ammo strong{font-size:24px}
+#gameOverlay .hud-top{padding:4px 7px}
+#gameOverlay .scoreblock{max-width:55vw}
+#gameOverlay .team-chip{min-width:0}
+#gameOverlay .economy-strip{font-size:10px;padding:3px 6px}
+#gameOverlay .grenade-hud{top:37px;font-size:8px;right:6px}
+#gameOverlay .hud-info{top:40px;font-size:9px}
+#gameOverlay #desktopHint{display:none}
+}
+@media (pointer:coarse) and (orientation:landscape) and (max-height:410px){
+#gameOverlay .mobile-actions{bottom:64px}
+#gameOverlay .fire-button{width:50px;height:50px}
+#gameOverlay .action-button{width:36px;height:31px}
+#gameOverlay .action-button.compact{width:36px;height:29px}
+#gameOverlay .joystick-zone{bottom:52px}
+#gameOverlay .grenade-hud{display:none}
+#gameOverlay .hud-info{top:35px}
+#gameOverlay .economy-strip #armorHud{display:none}
+}
 </style>
 </head>
 <body>
@@ -132,7 +264,7 @@ body{background:#151d22}.menu-screen{background:radial-gradient(circle at 80% 27
     <div id="hitDamage" class="damage-float" aria-live="polite"></div><div id="hitMark">✕</div>
     <div id="damageIndicator"></div>
     <div class="hud-bottom">
-      <div class="health-pane"><div class="health-title">STAN PANCERZA</div><div class="health-number"><span class="plus">✚</span> <span id="hpNumber">100</span><span class="small"> / 100</span></div><div class="health-track"><div id="healthFill"></div></div></div>
+      <div class="health-pane"><div class="health-title">ZDROWIE</div><div class="health-number"><span class="plus">✚</span> <span id="hpNumber">100</span><span class="small"> / 100</span></div><div class="health-track"><div id="healthFill"></div></div></div>
       <div class="weapon-pane"><span id="weaponTitle">VOLT-7</span><span id="weaponType">PULSE CARBINE</span><div class="ammo"><strong id="ammoNumber">30</strong><span>/</span><span id="ammoCapacity">30</span></div><span id="reloadText"></span></div>
     </div>
     <div id="objectivePanel" class="objective-panel hidden"><strong id="objectiveStatus">SABOTAŻ · STREFA A / B</strong><div class="objective-track"><div id="objectiveFill"></div></div><small id="objectiveHint">Przytrzymaj AKCJA w zaznaczonej strefie</small></div>
@@ -161,7 +293,7 @@ body{background:#151d22}.menu-screen{background:radial-gradient(circle at 80% 27
         <div class="settings-actions"><button id="resumeGame" class="primary-button">▶ WRÓĆ DO GRY</button><button id="leaveGameButton" class="secondary-button">⤴ WYJDŹ DO MENU</button></div>
       </div>
     </div>
-    <div id="scoreboard" class="scoreboard hidden"><div class="board-head">TABELA WYNIKÓW <span id="boardRoom">SOLO</span></div><div class="board-teams"><div><h3>◆ NOVA</h3><div id="boardBlue"></div></div><div><h3>◆ RIFT</h3><div id="boardRed"></div></div></div><p>Punkty za wyeliminowanie przeciwnika. Brak przyjaznego ognia.</p></div>
+    <div id="scoreboard" class="scoreboard hidden"><div class="board-head">TABELA WYNIKÓW <span id="boardRoom">SOLO</span></div><div class="board-teams"><div><h3>◆ NOVA</h3><div id="boardBlue"></div></div><div><h3>◆ RIFT</h3><div id="boardRed"></div></div></div><p>W trybach taktycznych obowiązują zasady rund, a trafienia w sojuszników są ograniczone.</p></div>
     <div id="mobileControls" class="mobile-controls">
       <div id="joystickZone" class="joystick-zone"><div class="joystick-base"><div id="joystickKnob"></div></div><span>RUCH</span></div>
       <div class="mobile-actions"><button id="btnFire" class="fire-button" aria-label="Strzał"><span>⌖</span><small>OGIEŃ</small></button><div class="action-row"><button id="btnJump" class="action-button" aria-label="Skok">↥<small>SKOK</small></button><button id="btnReload" class="action-button" aria-label="Przeładuj">↻<small>ŁADUJ</small></button><button id="btnWeapon" class="action-button" aria-label="Zmień broń">⇄<small>BROŃ</small></button><button id="btnAim" class="action-button" aria-label="Przybliż celowanie">◎<small>ZOOM</small></button></div><div class="action-row"><button id="btnSprint" class="action-button compact" aria-label="Sprint">➤<small>BIEG</small></button><button id="btnCrouch" class="action-button compact" aria-label="Kucanie">▤<small>KUCNIJ</small></button><button id="btnInteract" class="action-button compact" aria-label="Interakcja z nadajnikiem">⏣<small>AKCJA</small></button><button id="btnGrenadeSelect" class="action-button compact" aria-label="Zmień typ granatu">◉<small>WYBIERZ</small></button><button id="btnGrenadeThrow" class="action-button compact" aria-label="Rzuć wirtualny granat">◈<small>GRANAT</small></button></div></div>
@@ -171,10 +303,22 @@ body{background:#151d22}.menu-screen{background:radial-gradient(circle at 80% 27
   </div>
   <div id="mainMenu" class="menu-screen">
     <div class="menu-noise"></div><div class="menu-top"><div class="brand"><div class="brand-icon">T<span>CS</span></div><div>TEAM<br><b>CS</b></div></div><div class="version">MOBILE V3 <span>•</span> 8 MAP</div></div>
+
+    <nav class="menu-rail" aria-label="Szybka nawigacja">
+      <button type="button" class="rail-play" data-teamcs-action="play">▶ GRAJ</button>
+      <button type="button" data-teamcs-action="ranked">◈ RANKINGOWA</button>
+      <button type="button" data-teamcs-action="objective">⬡ ROZBROJENIE</button>
+      <button type="button" data-teamcs-action="inventory">▣ EKWIPUNEK</button>
+      <button type="button" data-teamcs-action="cases">▧ SKRZYNKI</button>
+      <button type="button" data-teamcs-action="online">☷ MULTIPLAYER</button>
+      <button type="button" data-teamcs-action="settings">⚙ USTAWIENIA</button>
+      <small>TEAMCS • GRAFIKA W PRZEBUDOWIE</small>
+    </nav>
     <div class="menu-content">
-      <div class="menu-left"><div class="eyebrow"><span class="online-dot"></span> PRZYGOTUJ SIĘ DO WALKI</div><h1>WEJDŹ<br>NA <em>ARENĘ.</em></h1><p class="lead">Jedna gra, dwa tryby. SOLO 5v5 z dziewięcioma botami albo MULTI dla 10 graczy przez kod pokoju. Do tego prototyp skrzynek, skórek i ranked beta ze statystykami zapisanymi lokalnie na urządzeniu.</p>
+      <div class="menu-left"><span class="hero-stamp">TAKTYCZNA GRA 5v5 • ANDROID</span><div class="eyebrow"><span class="online-dot"></span> PRZYGOTUJ SIĘ DO WALKI</div><h1>WEJDŹ<br>NA <em>ARENĘ.</em></h1><p class="lead">Jedna gra, dwa tryby. SOLO 5v5 z dziewięcioma botami albo MULTI dla 10 graczy przez kod pokoju. Do tego prototyp skrzynek, skórek i ranked beta ze statystykami zapisanymi lokalnie na urządzeniu.</p>
         <div class="profile-strip"><div class="mini-stat rank"><b>RANGA</b><strong id="rankValue">BRĄZ I</strong><small id="mmrValue">MMR 1000</small></div><div class="mini-stat"><b>KREDYTY</b><strong id="creditsValue">250</strong><small>waluta za rundy i skrzynki</small></div><div class="mini-stat"><b>SKRZYNKI</b><strong id="caseValue">2</strong><small>otwieraj i odblokuj skiny</small></div><div class="mini-stat"><b>STATYSTYKI</b><strong id="wlValue">0W / 0P</strong><small id="playlistBadge">TRYB: CASUAL</small></div></div>
         <div class="player-panel"><label for="playerName">TWÓJ PSEUDONIM</label><input id="playerName" maxlength="18" placeholder="np. Atlas_01" autocomplete="nickname" value="Operator"><div class="fields-inline"><div><label for="qualitySelect">GRAFIKA</label><select id="qualitySelect"><option value="auto">AUTO — ZALECANA</option><option value="low">PŁYNNOŚĆ</option><option value="medium">WYSOKA</option><option value="ultra">ULTRA</option></select></div><div><label for="sensSelect">CZUŁOŚĆ <output id="sensValue">1,00×</output></label><input id="sensSelect" type="range" min="0.35" max="2.80" step="0.05" value="1"></div></div><div class="pad-options"><label for="padSens">PAD: CZUŁOŚĆ CELOWANIA</label><input id="padSens" type="range" min="0.30" max="2.20" step="0.05" value="0.85"><output id="padSensValue">0,85×</output><label for="padDead">MARTWA STREFA ANALOGÓW</label><input id="padDead" type="range" min="0.05" max="0.35" step="0.01" value="0.18"><output id="padDeadValue">18%</output></div><div class="pad-options"><label for="scopeSens">LUNETA: CZUŁOŚĆ DOTYKU</label><input id="scopeSens" type="range" min="0.15" max="1.30" step="0.05" value="0.45"><output id="scopeSensValue">0,45×</output><label for="scopePadSens">LUNETA: CZUŁOŚĆ PADA</label><input id="scopePadSens" type="range" min="0.15" max="1.30" step="0.05" value="0.55"><output id="scopePadSensValue">0,55×</output></div><div class="status-inline"><span class="status-dot"></span><span id="queueModeText">Kolejka online: CASUAL 5v5</span></div><div class="sub-actions"><button id="playlistButton" class="micro-button">TRYB CASUAL</button><button id="openCaseBtn" class="micro-button">OTWÓRZ SKRZYNKĘ</button><button id="inventoryBtn" class="micro-button">EKWIPUNEK</button></div><div class="playlist-note">Wybierz CASUAL, RANKED BETA lub SABOTAŻ (wirtualny nadajnik). Ranking nadal jest lokalny; globalny matchmaking wymaga odrębnego serwera.</div><div id="controllerStatus" class="controller-status">🎮 Po sparowaniu pada naciśnij dowolny przycisk.</div></div>
+        <div class="match-cards" aria-label="Tryby gry"><button type="button" class="match-card" data-teamcs-action="play"><span class="match-pict">◉</span>SZYBKA GRA</button><button type="button" class="match-card" data-teamcs-action="ranked"><span class="match-pict">✦</span>RANKINGOWA</button><button type="button" class="match-card" data-teamcs-action="objective"><span class="match-pict">⬡</span>ROZBROJENIE</button></div>
         <div class="primary-actions"><button class="primary-button" id="soloButton"><span>▶</span> GRAJ SOLO <small>5v5 · 9 BOTÓW</small></button><button class="secondary-button" id="hostButton"><span>⌁</span> GRAJ MULTI <small>5v5 · KOD POKOJU</small></button></div>
         <div class="join-panel"><span>MASZ LINK LUB KOD OD ZNAJOMEGO?</span><div><input id="roomInput" maxlength="6" placeholder="KOD POKOJU" autocapitalize="characters"><button id="joinButton">DOŁĄCZ →</button></div><div class="rank-chip"><i>RANKED BETA</i> działa obecnie jako prywatne lobby 5v5 z lokalnym rankingiem. Globalny matchmaking i serwerowe konto to kolejny etap.</div></div>
         <div id="menuError" role="status" class="menu-error"></div><div id="netMenuStatus" class="net-menu-status">📡 Sprawdzanie połączenia…</div><button id="installGame" class="install-game-button">＋ ZAINSTALUJ JAKO APLIKACJĘ</button><p class="network-info">MULTI P2P korzysta z zewnętrznej usługi sygnalizacyjnej. Kody działają tylko przy połączeniu z internetem. W niektórych sieciach połączenie graczy może się nie udać.</p>
@@ -1241,6 +1385,27 @@ function pollGamepad(dt){
 window.addEventListener('gamepadconnected',e=>{state.gamepadIndex=e.gamepad.index;padStatus(true,e.gamepad.id);});
 window.addEventListener('gamepaddisconnected',e=>{if(state.gamepadIndex===e.gamepad.index){state.gamepadIndex=null;state.padButtons=[];state.padStick={x:0,y:0};padStatus(false);}});
 
+
+function setupTeamCSNavigation(){
+ const run=(id)=>{const el=$(id);if(el)el.click();};
+ const selectMode=(mode)=>{
+  const modes=['casual','ranked','objective'];
+  if(!state.playing&&state.matchType!==mode){
+   for(let i=0;i<3&&state.matchType!==mode;i++)togglePlaylist();
+  }
+ };
+ document.querySelectorAll('[data-teamcs-action]').forEach(el=>el.addEventListener('click',()=>{
+  switch(el.dataset.teamcsAction){
+   case 'play':run('soloButton');break;
+   case 'online':run('hostButton');break;
+   case 'ranked':selectMode('ranked');toast('RANKINGOWA • TRYB WYBRANY',1200);break;
+   case 'objective':selectMode('objective');toast('ROZBROJENIE • TRYB WYBRANY',1200);break;
+   case 'inventory':run('inventoryBtn');break;
+   case 'cases':run('openCaseBtn');break;
+   case 'settings':document.querySelector('#playerName')?.focus();toast('USTAWIENIA I CZUŁOŚĆ W PANELU GRACZA',1600);break;
+  }
+ }));
+}
 function setupControls(){
  document.addEventListener('keydown',e=>{
   if(document.activeElement?.tagName==='INPUT'||document.activeElement?.tagName==='SELECT'){
@@ -1306,7 +1471,7 @@ async function init(){try{
   state.maps=JSON.parse($('neonMapData').textContent);
   state.renderer=new ArenaRenderer($('gameCanvas'));
   try{const name=localStorage.getItem('neon-strike-name'),quality=localStorage.getItem('neon-strike-quality'),sens=localStorage.getItem('neon-strike-sens'),playlist=localStorage.getItem('neon-strike-playlist');if(name)$('playerName').value=name;for(const [key,id] of [['teamcs-scope-sens','scopeSens'],['teamcs-scope-pad-sens','scopePadSens']]){const val=Number(localStorage.getItem(key));if(val>=.15&&val<=1.30)$(id).value=val;}if(quality&&[...$('qualitySelect').options].some(o=>o.value===quality))$('qualitySelect').value=quality;if(sens&&Number(sens)>=.35&&Number(sens)<=2.8)$('sensSelect').value=sens;for(const [key,id,min,max] of [['neon-strike-pad-sens','padSens',.3,2.2],['neon-strike-pad-dead','padDead',.05,.35]]){const v=Number(localStorage.getItem(key));if(v>=min&&v<=max)$(id).value=v;}state.autoReconnect=localStorage.getItem('neon-strike-rejoin')!=='false';$('autoReconnect').checked=state.autoReconnect;if(['ranked','casual','objective'].includes(playlist))state.matchType=playlist;loadProfile();}catch{}
-  state.sens=Number($('sensSelect').value);state.map=state.maps[0];setupQuality();uiMapCards();state.renderer.loadMap(state.map);setupControls();syncSettingsFromMenu();updateConnectionInfo();updateProfileUI();renderInventory();
+  state.sens=Number($('sensSelect').value);state.map=state.maps[0];setupQuality();uiMapCards();state.renderer.loadMap(state.map);setupControls();setupTeamCSNavigation();syncSettingsFromMenu();updateConnectionInfo();updateProfileUI();renderInventory();
   window.addEventListener('online',()=>{updateConnectionInfo();if(state.retryCode&&!state.retryTimer&&!state.playing)scheduleRejoin(state.retryCode);});
   window.addEventListener('offline',()=>updateConnectionInfo());
   const conn=navigator.connection||navigator.mozConnection||navigator.webkitConnection;if(conn?.addEventListener)conn.addEventListener('change',updateConnectionInfo);
