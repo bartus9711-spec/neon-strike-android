@@ -13,7 +13,7 @@
   <meta name="description" content="TeamCS — mobilna arena FPS 3D. Graj solo lub ze znajomymi przez link.">
   
   
-  <title>TeamCS V4 — Rigged Operators / 8 MAP</title>
+  <title>TeamCS V5 — Cinematic Lobby / Rigged Operators</title>
   <style>
 :root{color-scheme:dark;--cyan:#a9b6a0;--blue:#7897a7;--red:#b98463;--bg:#06101a;--white:#eff8ff;--muted:#8ea7b7;--panel:rgba(5,18,30,.84);font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Arial,sans-serif}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050d15;color:var(--white)}body{touch-action:auto}button,select,input{font:inherit}button{cursor:pointer;user-select:none;-webkit-user-select:none}button:active{transform:scale(.97)}button:disabled{opacity:.4;cursor:not-allowed}input,select{outline:none}#gameCanvas{position:absolute;width:100%;height:100%;display:block;inset:0;touch-action:none}#vignette{pointer-events:none;position:absolute;inset:0;background:radial-gradient(ellipse 75% 72% at 50% 45%,transparent 45%,rgba(0,4,12,.52) 100%)}.hidden{display:none!important}
@@ -246,6 +246,132 @@ mask-image:linear-gradient(0deg,#000 5%,#000 78%,transparent)}
 #gameOverlay .hud-info{top:35px}
 #gameOverlay .economy-strip #armorHud{display:none}
 }
+
+/* TEAMCS V5 / interactive cinematic lobby — the 3-D world is LIVE below this HUD. */
+#mainMenu.menu-screen{
+ background:linear-gradient(90deg,rgba(4,10,17,.94) 0%,rgba(4,10,17,.74) 18%,rgba(7,12,18,.08) 36%,rgba(7,12,18,.08) 67%,rgba(4,9,15,.72) 83%,rgba(3,7,13,.92) 100%),linear-gradient(0deg,rgba(4,8,15,.96),transparent 36%,transparent 72%,rgba(4,9,15,.7));
+ backdrop-filter:none;color:#eee9df;
+ overflow:hidden;
+}
+#mainMenu.menu-screen:before{display:none}
+#mainMenu .menu-noise{pointer-events:none;opacity:.075}
+#mainMenu .menu-top{height:62px;min-height:62px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 18px;background:#07101bd9;border-bottom:1px solid #bcbba94d;box-shadow:0 10px 36px #0008}
+#mainMenu .brand{font-weight:950;font-style:italic;font-size:12px}
+#mainMenu .brand b{color:#e35345}
+#mainMenu .version{font-size:9px;letter-spacing:2px;margin-right:auto;padding-left:13px;color:#a9b5b4}
+#mainMenu .lobby-profile{margin-left:auto;display:flex;align-items:center;gap:14px;font-size:11px;font-weight:900;white-space:nowrap}
+#mainMenu .lobby-profile .lobby-portrait{width:34px;height:34px;border:1px solid #8e9a8d;background:linear-gradient(145deg,#566e6c,#141d26);display:grid;place-items:center;font-size:19px;color:#fff}
+#mainMenu .lobby-profile .lobby-id{display:flex;flex-direction:column;font-size:11px;line-height:1.3;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+#mainMenu .lobby-profile small{font-size:8px;color:#abb6b1;font-weight:550;letter-spacing:1px}
+#mainMenu .lobby-profile .lobby-money{color:#e5c578;font-size:12px}
+#mainMenu .lobby-profile .lobby-gems{color:#86c9de;font-size:12px}
+#mainMenu .menu-rail{left:0;top:62px;bottom:0;width:149px;padding:18px 7px 95px;gap:6px;background:linear-gradient(90deg,#060c15f2,#08131dd7);border-right:1px solid #a9a79733;overflow-y:auto;z-index:4}
+#mainMenu .menu-rail button{background:#101e2ab0;min-height:41px;font-size:10px;letter-spacing:.35px;padding-left:12px;border-left:3px solid transparent;text-align:left;font-weight:900}
+#mainMenu .menu-rail .rail-play{background:linear-gradient(100deg,#a99866bb,#2c3934cb);border-left:3px solid #f0d295;color:#fff}
+#mainMenu .menu-rail small{font-size:8px;line-height:1.5;color:#c6b799ad}
+#mainMenu .menu-content{display:block;position:relative;z-index:1;inset:0;min-height:0;height:calc(100% - 62px);padding:0;margin:0;max-width:none;pointer-events:none}
+#mainMenu .menu-content button,#mainMenu .menu-content input,#mainMenu .menu-content select{pointer-events:auto}
+#mainMenu .menu-left{position:absolute;left:165px;top:16px;width:285px;max-width:285px;z-index:2;pointer-events:none}
+#mainMenu .menu-left .hero-stamp{font-size:9px;padding:4px 7px;letter-spacing:.9px;background:#080f18af}
+#mainMenu .menu-left .eyebrow{color:#bdc5bc;font-size:8px;letter-spacing:2.1px;margin-top:6px}
+#mainMenu .menu-left h1{font-size:clamp(34px,4vw,58px);line-height:.92;letter-spacing:-2px;margin:8px 0 12px;text-shadow:0 4px 25px #020408}
+#mainMenu .menu-left h1 em{color:#d4b67d;text-shadow:0 0 30px #d6a45633}
+#mainMenu .menu-left .lead{display:none}
+#mainMenu .menu-left .primary-actions{position:absolute;top:195px;left:0;width:285px;display:grid;grid-template-columns:1fr;gap:7px}
+#mainMenu .primary-button,#mainMenu .secondary-button{height:48px;min-height:48px;border-radius:3px;clip-path:none;box-shadow:0 5px 20px #0007}
+#mainMenu .primary-actions .primary-button{background:linear-gradient(100deg,#bd8f45,#7a5835);color:#fff;font-size:13px}
+#mainMenu .primary-actions .secondary-button{background:linear-gradient(95deg,#1b3340ec,#0c1d27ec);border:1px solid #9e9c8655}
+#mainMenu .match-cards{display:grid;position:fixed;left:165px;right:288px;bottom:max(12px,env(safe-area-inset-bottom));grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin:0;z-index:5;pointer-events:auto}
+#mainMenu .match-card{height:64px;min-height:0;border:1px solid #a9a99988;background:linear-gradient(145deg,#1c2f3de9,#0b1821ed);font-size:10px;letter-spacing:.2px;text-shadow:0 2px 5px #000a;padding:6px}
+#mainMenu .match-card:hover,#mainMenu .match-card:focus-visible{background:#30414b;border-color:#e6c994}
+#mainMenu .match-pict{font-size:21px;line-height:1.1;color:#f4d09a}
+#mainMenu .menu-right{position:absolute;right:13px;top:16px;bottom:88px;width:260px;overflow:auto;z-index:3;padding:13px;background:linear-gradient(135deg,#07111cec,#0d1e29e0);border:1px solid #899e9b73;border-radius:4px;box-shadow:0 14px 50px #0008;pointer-events:auto;scrollbar-width:thin}
+#mainMenu .maps-heading{margin-bottom:9px}
+#mainMenu .maps-heading h2{font-size:19px;margin:2px 0 0;color:#e8ece8}
+#mainMenu .map-counter{font-size:9px}
+#mainMenu .map-cards{display:grid;grid-template-columns:1fr;gap:5px}
+#mainMenu .map-card{min-width:0;height:55px;padding:4px 6px;border-radius:3px}
+#mainMenu .map-card .map-thumb{width:27%}
+#mainMenu .map-card-text small{font-size:6px;margin:0}
+#mainMenu .map-card-text strong{font-size:12px}
+#mainMenu .map-card-text p{display:none}
+#mainMenu .feature-row{padding:7px 0;margin:9px 0 0}
+#mainMenu .feature-row strong{font-size:16px}
+#mainMenu .menu-footer{display:none}
+#mainMenu .profile-strip,#mainMenu .player-panel,#mainMenu .join-panel,#mainMenu .menu-error,#mainMenu .net-menu-status,#mainMenu .install-game-button,#mainMenu .network-info{display:none}
+#mainMenu.advanced-open .menu-left{pointer-events:auto;left:165px;top:8px;width:min(440px,calc(100vw - 190px));max-width:440px;max-height:calc(100vh - 88px);overflow:auto;padding:13px 15px;background:linear-gradient(125deg,#08131dfc,#122734fb);box-shadow:10px 12px 60px #000c;border:1px solid #b1aa836e;scrollbar-width:thin;z-index:20}
+#mainMenu.advanced-open .menu-left .profile-strip,#mainMenu.advanced-open .menu-left .player-panel,#mainMenu.advanced-open .menu-left .join-panel,#mainMenu.advanced-open .menu-left .menu-error,#mainMenu.advanced-open .menu-left .net-menu-status,#mainMenu.advanced-open .menu-left .install-game-button,#mainMenu.advanced-open .menu-left .network-info{display:initial}
+#mainMenu.advanced-open .menu-left .profile-strip{display:grid}
+#mainMenu.advanced-open .menu-left .player-panel{display:block}
+#mainMenu.advanced-open .menu-left .join-panel{display:block}
+#mainMenu.advanced-open .menu-left .primary-actions{position:static;width:auto;display:grid;grid-template-columns:1fr 1fr}
+#mainMenu.advanced-open .menu-left .lead{display:block}
+#mainMenu.advanced-open .menu-left h1{font-size:32px;line-height:.97;margin:6px 0}
+#mainMenu.advanced-open .match-cards{opacity:.55;pointer-events:none}
+#mainMenu .lobby-close{display:none;font-size:11px;letter-spacing:1px;border:1px solid #9d8965;background:#172b35;color:#fff;padding:9px 12px;float:right}
+#mainMenu.advanced-open .lobby-close{display:inline-block}
+#mainMenu .lobby-caption{position:absolute;left:50%;transform:translateX(-50%);top:88px;text-align:center;z-index:2;color:#e8e9dd;text-shadow:0 2px 14px #0009;pointer-events:none}
+#mainMenu .lobby-caption strong{font-size:10px;letter-spacing:2.5px}
+#mainMenu .lobby-caption span{display:block;color:#b9b7aa;letter-spacing:2px;font-size:9px;margin-top:4px}
+#mainMenu .lobby-badge{position:absolute;right:293px;bottom:98px;background:#0b1926d9;border:1px solid #b29c6a6d;padding:10px 12px;text-align:center;font-size:9px;font-weight:700;z-index:4;color:#dec9a1}
+#mainMenu .lobby-badge b{font-size:18px;display:block;color:#f8efe0;letter-spacing:2px}
+@media(max-width:980px){
+ #mainMenu .menu-rail{width:105px;padding:9px 4px 75px}
+ #mainMenu .menu-rail button{min-height:35px;font-size:8px;padding:6px 4px}
+ #mainMenu .menu-left{left:114px;width:213px;max-width:213px;top:9px}
+ #mainMenu .menu-left h1{font-size:clamp(30px,4vw,44px)}
+ #mainMenu .menu-left .primary-actions{top:154px;width:203px}
+ #mainMenu .primary-actions .primary-button,#mainMenu .primary-actions .secondary-button{height:41px;min-height:41px;font-size:10px}
+ #mainMenu .menu-right{width:191px;right:7px;padding:8px;bottom:83px}
+ #mainMenu .menu-right .maps-heading h2{font-size:14px}
+ #mainMenu .map-card{height:47px}
+ #mainMenu .map-card-text strong{font-size:9px}
+ #mainMenu .match-cards{left:114px;right:205px;bottom:5px;gap:3px;grid-template-columns:repeat(6,minmax(0,1fr))}
+ #mainMenu .match-card{font-size:8px;height:48px;padding:4px}
+ #mainMenu .match-pict{font-size:15px!important}
+ #mainMenu .lobby-caption{top:67px}
+ #mainMenu .lobby-caption strong{font-size:8px}
+ #mainMenu .lobby-caption span{font-size:8px}
+ #mainMenu .lobby-badge{display:none}
+ #mainMenu.advanced-open .menu-left{left:112px;width:min(420px,calc(100vw - 126px));max-height:calc(100vh - 73px)}
+}
+@media(max-height:520px) and (orientation:landscape){
+ #mainMenu .menu-top{height:43px;min-height:43px;padding:4px 9px}
+ #mainMenu .lobby-profile .lobby-portrait{height:27px;width:27px}
+ #mainMenu .lobby-profile{gap:8px;font-size:9px}
+ #mainMenu .lobby-profile small{font-size:7px}
+ #mainMenu .brand-icon{font-size:22px}
+ #mainMenu .brand b{font-size:16px}
+ #mainMenu .menu-rail{top:43px}
+ #mainMenu .menu-content{height:calc(100% - 43px)}
+ #mainMenu .menu-left{top:7px}
+ #mainMenu .menu-left h1{margin:6px 0;font-size:33px}
+ #mainMenu .menu-left .eyebrow{display:none}
+ #mainMenu .menu-left .primary-actions{top:128px}
+ #mainMenu .menu-right{top:6px}
+ #mainMenu .lobby-caption{top:52px}
+ #mainMenu.advanced-open .menu-left{top:2px;max-height:calc(100vh - 49px)}
+}
+@media(orientation:portrait){
+ #mainMenu.menu-screen{overflow:auto;background:linear-gradient(180deg,#07101dc5,#0a1620ee 45%,#09131cfa)}
+ #mainMenu .menu-top{height:60px;min-height:60px}
+ #mainMenu .lobby-profile{gap:6px}
+ #mainMenu .lobby-profile .lobby-id{max-width:85px;font-size:9px}
+ #mainMenu .version,#mainMenu .lobby-gems{display:none}
+ #mainMenu .menu-rail{position:relative;top:0;left:0;width:100%;bottom:auto;flex-direction:row;padding:4px 5px;overflow-x:auto;min-height:43px}
+ #mainMenu .menu-rail button{white-space:nowrap;flex:0 0 auto;min-height:32px;padding:5px 9px}
+ #mainMenu .menu-rail small{display:none}
+ #mainMenu .menu-content{height:auto;min-height:calc(100vh - 104px)}
+ #mainMenu .menu-left{position:relative;left:0;top:0;width:100%;max-width:none;padding:9px 14px}
+ #mainMenu .menu-left h1{font-size:33px}
+ #mainMenu .menu-left .primary-actions{position:static;display:grid;grid-template-columns:1fr 1fr;width:100%}
+ #mainMenu .lobby-caption{display:none}
+ #mainMenu .menu-right{position:relative;left:0;right:0;top:0;bottom:auto;width:calc(100% - 28px);margin:7px 14px 106px;max-height:none}
+ #mainMenu .map-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #mainMenu .match-cards{position:fixed;bottom:0;left:0;right:0;gap:3px;grid-template-columns:repeat(3,1fr);padding:5px;background:#07101ce9}
+ #mainMenu.advanced-open .menu-left{position:relative;left:0;top:0;width:100%;max-width:none;max-height:none;overflow:visible}
+}
+
 </style>
 </head>
 <body>
@@ -302,7 +428,13 @@ mask-image:linear-gradient(0deg,#000 5%,#000 78%,transparent)}
     <span id="desktopHint">WASD / PAD — RUCH · MYSZ / PRAWY ANALOG — CELOWANIE · LPM / RT — OGIEŃ · LT — ZOOM · A — SKOK · X — ŁADOWANIE</span>
   </div>
   <div id="mainMenu" class="menu-screen">
-    <div class="menu-noise"></div><div class="menu-top"><div class="brand"><div class="brand-icon">T<span>CS</span></div><div>TEAM<br><b>CS</b></div></div><div class="version">MOBILE V3 <span>•</span> 8 MAP</div></div>
+    <div class="lobby-caption"><strong>NOVA vs RIFT</strong><span>DWIE DRUŻYNY · JEDNA ARENA</span></div><div class="lobby-badge">TRYB ROZGRYWKI<b>5 VS 5</b>OPERACJA TAKTYCZNA</div>
+    <div class="menu-noise"></div><div class="menu-top"><div class="brand"><div class="brand-icon">T<span>CS</span></div><div>TEAM<br><b>CS</b></div></div><div class="version">MOBILE V5 <span>•</span> 8 MAP</div><div class="lobby-profile" aria-label="Profil gracza">
+      <div class="lobby-portrait">◈</div>
+      <div class="lobby-id"><strong id="lobbyNickname">OPERATOR</strong><small id="lobbyRank">BRĄZ I</small></div>
+      <span class="lobby-money">◉ <b id="lobbyCredits">250</b></span>
+      <span class="lobby-gems">◆ <b id="lobbyCases">2</b></span>
+    </div></div>
 
     <nav class="menu-rail" aria-label="Szybka nawigacja">
       <button type="button" class="rail-play" data-teamcs-action="play">▶ GRAJ</button>
@@ -315,10 +447,10 @@ mask-image:linear-gradient(0deg,#000 5%,#000 78%,transparent)}
       <small>TEAMCS • GRAFIKA W PRZEBUDOWIE</small>
     </nav>
     <div class="menu-content">
-      <div class="menu-left"><span class="hero-stamp">TAKTYCZNA GRA 5v5 • ANDROID</span><div class="eyebrow"><span class="online-dot"></span> PRZYGOTUJ SIĘ DO WALKI</div><h1>WEJDŹ<br>NA <em>ARENĘ.</em></h1><p class="lead">Jedna gra, dwa tryby. SOLO 5v5 z dziewięcioma botami albo MULTI dla 10 graczy przez kod pokoju. Do tego prototyp skrzynek, skórek i ranked beta ze statystykami zapisanymi lokalnie na urządzeniu.</p>
+      <div class="menu-left"><button class="lobby-close" type="button" data-teamcs-action="settings">✕ ZAMKNIJ OPCJE</button><span class="hero-stamp">TAKTYCZNA GRA 5v5 • ANDROID</span><div class="eyebrow"><span class="online-dot"></span> PRZYGOTUJ SIĘ DO WALKI</div><h1>WEJDŹ<br>NA <em>ARENĘ.</em></h1><p class="lead">Jedna gra, dwa tryby. SOLO 5v5 z dziewięcioma botami albo MULTI dla 10 graczy przez kod pokoju. Do tego prototyp skrzynek, skórek i ranked beta ze statystykami zapisanymi lokalnie na urządzeniu.</p>
         <div class="profile-strip"><div class="mini-stat rank"><b>RANGA</b><strong id="rankValue">BRĄZ I</strong><small id="mmrValue">MMR 1000</small></div><div class="mini-stat"><b>KREDYTY</b><strong id="creditsValue">250</strong><small>waluta za rundy i skrzynki</small></div><div class="mini-stat"><b>SKRZYNKI</b><strong id="caseValue">2</strong><small>otwieraj i odblokuj skiny</small></div><div class="mini-stat"><b>STATYSTYKI</b><strong id="wlValue">0W / 0P</strong><small id="playlistBadge">TRYB: CASUAL</small></div></div>
         <div class="player-panel"><label for="playerName">TWÓJ PSEUDONIM</label><input id="playerName" maxlength="18" placeholder="np. Atlas_01" autocomplete="nickname" value="Operator"><div class="fields-inline"><div><label for="qualitySelect">GRAFIKA</label><select id="qualitySelect"><option value="auto">AUTO — ZALECANA</option><option value="low">PŁYNNOŚĆ</option><option value="medium">WYSOKA</option><option value="ultra">ULTRA</option></select></div><div><label for="sensSelect">CZUŁOŚĆ <output id="sensValue">1,00×</output></label><input id="sensSelect" type="range" min="0.35" max="2.80" step="0.05" value="1"></div></div><div class="pad-options"><label for="padSens">PAD: CZUŁOŚĆ CELOWANIA</label><input id="padSens" type="range" min="0.30" max="2.20" step="0.05" value="0.85"><output id="padSensValue">0,85×</output><label for="padDead">MARTWA STREFA ANALOGÓW</label><input id="padDead" type="range" min="0.05" max="0.35" step="0.01" value="0.18"><output id="padDeadValue">18%</output></div><div class="pad-options"><label for="scopeSens">LUNETA: CZUŁOŚĆ DOTYKU</label><input id="scopeSens" type="range" min="0.15" max="1.30" step="0.05" value="0.45"><output id="scopeSensValue">0,45×</output><label for="scopePadSens">LUNETA: CZUŁOŚĆ PADA</label><input id="scopePadSens" type="range" min="0.15" max="1.30" step="0.05" value="0.55"><output id="scopePadSensValue">0,55×</output></div><div class="status-inline"><span class="status-dot"></span><span id="queueModeText">Kolejka online: CASUAL 5v5</span></div><div class="sub-actions"><button id="playlistButton" class="micro-button">TRYB CASUAL</button><button id="openCaseBtn" class="micro-button">OTWÓRZ SKRZYNKĘ</button><button id="inventoryBtn" class="micro-button">EKWIPUNEK</button></div><div class="playlist-note">Wybierz CASUAL, RANKED BETA lub SABOTAŻ (wirtualny nadajnik). Ranking nadal jest lokalny; globalny matchmaking wymaga odrębnego serwera.</div><div id="controllerStatus" class="controller-status">🎮 Po sparowaniu pada naciśnij dowolny przycisk.</div></div>
-        <div class="match-cards" aria-label="Tryby gry"><button type="button" class="match-card" data-teamcs-action="play"><span class="match-pict">◉</span>SZYBKA GRA</button><button type="button" class="match-card" data-teamcs-action="ranked"><span class="match-pict">✦</span>RANKINGOWA</button><button type="button" class="match-card" data-teamcs-action="objective"><span class="match-pict">⬡</span>ROZBROJENIE</button></div>
+        <div class="match-cards" aria-label="Tryby gry"><button type="button" class="match-card" data-teamcs-action="play"><span class="match-pict">▶</span>SZYBKA GRA 5v5</button><button type="button" class="match-card" data-teamcs-action="ranked"><span class="match-pict">✦</span>RANKINGOWA</button><button type="button" class="match-card" data-teamcs-action="objective"><span class="match-pict">⬡</span>ROZBROJENIE</button><button type="button" class="match-card" data-teamcs-action="online"><span class="match-pict">◎</span>WŁASNY POKÓJ</button><button type="button" class="match-card" data-teamcs-action="inventory"><span class="match-pict">◈</span>EKWIPUNEK</button><button type="button" class="match-card" data-teamcs-action="cases"><span class="match-pict">▧</span>SKRZYNKI</button></div>
         <div class="primary-actions"><button class="primary-button" id="soloButton"><span>▶</span> GRAJ SOLO <small>5v5 · 9 BOTÓW</small></button><button class="secondary-button" id="hostButton"><span>⌁</span> GRAJ MULTI <small>5v5 · KOD POKOJU</small></button></div>
         <div class="join-panel"><span>MASZ LINK LUB KOD OD ZNAJOMEGO?</span><div><input id="roomInput" maxlength="6" placeholder="KOD POKOJU" autocapitalize="characters"><button id="joinButton">DOŁĄCZ →</button></div><div class="rank-chip"><i>RANKED BETA</i> działa obecnie jako prywatne lobby 5v5 z lokalnym rankingiem. Globalny matchmaking i serwerowe konto to kolejny etap.</div></div>
         <div id="menuError" role="status" class="menu-error"></div><div id="netMenuStatus" class="net-menu-status">📡 Sprawdzanie połączenia…</div><button id="installGame" class="install-game-button">＋ ZAINSTALUJ JAKO APLIKACJĘ</button><p class="network-info">MULTI P2P korzysta z zewnętrznej usługi sygnalizacyjnej. Kody działają tylko przy połączeniu z internetem. W niektórych sieciach połączenie graczy może się nie udać.</p>
@@ -383,7 +515,7 @@ void main(){
  if(uMood>1.5)light=.48+sun*.37;
  if(uMood>.5 && uMood<1.5)light=.62+sun*.61;
  vec3 color=base*light*(.91+vTint*.15);
- if(vMat>8.5&&vMat<11.0 || vMat>14.5){color=base*(.93+.03*sin(uTime*.45+vPos.x*.2));}
+ if((vMat>8.5&&vMat<11.0) || (vMat>14.5&&vMat<15.5)){color=base*(.93+.03*sin(uTime*.45+vPos.x*.2));}
  if(vMat>10.5&&vMat<11.5){color=base*(.75+sun*.2);}
  if(vMat>12.5&&vMat<13.5)color=base*.72;
  float nearFade=clamp((vDepth-16.0)/125.0,0.0,1.0);nearFade=nearFade*nearFade*(3.0-2.0*nearFade);
@@ -1022,7 +1154,7 @@ function currentSkin(weapon){return (SKIN_POOL[weapon]||SKIN_POOL.pulse).find(s=
 function rankFromMMR(m){if(m<950)return 'BRĄZ I';if(m<1050)return 'BRĄZ II';if(m<1150)return 'SREBRO I';if(m<1250)return 'SREBRO II';if(m<1375)return 'ZŁOTO I';if(m<1500)return 'ZŁOTO II';if(m<1650)return 'PLATYNA';return 'DIAMENT';}
 function loadProfile(){try{const raw=JSON.parse(localStorage.getItem('neon-strike-profile')||'null');if(!raw)return;state.credits=Number(raw.credits)||250;state.cases=Number(raw.cases)||0;state.mmr=Number(raw.mmr)||1000;state.wins=Number(raw.wins)||0;state.losses=Number(raw.losses)||0;for(const w of weapons){const owned=Array.isArray(raw.ownedSkins?.[w])?raw.ownedSkins[w].filter(Boolean):['default'];state.ownedSkins[w]=Array.from(new Set(['default',...owned]));const eq=String(raw.equippedSkins?.[w]||'default');state.equippedSkins[w]=state.ownedSkins[w].includes(eq)?eq:'default';}}catch{}}
 function saveProfile(){try{localStorage.setItem('neon-strike-profile',JSON.stringify({credits:state.credits,cases:state.cases,mmr:state.mmr,wins:state.wins,losses:state.losses,ownedSkins:state.ownedSkins,equippedSkins:state.equippedSkins}));}catch{}}
-function updateProfileUI(){if(!$('rankValue'))return;$('rankValue').textContent=rankFromMMR(state.mmr);$('mmrValue').textContent='MMR '+Math.round(state.mmr);$('creditsValue').textContent=String(state.credits);$('caseValue').textContent=String(state.cases);$('wlValue').textContent=`${state.wins}W / ${state.losses}P`;$('playlistBadge').textContent='TRYB: '+(state.matchType==='ranked'?'RANKED BETA':state.matchType==='objective'?'SABOTAŻ':'CASUAL');$('queueModeText').textContent='Kolejka online: '+(state.matchType==='ranked'?'RANKED BETA 5v5':state.matchType==='objective'?'SABOTAŻ 5v5':'CASUAL 5v5');$('playlistButton').textContent=state.matchType==='ranked'?'TRYB RANKED':state.matchType==='objective'?'SABOTAŻ':'TRYB CASUAL';$('playlistButton').classList.toggle('active',state.matchType==='ranked');}
+function updateProfileUI(){if(!$('rankValue'))return;$('rankValue').textContent=rankFromMMR(state.mmr);$('mmrValue').textContent='MMR '+Math.round(state.mmr);$('creditsValue').textContent=String(state.credits);$('caseValue').textContent=String(state.cases);$('wlValue').textContent=`${state.wins}W / ${state.losses}P`;if($('lobbyNickname'))$('lobbyNickname').textContent=($('playerName').value||'OPERATOR').slice(0,18);if($('lobbyRank'))$('lobbyRank').textContent=rankFromMMR(state.mmr);if($('lobbyCredits'))$('lobbyCredits').textContent=String(state.credits);if($('lobbyCases'))$('lobbyCases').textContent=String(state.cases);$('playlistBadge').textContent='TRYB: '+(state.matchType==='ranked'?'RANKED BETA':state.matchType==='objective'?'SABOTAŻ':'CASUAL');$('queueModeText').textContent='Kolejka online: '+(state.matchType==='ranked'?'RANKED BETA 5v5':state.matchType==='objective'?'SABOTAŻ 5v5':'CASUAL 5v5');$('playlistButton').textContent=state.matchType==='ranked'?'TRYB RANKED':state.matchType==='objective'?'SABOTAŻ':'TRYB CASUAL';$('playlistButton').classList.toggle('active',state.matchType==='ranked');}
 function renderInventory(){const grid=$('inventoryGrid');if(!grid)return;grid.replaceChildren();for(const weapon of weapons){for(const skin of SKIN_POOL[weapon]){if(!state.ownedSkins[weapon].includes(skin.id))continue;const card=document.createElement('div');card.className='skin-card tier-'+skin.tier+(state.equippedSkins[weapon]===skin.id?' equipped':'');const sw=document.createElement('div');sw.className='swatch';sw.style.background=skin.swatch;const title=document.createElement('b');title.textContent=`${GUNS[weapon].name} | ${skin.name}`;const meta=document.createElement('span');meta.textContent=(skin.tier==='base'?'Podstawowa':skin.tier==='rare'?'Rzadka':skin.tier==='epic'?'Epicka':'Legendarna')+' · '+GUNS[weapon].type;const btn=document.createElement('button');btn.textContent=state.equippedSkins[weapon]===skin.id?'ZAŁOŻONA':'WYPOSAŻ';btn.addEventListener('click',()=>{state.equippedSkins[weapon]=skin.id;saveProfile();renderInventory();updateProfileUI();updateHud();});card.append(sw,title,meta,btn);grid.append(card);}}}
 function openInventory(){renderInventory();$('inventoryModal').classList.remove('hidden');}
 function closeInventory(){$('inventoryModal').classList.add('hidden');}
@@ -1603,8 +1735,12 @@ function tick(t){const dt=clamp((t-(state.lastFrame||t))/1000,0,.05);state.lastF
  if(state.renderer&&state.map){
   const p=state.player;const bob=state.playing&&state.moving?Math.sin(state.moving*12)*.036:0;
   const cam=state.playing?{x:p.x,y:p.y+(state.crouch?1.2:1.64)+bob,z:p.z,yaw:p.yaw,pitch:p.pitch}:
-    {x:26*Math.sin(t*.00012),y:11,z:24*Math.cos(t*.00012),yaw:Math.atan2(-26*Math.sin(t*.00012),24*Math.cos(t*.00012)),pitch:-.29};
+    {x:0,y:1.57,z:-108.2,yaw:Math.PI+Math.sin(t*.00017)*.025,pitch:-.012};
   let actors=state.mode==='solo'?state.bots:state.other;
+  if(!state.playing)actors=[
+    {id:'lobby-nova',name:'NOVA',x:-.9,y:0,z:-103,yaw:-.16,team:0,hp:100},
+    {id:'lobby-rift',name:'RIFT',x:.9,y:0,z:-103,yaw:.16,team:1,hp:100}
+  ];
   const effects=state.particles.map(e=>({...e,size:e.size*(e.life/.5)}));
   state.renderer.scopeActive=state.weapon==='rail'&&state.zoom;
   state.renderer.zoom+=((state.zoom?(state.weapon==='rail'?1.66:1):0)-state.renderer.zoom)*Math.min(1,dt*12);
@@ -1677,7 +1813,7 @@ function setupTeamCSNavigation(){
    case 'objective':selectMode('objective');toast('ROZBROJENIE • TRYB WYBRANY',1200);break;
    case 'inventory':run('inventoryBtn');break;
    case 'cases':run('openCaseBtn');break;
-   case 'settings':document.querySelector('#playerName')?.focus();toast('USTAWIENIA I CZUŁOŚĆ W PANELU GRACZA',1600);break;
+   case 'settings':$('mainMenu').classList.toggle('advanced-open');if($('mainMenu').classList.contains('advanced-open')){document.querySelector('#playerName')?.focus({preventScroll:true});}break;
   }
  }));
 }
