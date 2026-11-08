@@ -81,6 +81,37 @@ func _run() -> void:
     right_release.pressed = false
     main.hud._input(right_release)
     print("CI_VISUAL_ASSERTIONS_OK: Godot 3D, dual touch inputs, Ultra and 120 FPS options; real Bluetooth pad still needs device test")
+    # Verify that Low really removes PBR textures and optional geometry,
+    # then Ultra restores them — across maps, not just in a settings menu.
+    main.hud._on_profile_selected(0)
+    await process_frame
+    if Engine.max_fps != 60 or main.arena.detail_level != 0 or main.arena.texture_enabled:
+        push_error("CI: LOW does not apply real performance reductions")
+        quit(19)
+        return
+    main.hud._on_profile_selected(2)
+    await process_frame
+    if Engine.max_fps != 120 or main.arena.detail_level != 2 or not main.arena.texture_enabled:
+        push_error("CI: ULTRA fails to restore texture and details")
+        quit(20)
+        return
+    if main.hud.network_toggle.button_pressed or main.net.smart_enabled:
+        push_error("CI: smart network routing must be explicitly opt-in")
+        quit(21)
+        return
+    main.hud.network_toggle.button_pressed = true
+    main.hud._emit_graphics()
+    if not main.net.smart_enabled:
+        push_error("CI: explicit network preference was not routed to network monitor")
+        quit(22)
+        return
+    main.hud.network_toggle.button_pressed = false
+    main.hud._emit_graphics()
+    if main.net.game_server_rtt_ms >= 0:
+        push_error("CI: game server ping must not be invented")
+        quit(23)
+        return
+    print("CI_PERFORMANCE_AND_NETWORK_SETTINGS_OK: Low / Ultra affect materials, render and user opt-in")
     if main.arena.maps.size() != 8:
         push_error("CI: map selector missing some of the eight original arenas")
         quit(13)
