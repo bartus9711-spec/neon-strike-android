@@ -1,0 +1,65 @@
+name: ATLAS ARCADE 4 - sprawdz i zbuduj APK
+on:
+  push:
+    branches: [atlas-arcade-skill-4]
+    paths:
+      - 'atlas-app/**'
+      - '.github/workflows/atlas-arcade-skill-4.yml'
+  workflow_dispatch:
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Pobierz repozytorium
+        uses: actions/checkout@v4
+      - name: Ustaw Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Ustaw Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Test HTML i skryptow
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class ReadScripts(HTMLParser):
+              def __init__(self): super().__init__(); self.enabled=False; self.out=[]
+              def handle_starttag(self,tag,attrs):
+                  if tag=='script': self.enabled=True
+              def handle_endtag(self,tag):
+                  if tag=='script': self.enabled=False
+              def handle_data(self,data):
+                  if self.enabled: self.out.append(data)
+          h=Path('atlas-app/app/src/main/assets/arcade4.html').read_text('utf-8')
+          for key in ('initBooks()', 'initOlympus()', 'initDragon()', 'initFire()', 'initRetro()', 'initIce()', 'buy(id)'):
+              assert key in h, 'Brak mechaniki: '+key
+          v=ReadScripts();v.feed(h)
+          Path('/tmp/atlas4.js').write_text('\n'.join(v.out))
+          PY
+          node --check /tmp/atlas4.js
+      - name: Zbuduj instalator Android
+        run: gradle -p atlas-app --no-daemon assembleDebug
+      - name: Przygotuj plik
+        run: cp atlas-app/app/build/outputs/apk/debug/app-debug.apk ATLAS_ARCADE_4_0.apk
+      - name: Umiesc plik instalatora w artefaktach
+        uses: actions/upload-artifact@v4
+        with:
+          name: ATLAS-ARCADE-4-ANDROID
+          path: ATLAS_ARCADE_4_0.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Opublikuj APK do pobrania
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view atlas-arcade-skill-v4.0 >/dev/null 2>&1; then
+            gh release upload atlas-arcade-skill-v4.0 ATLAS_ARCADE_4_0.apk --clobber
+          else
+            gh release create atlas-arcade-skill-v4.0 ATLAS_ARCADE_4_0.apk --target "${GITHUB_SHA}" --title "ATLAS ARCADE 4.0 - 6 roznych gier" --notes "Offline Android APK: Ksiegi faraona (pamiec), Olimp bogow (match-3), Smocze Chiny (przygoda), Ognisty Re-Spin (refleks), Klub 777 (sekwencje), Lodowa komnata (sokoban). 5000 pkt na start, sklep z realnym wydawaniem punktow na narzedzia i wyglad, misje, rekordy. Bez obstawiania i wyplat."
+          fi
