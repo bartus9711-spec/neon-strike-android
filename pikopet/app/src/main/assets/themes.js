@@ -82,11 +82,19 @@
      </svg>`;
  }
  const shellCache=profiles.map(p=>"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(shellSvg(p)));
- // keep distinct names, including all 8 explicitly requested shells
- THEMES.splice(0,THEMES.length,...profiles.map((p,i)=>({name:p[0],hue:0,sat:1,bright:1,kind:p[8],art:shellCache[i]})));
+ // Original 32 brokatowe obudowy z PikoPet 1.x (obraz oryginalny + oryginalne barwy).
+ const classics=THEMES.map(t=>({...t,kind:"classic",classic:true,art:SHELL_SRC}));
+ // New Deluxe indexes 0..31 stay unchanged: existing Deluxe save keeps its chosen shell.
+ // Classic variants are appended as 32..63 to avoid altering the saved selection.
+ THEMES.splice(0,THEMES.length,...profiles.map((p,i)=>({name:p[0],hue:0,sat:1,bright:1,kind:p[8],classic:false,art:shellCache[i]})),...classics);
  const css=document.createElement("style");css.textContent=`
  #shellImage{filter:none!important}
+ #shellImage.skin-classic{filter:hue-rotate(var(--hue)) saturate(var(--sat)) brightness(var(--bright,1))!important}
  .skin-tile img{object-fit:contain!important;filter:none!important;image-rendering:auto}
+ .skin-tile img.classic-preview{filter:var(--skin-color)!important}
+ .shell-tabs{display:flex;gap:8px;margin:12px 0;position:sticky;top:0;z-index:3;padding:7px 0;background:#21152af0}
+ .shell-tabs button{flex:1;min-width:0;min-height:42px;border-radius:14px;border:2px solid #ad89b8;background:#30203e;color:#ffe4f4;font-weight:900}
+ .shell-tabs button.active{border-color:#ffe8ac;background:#674679;color:#ffffff}
  .skin-tile{min-height:166px}
  .skin-tile span{line-height:1.25!important}
  .mini-status{display:flex;align-items:center;gap:6px;justify-content:space-between;padding:9px 12px;border-radius:12px;border:1px solid #c2a0df55;background:#39284e;color:#ffebfc;font-size:12px;font-weight:800}
@@ -101,15 +109,36 @@
    prevRenderUI();
    if(previousSkin!==S.theme){
      previousSkin=S.theme;
-     $('shellImage').src=THEMES[S.theme]?.art||shellCache[0];
+     const shell=THEMES[S.theme]||THEMES[0];
+     $('shellImage').classList.toggle("skin-classic",!!shell?.classic);
+     $('shellImage').src=shell?.art||shellCache[0];
    }
  };
+ let shellGroup=S.theme>=profiles.length?"classic":"new";
  showThemes=function(){
-    showSheet("🎨 32 unikatowe obudowy",
-      `<p class="intro">Każda obudowa ma <b>własne wzory, dekoracje i kształt</b>. Wszystkie działają offline i nie zmieniają pupila.</p><div class="skin-grid">${
-        THEMES.map((t,i)=>`<button class="skin-tile ${S.theme===i?'active':''}" data-theme="${i}"><img src="${t.art}" alt="${xml(t.name)}"><span>${i+1}. ${xml(t.name)}</span></button>`).join("")
+    const from=shellGroup==="classic"?profiles.length:0;
+    const to=from+32;
+    showSheet("🎨 64 wymienne obudowy",
+      `<p class="intro"><b>32 klasyczne brokatowe + 32 nowe Deluxe</b>. Stare wzory wróciły bez utraty nowych, a zwierzak i zapis pozostają bez zmian.</p>
+      <div class="shell-tabs"><button data-shellgroup="new" class="${shellGroup==="new"?"active":""}">✨ Nowe (32)</button><button data-shellgroup="classic" class="${shellGroup==="classic"?"active":""}">🥚 Klasyczne (32)</button></div>
+      <div class="skin-grid">${
+        THEMES.slice(from,to).map((t,n)=>{
+          const i=n+from;
+          const style=t.classic?` style="--skin-color:hue-rotate(${t.hue}deg) saturate(${t.sat}) brightness(${t.bright})"`:"";
+          return `<button class="skin-tile ${S.theme===i?'active':''}" data-theme="${i}">
+             <img ${t.classic?'data-classic-shell="1"':''} ${t.classic?'':'src="'+t.art+'"'} class="${t.classic?'classic-preview':''}"${style} alt="${xml(t.name)}">
+             <span>${i+1}. ${xml(t.name)}</span>
+           </button>`;
+        }).join("")
       }</div>`,"themes");
+    if(shellGroup==="classic")document.querySelectorAll("[data-classic-shell]").forEach(img=>{img.src=SHELL_SRC;});
  };
+ $("overlay").addEventListener("click",e=>{
+   const button=e.target.closest("[data-shellgroup]");
+   if(!button)return;
+   shellGroup=button.dataset.shellgroup==="classic"?"classic":"new";
+   showThemes();
+ });
  const activities=[
   {id:"stroke",icon:"🐾",name:"Głaskanie",desc:"Pogłaszcz pupila i obserwuj serduszka",happy:6,affection:10,energy:0},
   {id:"bath",icon:"🛁",name:"Kąpiel",desc:"Piana, bąbelki i czyste futerko",happy:5,clean:32,energy:-2},
