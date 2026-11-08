@@ -107,11 +107,18 @@ body{background:#151d22}.menu-screen{background:radial-gradient(circle at 80% 27
 .damage-float{position:absolute;top:calc(50% - 92px);left:50%;transform:translate(-50%,0);font-size:18px;font-weight:1000;color:#f2ebd4;text-shadow:0 2px 4px #050505;z-index:11;pointer-events:none;opacity:0;transition:opacity .12s,transform .18s}
 .damage-float.show{opacity:1;transform:translate(-50%,-11px)}.damage-float.head{color:#f2ca76}
 @media(max-height:510px){.damage-float{top:calc(50% - 60px);font-size:14px}}
+
+/* Fictional grenades — smoke and flash are purely in-game visual effects */
+#flashScreen{position:absolute;inset:0;z-index:22;pointer-events:none;background:#fff;opacity:0;transition:opacity .08s linear}
+.grenade-hud{position:absolute;right:17px;top:48px;background:#0c1c24d8;padding:5px 9px;font-size:10px;color:#c3cec9;border:1px solid #61747088;pointer-events:none}
+#btnGrenadeThrow,#btnGrenadeSelect{border-color:#9a9a86;background:#383a32bb}
+@media(max-width:650px){.grenade-hud{right:4px;top:37px;font-size:8px;padding:2px 5px}.action-row .action-button.compact{min-width:40px;width:44px;font-size:12px}}
+@media(max-height:500px){.grenade-hud{top:34px;right:5px}.action-row .action-button.compact{width:41px}}
 </style>
 </head>
 <body>
   <canvas id="gameCanvas" aria-label="Arena 3D"></canvas>
-  <div id="vignette"></div><div class="cinematic-bars hidden" id="aimVignette"></div>
+  <div id="vignette"></div><div id="flashScreen" aria-hidden="true"></div><div class="cinematic-bars hidden" id="aimVignette"></div>
   <div class="sniper-scope hidden" id="sniperScope" aria-hidden="true"><div class="scope-view" id="sniperScopeView"><div class="scope-ring"></div><div class="scope-center"></div><span class="scope-info">LUNETA · AWP</span></div></div>
   <div id="gameOverlay" class="hidden">
     <div class="hud-top">
@@ -120,7 +127,7 @@ body{background:#151d22}.menu-screen{background:radial-gradient(circle at 80% 27
       <div class="top-right"><div class="signal" id="netHealth" title="Stan połączenia">● SOLO</div><div class="signal" id="netLabel"><i></i> SOLO</div><button class="icon-button hidden" id="inviteOpen" aria-label="Zaproszenie">↗</button><div class="economy-strip"><span id="walletHud">$800</span><span id="armorHud">PANCERZ 0</span></div><button id="shopHudButton" type="button" class="buy-hud">SKLEP [B]</button><button class="icon-button" id="scoreboardButton" aria-label="Tabela wyników">☷</button><button class="icon-button" id="menuButton" aria-label="Ustawienia w trakcie gry">⚙</button></div>
     </div>
     <div class="hud-info"><span id="mapLabel">NABRZEŻE 17</span><span id="roundLabel">Runda 01</span><span id="padHud">🎮 —</span></div>
-    <div id="killFeed"></div>
+    <div id="killFeed"></div><div id="grenadeStatus" class="grenade-hud">DYM ● BŁYSK ● ODŁAMKOWY ●</div>
     <div class="crosshair" id="crosshair"><span class="ch t"></span><span class="ch r"></span><span class="ch b"></span><span class="ch l"></span><i></i></div>
     <div id="hitDamage" class="damage-float" aria-live="polite"></div><div id="hitMark">✕</div>
     <div id="damageIndicator"></div>
@@ -157,7 +164,7 @@ body{background:#151d22}.menu-screen{background:radial-gradient(circle at 80% 27
     <div id="scoreboard" class="scoreboard hidden"><div class="board-head">TABELA WYNIKÓW <span id="boardRoom">SOLO</span></div><div class="board-teams"><div><h3>◆ NOVA</h3><div id="boardBlue"></div></div><div><h3>◆ RIFT</h3><div id="boardRed"></div></div></div><p>Punkty za wyeliminowanie przeciwnika. Brak przyjaznego ognia.</p></div>
     <div id="mobileControls" class="mobile-controls">
       <div id="joystickZone" class="joystick-zone"><div class="joystick-base"><div id="joystickKnob"></div></div><span>RUCH</span></div>
-      <div class="mobile-actions"><button id="btnFire" class="fire-button" aria-label="Strzał"><span>⌖</span><small>OGIEŃ</small></button><div class="action-row"><button id="btnJump" class="action-button" aria-label="Skok">↥<small>SKOK</small></button><button id="btnReload" class="action-button" aria-label="Przeładuj">↻<small>ŁADUJ</small></button><button id="btnWeapon" class="action-button" aria-label="Zmień broń">⇄<small>BROŃ</small></button><button id="btnAim" class="action-button" aria-label="Przybliż celowanie">◎<small>ZOOM</small></button></div><div class="action-row"><button id="btnSprint" class="action-button compact" aria-label="Sprint">➤<small>BIEG</small></button><button id="btnCrouch" class="action-button compact" aria-label="Kucanie">▤<small>KUCNIJ</small></button><button id="btnInteract" class="action-button compact" aria-label="Interakcja z nadajnikiem">⏣<small>AKCJA</small></button></div></div>
+      <div class="mobile-actions"><button id="btnFire" class="fire-button" aria-label="Strzał"><span>⌖</span><small>OGIEŃ</small></button><div class="action-row"><button id="btnJump" class="action-button" aria-label="Skok">↥<small>SKOK</small></button><button id="btnReload" class="action-button" aria-label="Przeładuj">↻<small>ŁADUJ</small></button><button id="btnWeapon" class="action-button" aria-label="Zmień broń">⇄<small>BROŃ</small></button><button id="btnAim" class="action-button" aria-label="Przybliż celowanie">◎<small>ZOOM</small></button></div><div class="action-row"><button id="btnSprint" class="action-button compact" aria-label="Sprint">➤<small>BIEG</small></button><button id="btnCrouch" class="action-button compact" aria-label="Kucanie">▤<small>KUCNIJ</small></button><button id="btnInteract" class="action-button compact" aria-label="Interakcja z nadajnikiem">⏣<small>AKCJA</small></button><button id="btnGrenadeSelect" class="action-button compact" aria-label="Zmień typ granatu">◉<small>WYBIERZ</small></button><button id="btnGrenadeThrow" class="action-button compact" aria-label="Rzuć wirtualny granat">◈<small>GRANAT</small></button></div></div>
     </div>
     <div id="chatBox"><div id="chatFeed"></div><div id="chatEntry" class="hidden"><input id="chatInput" maxlength="70" placeholder="Napisz wiadomość…"><button id="chatSend">WYŚLIJ</button></div><button id="chatToggle">💬</button></div>
     <span id="desktopHint">WASD / PAD — RUCH · MYSZ / PRAWY ANALOG — CELOWANIE · LPM / RT — OGIEŃ · LT — ZOOM · A — SKOK · X — ŁADOWANIE</span>
@@ -524,6 +531,11 @@ class ArenaRenderer {
     if(site){g.addBox(site.x,.26,site.z,.66,.52,.5,'dark');g.addBox(site.x,.56,site.z,.32,.12,.30,'red');g.addBox(site.x,.67,site.z,.09,.07,.09,'cyan');}
   }
   for(const effect of effects){const s=effect.size||.15;g.addBox(effect.x,effect.y,effect.z,s,s,s,effect.mat||'cyan');}
+  for(const v of state.grenadeVisuals||[]){
+   if(!v.triggered)g.addBox(v.x,.7,v.z,.22,.22,.22,'shade',0);
+   else if(v.kind==='smoke'){const age=(performance.now()-v.start)/1000;const scale=Math.min(1,(age-.7)/1.1);for(let k=0;k<13;k++){const ang=k*2.4,dist=.35+k*.12,x=v.x+Math.cos(ang)*dist,z=v.z+Math.sin(ang)*dist,y=.55+Math.sin(k*2.2)*.32;g.addBox(x,y,z,(1.1+k*.09)*scale,(1.1+k*.09)*scale,(1.1+k*.09)*scale,'steel',-.4);}}
+   else if(v.kind==='frag'&&performance.now()-v.start<950){for(let k=0;k<7;k++){const a=k*6.28/7;g.addBox(v.x+Math.cos(a)*.75,.6,v.z+Math.sin(a)*.75,.16,.16,.16,'sandstone',.3);}}
+  }
   const data=g.data;if(data.length){gl.bindBuffer(gl.ARRAY_BUFFER,this.dynamicBuf);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);this.bindBuffer(this.dynamicBuf);gl.drawArrays(gl.TRIANGLES,0,data.length/10);}
   if(tracers.length){const lines=new Geometry();for(const t of tracers)lines.line(t.from,t.to,t.team===0?'cyan':'red');const d=lines.data;gl.bindBuffer(gl.ARRAY_BUFFER,this.lineBuf);gl.bufferData(gl.ARRAY_BUFFER,d,gl.DYNAMIC_DRAW);this.bindBuffer(this.lineBuf);gl.drawArrays(gl.LINES,0,d.length/10);}
   // Fully 3D first-person blaster model, always rendered in front of world.
@@ -582,7 +594,7 @@ const state={maps:[],selected:'port',map:null,renderer:null,playing:false,mode:'
   keys:{},stick:{x:0,y:0},fireHeld:false,sprint:false,crouch:false,jumpVel:0,grounded:true,
   lastFrame:0,time:0,elapsed:0,roundMs:240000,soloScores:[0,0],scores:[0,0],round:1,roundEnd:0,deadUntil:0,
   paused:false,autoReconnect:true,retryCode:'',retryCount:0,retryTimer:null,installPrompt:null,networkLast:'',recoil:0,moving:0,sens:1,lastNet:0,lastHud:0,lastLook:0,lookPointer:null,lookLastX:0,lookLastY:0,
-  audio:null,hitTimeout:0,quality:'medium',noticeUntil:0,chatOpen:false,joinedFromLink:false,gamepadIndex:null,padButtons:[],padStick:{x:0,y:0},padSens:.85,padDead:.18,zoom:false,cash:800,armor:0,gear:['usp','knife'],buyDeadline:0,buyLeftMs:0,shopOpen:false,scopeSens:.45,scopePadSens:.55,objective:{phase:'idle',site:null,deadline:0},interactHeld:false,interactProgress:0,objectiveBotReady:0,credits:250,cases:2,mmr:1000,wins:0,losses:0,matchType:'casual',matchRewarded:false,ownedSkins:{pulse:['default'],storm:['default'],rail:['default'],usp:['default'],tec:['default'],knife:['default']},equippedSkins:{pulse:'default',storm:'default',rail:'default',usp:'default',tec:'default',knife:'default'}};
+  audio:null,hitTimeout:0,quality:'medium',noticeUntil:0,chatOpen:false,joinedFromLink:false,gamepadIndex:null,padButtons:[],padStick:{x:0,y:0},padSens:.85,padDead:.18,zoom:false,grenades:{frag:1,smoke:1,flash:1},grenadeType:'flash',grenadeVisuals:[],flashPower:0,flashEnd:0,cash:800,armor:0,gear:['usp','knife'],buyDeadline:0,buyLeftMs:0,shopOpen:false,scopeSens:.45,scopePadSens:.55,objective:{phase:'idle',site:null,deadline:0},interactHeld:false,interactProgress:0,objectiveBotReady:0,credits:250,cases:2,mmr:1000,wins:0,losses:0,matchType:'casual',matchRewarded:false,ownedSkins:{pulse:['default'],storm:['default'],rail:['default'],usp:['default'],tec:['default'],knife:['default']},equippedSkins:{pulse:'default',storm:'default',rail:'default',usp:'default',tec:'default',knife:'default'}};
 const META={port:'◈',dunes:'◆',neon:'⬡',foundry:'⚙',metro:'▥',alpine:'▲',oldtown:'⌂',skyline:'◇'};
 
 const SKIN_POOL={
@@ -707,12 +719,89 @@ function matchCashRound(winner){
  const bonus=winner<0?1600:winner===state.team?3000:1650;
  state.cash=Math.min(16000,state.cash+bonus);toast('BONUS RUNDY +$'+bonus);updateWallet();
 }
+
+const GRENADE_NAMES={frag:'ODŁAMKOWY',smoke:'DYMNY',flash:'BŁYSKOWY'};
+function resetGrenades(){state.grenades={frag:1,smoke:1,flash:1};state.grenadeVisuals=[];state.flashPower=0;state.flashEnd=0;refreshGrenadeHud();}
+function refreshGrenadeHud(){
+ const label=$('grenadeStatus');if(!label)return;
+ const g=state.grenades;
+ label.textContent='GRANAT: '+(GRENADE_NAMES[state.grenadeType]||'DYMNY')+' ×'+(g[state.grenadeType]||0);
+}
+function selectGrenade(){
+ const types=['flash','smoke','frag'],i=types.indexOf(state.grenadeType);
+ state.grenadeType=types[(i+1)%types.length];refreshGrenadeHud();toast('WYBRANO: '+GRENADE_NAMES[state.grenadeType],800);
+}
+function grenadeLanding(p){
+ const co=Math.cos(p.yaw),si=Math.sin(p.yaw),distance=10;
+ const origin=[p.x,p.y+1.55,p.z],dir=[si*co,0,-co*co],clear=rayWall(origin,dir,distance);
+ const d=Math.max(1.4,Math.min(distance-1,clear-1));
+ return {x:p.x+Math.sin(p.yaw)*d,z:p.z-Math.cos(p.yaw)*d,y:1.2};
+}
+function makeGrenadeVisual(kind,x,z){
+ state.grenadeVisuals.push({kind,x,z,start:performance.now(),triggered:false,end:performance.now()+(kind==='smoke'?10500:1500)});
+ if(state.grenadeVisuals.length>18)state.grenadeVisuals.shift();
+}
+function checkFlash(x,z){
+ const p=state.player,dx=x-p.x,dz=z-p.z,dist=Math.hypot(dx,dz);
+ if(dist>23||dist<.01||lineBlocked(state.map,{x:p.x,z:p.z},{x,z}))return;
+ // Facing a light source in the virtual world matters; behind the avatar there is no flash effect.
+ const front=(dx*Math.sin(p.yaw)-dz*Math.cos(p.yaw))/dist;
+ if(front<=.14)return;
+ const strength=clamp((1-dist/23)*front*1.7,0,1);
+ if(strength>.08){state.flashPower=Math.max(strength,state.flashPower);state.flashEnd=performance.now()+1300;}
+}
+function triggerGrenade(v){
+ if(v.kind==='flash')checkFlash(v.x,v.z);
+ if(v.kind==='frag'&&state.mode==='solo'){
+  for(const b of state.bots){
+   if(b.hp<=0)continue;
+   const dist=Math.hypot(b.x-v.x,b.z-v.z);
+   if(dist>5.2||lineBlocked(state.map,{x:v.x,z:v.z},b))continue;
+   const raw=Math.round(52*Math.max(0,1-dist/5.2)),saved=Math.min(b.armor||0,Math.round(raw*.4));
+   b.armor=Math.max(0,(b.armor||0)-saved);b.hp=Math.max(0,b.hp-raw+saved);
+   if(!b.hp){b.deaths++;b.respawnAt=state.matchType==='ranked'?Infinity:performance.now()+2300;}
+  }
+ }
+}
+function updateGrenadeVisuals(now){
+ if(!state.playing)return;
+ for(const v of state.grenadeVisuals){if(!v.triggered&&now-v.start>700){v.triggered=true;triggerGrenade(v);}}
+ state.grenadeVisuals=state.grenadeVisuals.filter(v=>v.end>now);
+ const flash=$('flashScreen');
+ flash.style.opacity=now<state.flashEnd?String(Math.min(.95,state.flashPower*((state.flashEnd-now)/1300))):'0';
+ if(now>=state.flashEnd)state.flashPower=0;
+}
+function throwGrenade(){
+ if(!state.playing||state.paused||state.shopOpen||state.player.hp<=0||state.roundEnd)return;
+ const kind=state.grenadeType;
+ if(!state.grenades[kind]){toast('BRAK GRANATU: '+GRENADE_NAMES[kind],1100);return;}
+ if(state.mode==='online'){netSend({type:'grenade',kind});state.grenades[kind]--;refreshGrenadeHud();return;}
+ state.grenades[kind]--;const dest=grenadeLanding(state.player);
+ makeGrenadeVisual(kind,dest.x,dest.z);refreshGrenadeHud();sfx('switch');
+}
+function hostGrenade(p,msg){
+ const r=state.hostRoom;if(!r||r.roundEnds||p.hp<=0||!['frag','smoke','flash'].includes(msg.kind)||!p.grenades[msg.kind])return;
+ p.grenades[msg.kind]--;
+ const z=p.z-Math.cos(p.yaw)*9,x=p.x+Math.sin(p.yaw)*9,kind=msg.kind;
+ roomBroadcast({type:'grenadeVisual',kind,x,z,by:p.name});
+ if(kind==='frag')setTimeout(()=>{
+  if(state.hostRoom!==r||r.roundEnds)return;
+  for(const target of r.players.values()){
+   const dist=Math.hypot(target.x-x,target.z-z);
+   if(target.hp<=0||dist>5.5||lineBlocked(r.map,{x,z},target))continue;
+   const damage=Math.round(52*Math.max(0,1-dist/5.5)),absorbed=Math.min(target.armor||0,Math.floor(damage*.4));
+   target.armor=Math.max(0,(target.armor||0)-absorbed);target.hp=Math.max(0,target.hp-damage+absorbed);
+   messageTo(target.id,{type:'damage',hp:target.hp});
+   if(!target.hp){target.deaths++;target.respawnAt=r.matchType==='ranked'?Infinity:performance.now()+2400;messageTo(target.id,{type:'dead',respawnMs:r.matchType==='ranked'?-1:2400});roomBroadcast({type:'frag',killer:p.name,victim:target.name,team:p.team});if(target.team!==p.team){p.kills++;p.cash=Math.min(16000,p.cash+300);r.scores[p.team]++;}}
+  }
+ },700);
+}
 function resetPlayer(){const spots=state.map.spawnBlue;const spot=spots[0];state.player.x=spot[0];state.player.y=0;state.player.z=spot[1];state.player.yaw=.78;state.player.pitch=0;state.player.hp=100;state.player.ammo={pulse:30,storm:30,rail:10,usp:12,tec:18,knife:1};state.player.kills=0;state.player.deaths=0;state.deadUntil=0;state.jumpVel=0;state.grounded=true;state.reloading=false;state.reloadEnd=0;state.weapon='usp';}
 function startView(mode,mapId){state.paused=false;state.matchRewarded=false;state.objective={phase:'idle',site:null,deadline:0};state.interactHeld=false;state.interactProgress=0;state.objectiveBotReady=performance.now()+27000;$('objectivePanel').classList.toggle('hidden',state.matchType!=='objective');$('settingsPanel').classList.add('hidden');state.mode=mode;state.map=state.maps.find(m=>m.id===mapId)||state.maps[0];state.selected=state.map.id;state.renderer.loadMap(state.map);state.playing=true;state.elapsed=0;state.roundMs=240000;state.roundEnd=0;state.round=1;state.tracers=[];state.particles=[];state.scores=[0,0];state.soloScores=[0,0];state.other=[];state.bots=[];state.keys={};state.stick={x:0,y:0};state.fireHeld=false;state.sprint=false;state.crouch=false;state.zoom=false;state.padStick={x:0,y:0};state.touchZoomHeld=false;state.mouseZoomHeld=false;state.mouseFireHeld=false;state.touchFireHeld=false;state.padButtons=[];
  $('mainMenu').classList.add('hidden');$('gameOverlay').classList.remove('hidden');$('deathOverlay').classList.add('hidden');$('roundOverlay').classList.add('hidden');$('invitePanel').classList.add('hidden');$('scoreboard').classList.add('hidden');$('mapLabel').textContent=state.map.name;$('roundLabel').textContent='Runda 01';
  $('netLabel').textContent=mode==='online'?'● ONLINE':'● SOLO';$('netLabel').style.color=mode==='online'?'#25f3df':'#9fbdc8';
  $('inviteOpen').classList.toggle('hidden',mode!=='online');
- resetPlayer();state.cash=800;state.armor=0;state.gear=['usp','knife'];state.buyDeadline=performance.now()+24000;state.buyLeftMs=24000;closeShop();setWeapon('usp');setZoom(false);updateHud();updateWallet();
+ resetPlayer();resetGrenades();state.cash=800;state.armor=0;state.gear=['usp','knife'];state.buyDeadline=performance.now()+24000;state.buyLeftMs=24000;closeShop();setWeapon('usp');setZoom(false);updateHud();updateWallet();
  if(mobile&&document.fullscreenEnabled&&!document.fullscreenElement)document.documentElement.requestFullscreen?.().catch(()=>{});
 }
 function addBot(team,index){const spots=team===0?state.map.spawnBlue:state.map.spawnRed,pt=spots[index%spots.length];const id=`bot${team}_${index}`;
@@ -756,13 +845,13 @@ function makeHostPlayer(id,name){
  const totals=[0,0];for(const p of r.players.values())totals[p.team]++;
  if(r.players.size>=10)return null;
  const team=totals[0]<=totals[1]&&totals[0]<5?0:totals[1]<5?1:0;
- const p={id,name:safeName(name),team,kills:0,deaths:0,x:0,y:0,z:0,yaw:0,pitch:0,hp:100,weapon:'usp',ammo:ammoFull(),cash:800,armor:0,gear:['usp','knife'],lastFire:0,lastMove:performance.now(),respawnAt:0,reloading:false,reloadFinish:0};
+ const p={id,name:safeName(name),team,kills:0,deaths:0,x:0,y:0,z:0,yaw:0,pitch:0,hp:100,weapon:'usp',ammo:ammoFull(),cash:800,armor:0,gear:['usp','knife'],grenades:{frag:1,smoke:1,flash:1},lastFire:0,lastMove:performance.now(),respawnAt:0,reloading:false,reloadFinish:0};
  r.players.set(id,p);return p;
 }
 function hostSpawn(p){
  const r=state.hostRoom;if(!r)return;
  const pt=(p.team===0?r.map.spawnBlue:r.map.spawnRed)[Math.floor(random()*5)];
- Object.assign(p,{x:pt[0],y:0,z:pt[1],yaw:p.team===0?2.4:-.7,pitch:0,hp:100,ammo:ammoFull(),weapon:p.gear.find(x=>x!=='usp')||'usp',reloading:false,reloadFinish:0,respawnAt:0,lastFire:0,lastMove:performance.now()});
+ Object.assign(p,{x:pt[0],y:0,z:pt[1],yaw:p.team===0?2.4:-.7,pitch:0,hp:100,ammo:ammoFull(),grenades:{frag:1,smoke:1,flash:1},weapon:p.gear.find(x=>x!=='usp'&&x!=='knife')||'usp',reloading:false,reloadFinish:0,respawnAt:0,lastFire:0,lastMove:performance.now()});
  messageTo(p.id,{type:'spawn',x:p.x,y:p.y,z:p.z,yaw:p.y,team:p.team,ammo:p.ammo,cash:p.cash,armor:p.armor,gear:p.gear,weapon:p.weapon});
 }
 function hostJoin(id,name,conn){
@@ -847,6 +936,7 @@ function hostMessage(id,msg){
  const r=state.hostRoom,p=r.players.get(id);if(!p)return;
  if(msg.type==='objectiveAction')return hostObjectiveAction(p,msg);
  if(msg.type==='shop')return hostShop(p,msg);
+ if(msg.type==='grenade')return hostGrenade(p,msg);
  if(msg.type==='move')return hostMove(p,msg);
  if(msg.type==='fire')return hostFire(p);
  if(msg.type==='weapon'){if(GUNS[msg.weapon]&&p.gear.includes(msg.weapon)){p.weapon=msg.weapon;p.reloading=false;p.reloadFinish=0;}return;}
@@ -922,7 +1012,7 @@ function handleNet(msg){switch(msg.type){
   $('invitePanel').classList.remove('hidden');toast(`DOŁĄCZONO · DRUŻYNA ${state.team===0?'NOVA':'RIFT'}`,3000);
   break;}
  case 'spawn':{
-  state.cash=Number(msg.cash)||0;state.armor=Number(msg.armor)||0;state.gear=Array.isArray(msg.gear)?msg.gear:['usp','knife'];state.weapon=msg.weapon||'usp';
+  resetGrenades();state.cash=Number(msg.cash)||0;state.armor=Number(msg.armor)||0;state.gear=Array.isArray(msg.gear)?msg.gear:['usp','knife'];state.weapon=msg.weapon||'usp';
   state.player.x=msg.x;state.player.z=msg.z;state.player.y=msg.y;state.player.yaw=msg.yaw;state.player.pitch=0;state.player.hp=100;state.player.ammo=msg.ammo;state.team=msg.team;state.deadUntil=0;state.reloading=false;state.jumpVel=0;
   $('deathOverlay').classList.add('hidden');break;}
  case 'snapshot':{
@@ -931,6 +1021,7 @@ function handleNet(msg){switch(msg.type){
   const own=msg.players.find(p=>p.id===state.ownId);
   if(own){state.cash=own.cash||0;state.armor=own.armor||0;state.gear=Array.isArray(own.gear)?own.gear:['usp','knife'];state.weapon=own.weapon||state.weapon;state.player.hp=own.hp;state.player.kills=own.kills;state.player.deaths=own.deaths;state.player.ammo[state.weapon]=msg.ammo;state.reloading=msg.reloading;}
   state.allPlayers=msg.players;break;}
+ case 'grenadeVisual':makeGrenadeVisual(msg.kind,msg.x,msg.z);break;
  case 'shot':{
   if(msg.id===state.ownId)break;
   const shooter=state.other.find(p=>p.id===msg.id);state.tracers.push({from:msg.from,to:msg.to,team:shooter?.team??1,life:.16});
@@ -944,7 +1035,7 @@ function handleNet(msg){switch(msg.type){
  case 'shopResult':state.cash=msg.cash;state.armor=msg.armor;state.gear=msg.gear;state.weapon=msg.weapon;toast(msg.info);updateWallet();break;
  case 'objective':state.objective={phase:msg.phase,site:msg.site,deadline:performance.now()+msg.remainingMs};toast(msg.phase==='active'?'NADAJNIK AKTYWNY · STREFA '+msg.site:'NADAJNIK WYŁĄCZONY',2100);break;
  case 'roundEnd':finishRound(msg.winner);break;
- case 'newRound':state.round++;state.buyLeftMs=24000;$('roundLabel').textContent=`Runda ${String(state.round).padStart(2,'0')}`;$('roundOverlay').classList.add('hidden');state.roundEnd=0;state.matchRewarded=false;state.objective={phase:'idle',site:null,deadline:0};state.interactProgress=0;toast('NOWA RUNDA');break;
+ case 'newRound':state.round++;resetGrenades();state.buyLeftMs=24000;$('roundLabel').textContent=`Runda ${String(state.round).padStart(2,'0')}`;$('roundOverlay').classList.add('hidden');state.roundEnd=0;state.matchRewarded=false;state.objective={phase:'idle',site:null,deadline:0};state.interactProgress=0;toast('NOWA RUNDA');break;
  case 'left':toast(`${msg.name} opuścił grę`);break;
  case 'notice':toast(msg.text,1500);break;
  case 'chat':pushChat(msg.name,msg.text,msg.team);break;
@@ -1077,11 +1168,11 @@ function gameStep(dt,now){if(!state.playing)return;if(state.paused){pollGamepad(
   }else if(state.elapsed>=240000&&!state.roundEnd)finishRound(state.soloScores[0]===state.soloScores[1]?-1:state.soloScores[0]>state.soloScores[1]?0:1);
   if(!state.roundEnd)updateBots(dt,now);
   if(state.player.hp===0&&state.deadUntil&&now>=state.deadUntil&&!state.roundEnd)respawnSolo();
-  if(state.roundEnd&&now-state.roundEnd>8500){state.round++;state.roundEnd=0;state.buyDeadline=now+24000;state.matchRewarded=false;state.objective={phase:'idle',site:null,deadline:0};state.interactProgress=0;state.interactHeld=false;state.objectiveBotReady=now+27000;state.elapsed=0;state.soloScores=[0,0];state.bots=[...Array.from({length:4},(_,i)=>addBot(0,i+1)),...Array.from({length:5},(_,i)=>addBot(1,i))];respawnSolo();state.player.kills=0;state.player.deaths=0;$('roundOverlay').classList.add('hidden');$('roundLabel').textContent=`Runda ${String(state.round).padStart(2,'0')}`;toast('NOWA RUNDA');}
+  if(state.roundEnd&&now-state.roundEnd>8500){state.round++;state.roundEnd=0;state.buyDeadline=now+24000;resetGrenades();state.matchRewarded=false;state.objective={phase:'idle',site:null,deadline:0};state.interactProgress=0;state.interactHeld=false;state.objectiveBotReady=now+27000;state.elapsed=0;state.soloScores=[0,0];state.bots=[...Array.from({length:4},(_,i)=>addBot(0,i+1)),...Array.from({length:5},(_,i)=>addBot(1,i))];respawnSolo();state.player.kills=0;state.player.deaths=0;$('roundOverlay').classList.add('hidden');$('roundLabel').textContent=`Runda ${String(state.round).padStart(2,'0')}`;toast('NOWA RUNDA');}
  }
  if(state.reloading&&now>=state.reloadEnd&&state.mode==='solo'){state.reloading=false;state.player.ammo[state.weapon]=GUNS[state.weapon].capacity;sfx('reloadEnd');}
  pollGamepad(dt);if(state.player.hp>0)movePlayer(dt);updateObjectiveHUD(dt,now);
- if(state.fireHeld)localFire();
+ if(state.fireHeld)localFire();updateGrenadeVisuals(now);
  state.recoil=Math.max(0,state.recoil-dt*5.5);
  state.tracers=state.tracers.filter(t=>(t.life-=dt)>0);
  state.particles=state.particles.filter(p=>(p.life-=dt)>0);
@@ -1142,7 +1233,7 @@ function pollGamepad(dt){
  const edge=(i,fn)=>{const current=pressed(i);if(current&&!state.padButtons[i])fn();state.padButtons[i]=current;};
  const firing=pressed(7);state.fireHeld=firing||state.touchFireHeld||state.mouseFireHeld||false;
  setZoom(pressed(6)||state.touchZoomHeld||state.mouseZoomHeld||false);
- edge(0,jump);edge(2,reload);state.interactHeld=pressed(3);edge(1,()=>{state.crouch=!state.crouch;});
+ edge(0,jump);edge(2,reload);edge(14,selectGrenade);edge(15,throwGrenade);state.interactHeld=pressed(3);edge(1,()=>{state.crouch=!state.crouch;});
  edge(8,()=>{$('scoreboard').classList.toggle('hidden');updateScoreboard();});
  edge(4,()=>setWeapon('pulse'));edge(5,cycleWeapon);
  state.sprint=!!pressed(10)||!!state.sprintTouch;
@@ -1158,7 +1249,7 @@ function setupControls(){
   state.keys[e.code]=true;
   if(e.code==='Tab'){e.preventDefault();if(state.playing){$('scoreboard').classList.remove('hidden');updateScoreboard();}};
   if(e.code==='Space'){e.preventDefault();jump();}if(e.code==='KeyQ')setZoom(true);
-  if(e.code==='KeyB'){e.preventDefault();state.shopOpen?closeShop():openShop();}if(e.code==='KeyR')reload();if(e.code==='KeyE')state.interactHeld=true;
+  if(e.code==='KeyB'){e.preventDefault();state.shopOpen?closeShop():openShop();}if(e.code==='KeyG'){e.preventDefault();selectGrenade();}if(e.code==='KeyF'){e.preventDefault();throwGrenade();}if(e.code==='KeyR')reload();if(e.code==='KeyE')state.interactHeld=true;
   if(e.code==='Digit1')setWeapon('pulse');if(e.code==='Digit2')setWeapon('storm');if(e.code==='Digit3')setWeapon('rail');if(e.code==='Digit4')setWeapon('usp');if(e.code==='Digit5')setWeapon('tec');if(e.code==='Digit6')setWeapon('knife');
   if(e.code==='KeyC')state.crouch=!state.crouch;
 
@@ -1184,6 +1275,7 @@ function setupControls(){
  zone.addEventListener('pointerup',joyStop);zone.addEventListener('pointercancel',joyStop);
  const fireBtn=$('btnFire');fireBtn.addEventListener('pointerdown',eventSafe(e=>{fireBtn.setPointerCapture(e.pointerId);state.fireHeld=true;state.touchFireHeld=true;fireBtn.classList.add('active');localFire();}));
  for(const type of ['pointerup','pointercancel','lostpointercapture'])fireBtn.addEventListener(type,()=>{state.fireHeld=false;state.touchFireHeld=false;fireBtn.classList.remove('active');});
+ $('btnGrenadeSelect').addEventListener('pointerdown',eventSafe(selectGrenade));$('btnGrenadeThrow').addEventListener('pointerdown',eventSafe(throwGrenade));
  $('btnAim').addEventListener('pointerdown',eventSafe(()=>{state.touchZoomHeld=!state.touchZoomHeld;setZoom(state.touchZoomHeld);}));$('btnJump').addEventListener('pointerdown',eventSafe(jump));$('btnReload').addEventListener('pointerdown',eventSafe(reload));$('btnWeapon').addEventListener('pointerdown',eventSafe(cycleWeapon));
  $('btnSprint').addEventListener('pointerdown',eventSafe(()=>{state.sprintTouch=!state.sprintTouch;state.sprint=state.sprintTouch;$('btnSprint').classList.toggle('active',state.sprint);}));
  $('btnCrouch').addEventListener('pointerdown',eventSafe(()=>{state.crouch=!state.crouch;$('btnCrouch').classList.toggle('active',state.crouch);}));
