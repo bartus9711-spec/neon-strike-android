@@ -7,7 +7,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Pobierz projekt
         uses: actions/checkout@v4
@@ -23,17 +23,24 @@ jobs:
       - name: Sprawdz Android SDK dostepny na serwerze
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "Dostepne platformy:"
-          ls -1 "$ANDROID_HOME/platforms" || true
-          echo "Dostepne build-tools:"
-          ls -1 "$ANDROID_HOME/build-tools" || true
           test -f "$ANDROID_HOME/platforms/android-35/android.jar"
       - name: Zbuduj APK
         run: gradle --no-daemon --stacktrace assembleDebug
-      - name: Udostepnij APK
+      - name: Przygotuj plik do pobrania
+        run: cp app/build/outputs/apk/debug/app-debug.apk NEON_STRIKE_V3.apk
+      - name: Udostepnij APK jako artefakt kompilacji
         uses: actions/upload-artifact@v4
         with:
           name: NEON-STRIKE-Android-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: NEON_STRIKE_V3.apk
           if-no-files-found: error
           retention-days: 14
+      - name: Opublikuj bezposredni APK w GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v0.3.0-beta >/dev/null 2>&1; then
+            gh release upload v0.3.0-beta NEON_STRIKE_V3.apk --clobber
+          else
+            gh release create v0.3.0-beta NEON_STRIKE_V3.apk --target "${GITHUB_SHA}" --title "NEON STRIKE V3 (beta)" --prerelease --notes "NEON STRIKE V3: 8 map, 5 stylizowanych broni, prywatne pokoje online P2P, ranking beta i kosmetyka zdobywana za rozgrywke. Pobierz NEON_STRIKE_V3.apk i otworz go w Plikach na Androidzie. To testowa aplikacja spoza Google Play. Przy zmianie podpisu debug poprzednia wersja moze wymagac odinstalowania."
+          fi
