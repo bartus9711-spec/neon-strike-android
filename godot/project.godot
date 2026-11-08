@@ -25,3 +25,6 @@ renderer/rendering_method.mobile="mobile"
 textures/default_filters/use_nearest_mipmap_filter=false
 environment/defaults/default_clear_color=Color(0.06, 0.10, 0.16, 1)
 anti_aliasing/quality/msaa_3d=2
+
+[editor_plugins]
+enabled=PackedStringArray("res://addons/teamcs_network/plugin.cfg")
