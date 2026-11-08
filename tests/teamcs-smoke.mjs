@@ -38,7 +38,14 @@ async function runTest(name,params){
   if(params.isMobile){
     assert.equal(await page.locator('#btnFire').isVisible(),false,'Mobile controls visible too early');
   }
+  assert.equal(await page.locator('#mainMenu .match-card').count(),6,'The six quick-access actions are missing');
+  assert.equal(await page.locator('#lobbyNickname').isVisible(),true,'Lobby player profile missing');
+  await page.screenshot({path:'test-results/'+name+'-lobby.png',animations:'disabled'});
+  await page.locator('#mainMenu .menu-rail [data-teamcs-action="settings"]').click();
+  assert.equal(await page.locator('#mainMenu').evaluate(e=>e.classList.contains('advanced-open')),true,'Settings drawer did not open');
   await page.locator('#qualitySelect').selectOption('low');
+  await page.locator('.lobby-close').click();
+  assert.equal(await page.locator('#mainMenu').evaluate(e=>e.classList.contains('advanced-open')),false,'Settings drawer did not close');
   await page.locator('#soloButton').click();
   await page.waitForTimeout(550);
   assert.equal(await page.locator('#gameOverlay').isVisible(),true,'Solo overlay not visible');
