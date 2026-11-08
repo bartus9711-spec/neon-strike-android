@@ -1,0 +1,53 @@
+name: TeamCS Godot 4.7.2 3D Visual QA
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "godot/**"
+      - ".github/workflows/godot-visual-qa.yml"
+jobs:
+  godot-visual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and verify stable Godot 4.7.2
+        run: |
+          curl --fail --location --retry 4 --retry-delay 4 \
+            -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot-bin
+          chmod +x /tmp/godot-bin/Godot_v4.7.2-stable_linux.x86_64
+          /tmp/godot-bin/Godot_v4.7.2-stable_linux.x86_64 --version
+      - name: Import and static parse GDScript resources
+        run: |
+          set -o pipefail
+          /tmp/godot-bin/Godot_v4.7.2-stable_linux.x86_64 --headless \
+            --rendering-method gl_compatibility --path godot --editor --import --quit \
+            2>&1 | tee /tmp/godot-import.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script|Failed to load resource' /tmp/godot-import.log; then
+            exit 1
+          fi
+      - name: Playtest in software-rendered display and capture screenshot
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -qq install -y xvfb libgl1-mesa-dri libgl1
+          set -o pipefail
+          xvfb-run -a -s "-screen 0 1280x720x24" \
+            /tmp/godot-bin/Godot_v4.7.2-stable_linux.x86_64 \
+            --path godot --rendering-method gl_compatibility \
+            --script res://tools/capture.gd \
+            2>&1 | tee /tmp/godot-playtest.log
+          grep -q "CI_VISUAL_ASSERTIONS_OK" /tmp/godot-playtest.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Invalid access|Invalid call' /tmp/godot-playtest.log; then exit 1; fi
+          test -s godot/visual-qa/teamcs-godot-preview.png
+      - name: Upload visual QA screenshot and logs (no APK release)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TeamCS-Godot-Visual-QA
+          path: |
+            godot/visual-qa/*.png
+            /tmp/godot-import.log
+            /tmp/godot-playtest.log
+          if-no-files-found: warn
