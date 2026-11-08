@@ -1,4 +1,4 @@
-name: Build PikoPet Cozy 2.3 APK
+name: Build PikoPet BT 2.4 APK
 on:
   push:
     branches: [ pikopet-apk-build ]
@@ -45,6 +45,8 @@ jobs:
           assert "const defs=[" in (p/'challenges.js').read_text()
           assert 'makeDiscoverable' in (p/'bluetooth.js').read_text()
           assert 'scanBluetooth' in (p/'bluetooth.js').read_text()
+          assert 'systemDevicePicker' in (p/'bluetooth.js').read_text()
+          assert 'bt_visible' in (p/'bluetooth.js').read_text()
           assert "addEventListener('click',()=>hideSheet())" in html
           assert 'PikoNavigation' in (p/'navigation.js').read_text()
           main=re.search(r'<script>(.*?)</script>',html,re.S).group(1)
@@ -54,27 +56,27 @@ jobs:
           assert 'const classics=THEMES.map' in (p/'themes.js').read_text()
           assert '64 wymienne obudowy' in (p/'themes.js').read_text()
           assert 'const BONUS=[' in (p/'games.js').read_text()
-          print('PikoPet Cozy 2.3: wszystkie skrypty i pliki są dostępne offline')
+          print('PikoPet BT 2.4: wszystkie skrypty i pliki są dostępne offline')
           PY
       - name: Android SDK 35
         run: test -f "$ANDROID_HOME/platforms/android-35/android.jar"
       - name: Buduj aplikacje Android
         run: gradle --no-daemon -p pikopet :app:assembleDebug --stacktrace
       - name: Przygotuj APK
-        run: cp pikopet/app/build/outputs/apk/debug/app-debug.apk PikoPet_COZY_2_3.apk
+        run: cp pikopet/app/build/outputs/apk/debug/app-debug.apk PikoPet_BLUETOOTH_2_4.apk
       - name: APK do pobrania
         uses: actions/upload-artifact@v4
         with:
-          name: PikoPet-Cozy-2.3-APK
-          path: PikoPet_COZY_2_3.apk
+          name: PikoPet-Bluetooth-2.4-APK
+          path: PikoPet_BLUETOOTH_2_4.apk
           if-no-files-found: error
           retention-days: 30
       - name: Publiczny instalator w Releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view pikopet-cozy-v2.3 >/dev/null 2>&1; then
-            gh release upload pikopet-cozy-v2.3 PikoPet_COZY_2_3.apk --clobber
+          if gh release view pikopet-bluetooth-v2.4 >/dev/null 2>&1; then
+            gh release upload pikopet-bluetooth-v2.4 PikoPet_BLUETOOTH_2_4.apk --clobber
           else
-            gh release create pikopet-cozy-v2.3 PikoPet_COZY_2_3.apk --target "${GITHUB_SHA}" --title "PikoPet Cozy 2.3 — obudowy, minigry i odwiedziny" --notes "Instalator Android (APK). Pikselowy pupil, 64 obudowy (32 klasyczne, 32 nowe Deluxe), 32 gatunki, 20 minigier, 12 zabaw, album pamiątek, zapis offline i przypomnienia o opiece. Odwiedziny na sparowanym Bluetooth lub w tej samej sieci Wi-Fi po kodzie i zgodzie gospodarza. Zwierzaki chodzą po ekranie, po wizycie BT/Wi-Fi pojawia się przytulny pokoik. Można wykryć i sparować telefony Bluetooth. X cofa do poprzedniego menu, Android Wstecz działa tak samo. Budowa testowa z podpisem debug."
+            gh release create pikopet-bluetooth-v2.4 PikoPet_BLUETOOTH_2_4.apk --target "${GITHUB_SHA}" --title "PikoPet BT 2.4 — obudowy, minigry i odwiedziny" --notes "Instalator Android (APK). Pikselowy pupil, 64 obudowy (32 klasyczne, 32 nowe Deluxe), 32 gatunki, 20 minigier, 12 zabaw, album pamiątek, zapis offline i przypomnienia o opiece. Ulepszone wykrywanie telefonow, rzeczywiste potwierdzenie widocznosci, skaner systemowy Androida i parowanie BT; Wi-Fi bez zmian. Zwierzaki chodzą po ekranie, po wizycie BT/Wi-Fi pojawia się przytulny pokoik. Można wykryć i sparować telefony Bluetooth. X cofa do poprzedniego menu, Android Wstecz działa tak samo. Budowa testowa z podpisem debug."
           fi
