@@ -1,6 +1,8 @@
 package com.pikopet.mobile;
 import android.Manifest;
 import android.app.Activity;
+import android.bluetooth.BluetoothDevice;
+import android.companion.CompanionDeviceManager;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -98,6 +100,23 @@ public class MainActivity extends Activity {
  }
  @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
    super.onActivityResult(requestCode,resultCode,data);
+   if(requestCode==74){
+     if(link!=null)link.onDiscoverabilityResult(resultCode);
+     return;
+   }
+   if(requestCode==76){
+     if(link!=null){
+       if(resultCode==RESULT_OK&&data!=null){
+         try{
+           BluetoothDevice picked=Build.VERSION.SDK_INT>=33?
+             data.getParcelableExtra(CompanionDeviceManager.EXTRA_DEVICE,BluetoothDevice.class):
+             (BluetoothDevice)data.getParcelableExtra(CompanionDeviceManager.EXTRA_DEVICE);
+           link.onCompanionPicked(picked);
+         }catch(Exception e){link.reportBluetooth("Nie można odczytać wybranego telefonu z listy systemowej.");}
+       }else link.reportBluetooth("Anulowano wybór urządzenia Bluetooth.");
+     }
+     return;
+   }
    if(requestCode==PICK_FILE&&fileCallback!=null){
       fileCallback.onReceiveValue(resultCode==RESULT_OK&&data!=null&&data.getData()!=null?new Uri[]{data.getData()}:null);
       fileCallback=null;
