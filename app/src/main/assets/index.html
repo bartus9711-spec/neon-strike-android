@@ -13,7 +13,7 @@
   <meta name="description" content="TeamCS — mobilna arena FPS 3D. Graj solo lub ze znajomymi przez link.">
   
   
-  <title>TeamCS V3 — 5v5 / 8 MAP</title>
+  <title>TeamCS V4 — Rigged Operators / 8 MAP</title>
   <style>
 :root{color-scheme:dark;--cyan:#a9b6a0;--blue:#7897a7;--red:#b98463;--bg:#06101a;--white:#eff8ff;--muted:#8ea7b7;--panel:rgba(5,18,30,.84);font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Arial,sans-serif}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050d15;color:var(--white)}body{touch-action:auto}button,select,input{font:inherit}button{cursor:pointer;user-select:none;-webkit-user-select:none}button:active{transform:scale(.97)}button:disabled{opacity:.4;cursor:not-allowed}input,select{outline:none}#gameCanvas{position:absolute;width:100%;height:100%;display:block;inset:0;touch-action:none}#vignette{pointer-events:none;position:absolute;inset:0;background:radial-gradient(ellipse 75% 72% at 50% 45%,transparent 45%,rgba(0,4,12,.52) 100%)}.hidden{display:none!important}
@@ -351,7 +351,7 @@ void main(){vec4 eye=uView*vec4(aPos,1.0);gl_Position=uProj*eye;vDepth=-eye.z;vP
 const FRAG=`
 precision mediump float;
 varying vec3 vPos; varying vec3 vNormal; varying vec2 vUV; varying float vMat; varying float vTint; varying float vDepth;
-uniform float uMood;uniform float uTime;uniform float uDetails;uniform vec3 uFog;
+uniform float uMood;uniform float uTime;uniform float uDetails;uniform vec3 uFog;uniform sampler2D uAvatarTex;
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 vec3 palette(float m){
  if(m<.5)return vec3(.24,.245,.23); if(m<1.5)return vec3(.47,.455,.42);
@@ -364,7 +364,7 @@ vec3 palette(float m){
  if(m<14.5)return vec3(.75,.89,.94);return vec3(.55,.52,.44);
 }
 void main(){
- vec3 base=palette(vMat);vec3 n=normalize(vNormal);float grain=hash(floor(vUV*46.0))-.5;
+ vec3 base=vMat>19.5?texture2D(uAvatarTex,vUV).rgb:palette(vMat);vec3 n=normalize(vNormal);float grain=hash(floor(vUV*46.0))-.5;
  if(vMat<9.0 || (vMat>11.5 && vMat<13.0)){
   base*=1.0+grain*.17*uDetails;
   if(vMat<.5 || (vMat>11.5&&vMat<12.5)){float seams=max(step(.986,fract(vUV.x*.8)),step(.986,fract(vUV.y*.8)));base*=1.0-seams*.19*uDetails;}
@@ -510,21 +510,273 @@ function residenceFacade(g,b,detail,rand,night){
  g.addBox(b.x,b.h+.08,b.z,b.w+.36,.16,b.d+.36,'dark',-.16);
  if(detail>1){g.addBox(b.x+b.w*.28,b.h+.48,b.z+b.d*.14,.8,.8,.9,'brick',-.2);g.addBox(b.x+b.w*.28,b.h+.96,b.z+b.d*.14,1,.16,1,'shade');}
 }
+
+/**
+ * TEAMCS / Rigged Operator Mesh v4.
+ * Original offline mesh. Generated ONCE at boot; vertices are smooth surfaces,
+ * not boxes. A hierarchical 11-joint skin rig animates legs, shoulders, elbows
+ * and upper body from the movement velocity measured in the game.
+ * All appearance maps to a real, cached WebGL fabric-texture atlas.
+ */
+class AvatarAsset3D {
+ constructor(gl){
+  this.rest=[
+   [0,.95,0],[0,1.28,0],[0,1.76,0],
+   [-.415,1.48,0],[-.53,1.18,-.06],
+   [.415,1.48,0],[.53,1.18,-.06],
+   [-.205,.875,0],[-.215,.505,0],
+   [.205,.875,0],[.215,.505,0]
+  ];
+  this.parent=[-1,0,1,1,3,1,5,0,7,0,9];
+  this.vertices=[];
+  this.build();
+  this.texture=this.makeTexture(gl);
+ }
+ v(p,n,uv,material,joint,blend=-1,weight=1){
+  const L=Math.hypot(n[0],n[1],n[2])||1;
+  return {p,n:[n[0]/L,n[1]/L,n[2]/L],uv,m:material,j:joint,k:blend,w:weight};
+ }
+ tri(a,b,c){this.vertices.push(a,b,c);}
+ // A closed elliptical shell; vertex normals are smooth, no cube silhouette.
+ shell(rings,mat,bone=1,segments=16,from=-Math.PI,to=Math.PI){
+  for(let i=0;i<rings.length-1;i++){
+   for(let j=0;j<segments;j++){
+    const angle=from+(to-from)*j/segments,next=from+(to-from)*(j+1)/segments;
+    const vertex=(ring,a,v)=>{
+     const [y,rx,rz,dx=0,dz=0]=ring,cs=Math.cos(a),sn=Math.sin(a);
+     const n=[cs/Math.max(.04,rx),0,sn/Math.max(.04,rz)];
+     const joint=typeof bone==='function'?bone(i,v):bone;
+     return this.v([dx+rx*cs,y,dz+rz*sn],n,[(a-from)/(to-from),v],mat,joint);
+    };
+    const a=vertex(rings[i],angle,i/(rings.length-1)),b=vertex(rings[i+1],angle,(i+1)/(rings.length-1));
+    const c=vertex(rings[i+1],next,(i+1)/(rings.length-1)),d=vertex(rings[i],next,i/(rings.length-1));
+    this.tri(a,b,c);this.tri(a,c,d);
+   }
+  }
+ }
+ // Tube follows a custom series of 3D limb/jacket control sections.
+ tube(points,slot,segments=12){
+  const frames=points.map((pt,i)=>{
+   const before=points[Math.max(0,i-1)].p,after=points[Math.min(points.length-1,i+1)].p;
+   const d=[after[0]-before[0],after[1]-before[1],after[2]-before[2]],len=Math.hypot(...d)||1;
+   const axis=d.map(x=>x/len),cross=[axis[1],-axis[0],0],ll=Math.hypot(...cross)||1;
+   const right=cross.map(x=>x/ll),front=[axis[1]*right[2]-axis[2]*right[1],axis[2]*right[0]-axis[0]*right[2],axis[0]*right[1]-axis[1]*right[0]];
+   return {pt,right,front};
+  });
+  const at=(i,theta)=>{
+   const {pt,right,front}=frames[i],c=Math.cos(theta),s=Math.sin(theta);
+   const r=pt.r,depth=pt.d||r;
+   const n=[right[0]*c/r+front[0]*s/depth,right[1]*c/r+front[1]*s/depth,right[2]*c/r+front[2]*s/depth];
+   return this.v([pt.p[0]+right[0]*c*r+front[0]*s*depth,pt.p[1]+right[1]*c*r+front[1]*s*depth,pt.p[2]+right[2]*c*r+front[2]*s*depth],n,[(theta+Math.PI)/Math.PI/2,i/(points.length-1)],slot,pt.j,pt.k??-1,pt.w??1);
+  };
+  for(let i=0;i<points.length-1;i++)for(let j=0;j<segments;j++){
+   const a=-Math.PI+Math.PI*2*j/segments,b=-Math.PI+Math.PI*2*(j+1)/segments;
+   const p0=at(i,a),p1=at(i+1,a),p2=at(i+1,b),p3=at(i,b);
+   this.tri(p0,p1,p2);this.tri(p0,p2,p3);
+  }
+ }
+ egg(x,y,z,rx,ry,rz,mat,joint,segments=14){
+  const rings=[];for(let i=0;i<=9;i++){
+   const phi=-Math.PI/2+Math.PI*i/9;
+   rings.push([y+ry*Math.sin(phi),Math.max(.012,rx*Math.cos(phi)),Math.max(.012,rz*Math.cos(phi)),x,z]);
+  }
+  this.shell(rings,mat,joint,segments);
+ }
+ cable(a,b,r,mat,bone,steps=9){
+  this.tube([{p:a,r:r*.72,j:bone},{p:[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2],r,j:bone},{p:b,r:r*.72,j:bone}],mat,steps);
+ }
+ build(){
+  // JACKET: shaped waist, chest, shoulder silhouette, tapered neck.
+  this.shell([[.94,.275,.20],[1.03,.302,.226],[1.16,.32,.24],[1.35,.398,.265],[1.51,.390,.249],[1.58,.225,.17]],0,(i)=>i<1?0:1);
+  // 3D VEST: separate worn ballistic fabric over the jacket, not a box.
+  this.shell([[1.075,.296,.249],[1.13,.345,.277],[1.27,.377,.288],[1.43,.375,.287],[1.52,.324,.254],[1.55,.25,.187]],1,1,20);
+  this.egg(0,1.592,0,.20,.115,.19,4,1,14);
+  this.cable([-.315,1.49,-.15],[-.22,1.10,-.281],.052,4,1);
+  this.cable([.315,1.49,-.15],[.22,1.10,-.281],.052,4,1);
+  this.cable([-.30,1.49,.16],[-.25,1.10,.274],.053,4,1);
+  this.cable([.30,1.49,.16],[.25,1.10,.274],.053,4,1);
+  // Neck and anatomically curved head, with ears/nose and padded helmet.
+  this.egg(0,1.67,0,.123,.13,.12,3,2);
+  this.egg(0,1.80,-.014,.207,.25,.20,3,2,18);
+  this.egg(-.205,1.8,-.006,.062,.096,.048,3,2);
+  this.egg(.205,1.8,-.006,.062,.096,.048,3,2);
+  this.egg(0,1.781,-.222,.048,.068,.075,3,2);
+  this.shell([[1.825,.21,.203],[1.89,.249,.249],[1.965,.248,.240],[2.018,.195,.181],[2.042,.085,.085]],5,2,20);
+  this.cable([-.24,1.845,-.044],[.24,1.845,-.044],.047,4,2,12);
+  this.egg(-.13,1.78,-.183,.105,.050,.032,11,2);
+  this.egg(.13,1.78,-.183,.105,.050,.032,11,2);
+  // Collar and straps; textured panels, pouch contours and belt.
+  for(const side of [-1,1]){
+   this.egg(side*.23,1.48,-.228,.115,.075,.108,4,1);
+   this.egg(side*.225,1.19,-.296,.118,.15,.052,9,1);
+   this.egg(side*.15,1.41,-.305,.14,.075,.032,7,1);
+   this.egg(side*.19,1.01,-.237,.125,.083,.058,9,0);
+  }
+  this.cable([-.305,1.05,-.23],[.305,1.05,-.23],.056,4,0);
+  this.egg(0,1.05,-.293,.07,.056,.037,10,0);
+  // Curved hip shape, flexible uniform legs and soft knee pads.
+  this.egg(0,.935,0,.32,.17,.237,2,0,18);
+  for(const side of [-1,1]){
+   const thigh=side<0?7:9,shin=side<0?8:10;
+   const hip=[side*.205,.875,0],knee=[side*.218,.50,-.034],ankle=[side*.22,.14,-.028];
+   this.tube([
+    {p:[side*.205,.91,0],r:.183,d:.185,j:7+(side>0?2:0)},
+    {p:[side*.211,.79,0],r:.172,d:.172,j:thigh},
+    {p:[side*.214,.64,-.012],r:.154,d:.157,j:thigh},
+    {p:[side*.218,.525,-.027],r:.130,d:.129,j:thigh,k:shin,w:.64}
+   ],2,16);
+   this.tube([
+    {p:knee,r:.137,d:.135,j:shin,k:thigh,w:.75},
+    {p:[side*.217,.40,-.028],r:.143,d:.140,j:shin},
+    {p:[side*.22,.26,-.02],r:.116,d:.118,j:shin},
+    {p:ankle,r:.092,d:.099,j:shin}
+   ],2,14);
+   this.egg(side*.218,.49,-.151,.142,.147,.052,4,shin);
+   this.egg(side*.218,.485,-.205,.09,.09,.033,5,shin);
+   this.egg(side*.22,.126,-.145,.17,.126,.285,8,shin,16);
+   this.egg(side*.22,.17,.055,.143,.12,.16,8,shin);
+   // Sleeves follow shoulder-elbow-wrist joints rather than cuboids.
+   const upper=side<0?3:5,lower=side<0?4:6;
+   this.egg(side*.41,1.475,0,.21,.19,.213,0,upper,16);
+   this.tube([
+    {p:[side*.415,1.48,-.01],r:.175,d:.169,j:upper},
+    {p:[side*.466,1.365,-.027],r:.164,d:.16,j:upper},
+    {p:[side*.511,1.245,-.05],r:.145,d:.137,j:upper,k:lower,w:.7},
+    {p:[side*.53,1.175,-.07],r:.127,d:.12,j:lower,k:upper,w:.84}
+   ],0,14);
+   this.tube([
+    {p:[side*.53,1.19,-.06],r:.134,j:lower,k:upper,w:.8},
+    {p:[side*.48,1.09,-.135],r:.126,d:.13,j:lower},
+    {p:[side*.382,1.015,-.229],r:.104,d:.103,j:lower},
+    {p:[side*.323,.983,-.31],r:.087,d:.09,j:lower}
+   ],0,14);
+   this.egg(side*.32,.974,-.33,.11,.119,.12,6,lower,14);
+   this.egg(side*.41,1.452,-.18,.12,.097,.049,7,upper);
+   this.egg(side*.49,1.26,-.138,.14,.115,.088,4,upper);
+   this.cable([side*.29,1.49,.18],[side*.50,1.34,.16],.028,4,upper);
+  }
+  // Textured back panel and attached equipment pouches.
+  this.egg(0,1.28,.262,.268,.314,.13,9,1,18);
+  this.egg(0,1.36,.386,.123,.09,.042,4,1);
+  this.egg(0,1.56,-.207,.24,.060,.085,4,1);
+  this.egg(0,1.405,-.32,.095,.043,.034,7,1);
+  this.vertices=Object.freeze(this.vertices);
+ }
+ makeTexture(gl){
+  const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=512;
+  const ctx=canvas.getContext('2d',{alpha:false});
+  const colors=[
+   ['#455e60','#263a42','#35494d','#bb906d','#1c3036','#344346','#222b31','#49847f','#292c2e','#354951','#a5a49b','#334c57'],
+   ['#8b7963','#524d41','#746752','#bd946f','#39352d','#59554b','#303033','#ad824a','#2d2c2a','#665747','#b3a28f','#4f5148']
+  ];
+  let seed=712313;const rnd=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
+  const rgb=hex=>[parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];
+  const tile=128;
+  for(let team=0;team<2;team++)for(let mat=0;mat<12;mat++){
+   const tx=(team*4+mat%4)*tile,ty=Math.floor(mat/4)*tile;
+   const color=rgb(colors[team][mat]);
+   ctx.fillStyle=colors[team][mat];ctx.fillRect(tx,ty,tile,tile);
+   for(let i=0;i<1800;i++){
+    const noise=(rnd()-.5)*48,x=tx+rnd()*tile,y=ty+rnd()*tile;
+    const c=color.map(v=>Math.max(0,Math.min(255,Math.round(v+noise))));
+    ctx.fillStyle='rgba('+c.join(',')+',.22)';
+    ctx.fillRect(x,y,1+rnd()*2,1+rnd()*2);
+   }
+   // Small-scale woven fabric, ballistic nylon and leather grain.
+   if([0,1,2,4,5,6,8,9].includes(mat)){
+    for(let s=0;s<64;s++){
+     ctx.fillStyle=s%2?'rgba(255,255,255,.042)':'rgba(0,0,0,.074)';
+     ctx.fillRect(tx+s*2,ty,1,tile);
+     ctx.fillRect(tx,ty+s*2,tile,1);
+    }
+   }
+   if([1,4,9].includes(mat)){
+    ctx.strokeStyle='rgba(8,17,23,.20)';ctx.lineWidth=1;
+    for(let x=7;x<tile;x+=17){ctx.beginPath();ctx.moveTo(tx+x,ty);ctx.lineTo(tx+x,ty+tile);ctx.stroke();}
+    for(let y=8;y<tile;y+=20){ctx.beginPath();ctx.moveTo(tx,ty+y);ctx.lineTo(tx+tile,ty+y);ctx.stroke();}
+    ctx.strokeStyle='rgba(238,237,218,.20)';ctx.setLineDash([2,4]);
+    ctx.strokeRect(tx+6,ty+6,tile-12,tile-12);ctx.setLineDash([]);
+   }
+   if(mat===11){
+    const grad=ctx.createLinearGradient(tx,ty,tx+tile,ty+tile);
+    grad.addColorStop(0,'rgba(154,192,202,.35)');grad.addColorStop(.55,'rgba(12,30,47,.3)');grad.addColorStop(1,'rgba(6,20,34,.62)');
+    ctx.fillStyle=grad;ctx.fillRect(tx,ty,tile,tile);
+   }
+  }
+  const tex=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,canvas);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+  return tex;
+ }
+ rotation(x,z){
+  const a=Math.cos(x),b=Math.sin(x),c=Math.cos(z),d=Math.sin(z);
+  return [c,-d*a,d*b,d,c*a,-c*b,0,b,a];
+ }
+ mul(a,b){return [
+  a[0]*b[0]+a[1]*b[3]+a[2]*b[6],a[0]*b[1]+a[1]*b[4]+a[2]*b[7],a[0]*b[2]+a[1]*b[5]+a[2]*b[8],
+  a[3]*b[0]+a[4]*b[3]+a[5]*b[6],a[3]*b[1]+a[4]*b[4]+a[5]*b[7],a[3]*b[2]+a[4]*b[5]+a[5]*b[8],
+  a[6]*b[0]+a[7]*b[3]+a[8]*b[6],a[6]*b[1]+a[7]*b[4]+a[8]*b[7],a[6]*b[2]+a[7]*b[5]+a[8]*b[8]
+ ];}
+ rot(m,p){return [m[0]*p[0]+m[1]*p[1]+m[2]*p[2],m[3]*p[0]+m[4]*p[1]+m[5]*p[2],m[6]*p[0]+m[7]*p[1]+m[8]*p[2]];}
+ emit(g,p,t,track){
+  const speed=Math.min(1,track.speed/5.2),phase=track.phase;
+  const stride=Math.sin(phase)*speed,breathe=Math.sin(t*1.55+track.phase*.11)*.012;
+  const a=[
+   [0,Math.sin(phase*2)*speed*.015],[breathe*.4,Math.sin(phase)*speed*.035],[-breathe*.7,0],
+   [-.08-stride*.28,-.055],[-.09-stride*.13,0],
+   [-.08+stride*.28,.055],[-.09+stride*.13,0],
+   [stride*.47,0],[Math.max(0,-stride)*.53,0],
+   [-stride*.47,0],[Math.max(0,stride)*.53,0]
+  ];
+  const pose=[];
+  for(let i=0;i<this.rest.length;i++){
+   const parent=this.parent[i],base=this.rest[i],r=this.rotation(...a[i]);
+   if(parent<0)pose.push({p:base,r});
+   else{
+    const pr=pose[parent],prBase=this.rest[parent],off=this.rot(pr.r,[base[0]-prBase[0],base[1]-prBase[1],base[2]-prBase[2]]);
+    pose.push({p:[pr.p[0]+off[0],pr.p[1]+off[1],pr.p[2]+off[2]],r:this.mul(pr.r,r)});
+   }
+  }
+  const cs=Math.cos(p.yaw||0),sn=Math.sin(p.yaw||0),team=p.team===0?0:1;
+  const bounce=Math.abs(Math.sin(phase))*speed*.026;
+  const tx=p.x,ty=(p.y||0)+bounce,tz=p.z;
+  const transform=(bone,v,n)=>{
+   const bt=pose[bone],rest=this.rest[bone],off=[v[0]-rest[0],v[1]-rest[1],v[2]-rest[2]],shift=this.rot(bt.r,off);
+   return {p:[bt.p[0]+shift[0],bt.p[1]+shift[1],bt.p[2]+shift[2]],n:this.rot(bt.r,n)};
+  };
+  for(const v of this.vertices){
+   const A=transform(v.j,v.p,v.n),B=v.k>=0?transform(v.k,v.p,v.n):A,w=v.w;
+   const x=A.p[0]*w+B.p[0]*(1-w),y=A.p[1]*w+B.p[1]*(1-w),z=A.p[2]*w+B.p[2]*(1-w);
+   const nx=A.n[0]*w+B.n[0]*(1-w),ny=A.n[1]*w+B.n[1]*(1-w),nz=A.n[2]*w+B.n[2]*(1-w);
+   const nn=Math.hypot(nx,ny,nz)||1;
+   const u=((v.m%4)+team*4+.045+v.uv[0]*.91)/8;
+   const uvRow=Math.floor(v.m/4),vv=1-(uvRow+.045+v.uv[1]*.91)/4;
+   g.a.push(tx+x*cs+z*sn,ty+y,tz-x*sn+z*cs,(nx*cs+nz*sn)/nn,ny/nn,(-nx*sn+nz*cs)/nn,u,vv,20,.1);
+  }
+ }
+}
+
 class ArenaRenderer {
  constructor(canvas){this.canvas=canvas;this.gl=canvas.getContext('webgl',{antialias:false,alpha:false,depth:true,powerPreference:'high-performance',preserveDrawingBuffer:true});if(!this.gl)throw Error('WebGL is unavailable');const gl=this.gl;
   this.p=program(gl,VERT,FRAG);this.skyP=program(gl,SKY_V,SKY_F);this.buf=gl.createBuffer();this.dynamicBuf=gl.createBuffer();this.lineBuf=gl.createBuffer();this.skyBuf=gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER,this.skyBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   this.locations={};for(const n of ['aPos','aNormal','aUV','aMat','aTint'])this.locations[n]=gl.getAttribLocation(this.p,n);
-  this.uniforms={};for(const n of ['uProj','uView','uMood','uTime','uDetails','uFog'])this.uniforms[n]=gl.getUniformLocation(this.p,n);
+  this.uniforms={};for(const n of ['uProj','uView','uMood','uTime','uDetails','uFog','uAvatarTex'])this.uniforms[n]=gl.getUniformLocation(this.p,n);
   this.skyLoc=gl.getAttribLocation(this.skyP,'aPos');this.skyMood=gl.getUniformLocation(this.skyP,'uMood');this.skyTime=gl.getUniformLocation(this.skyP,'uTime');
-  this.map=null;this.quality='medium';this.lastFps=60;this.width=1;this.height=1;this.zoom=0;this.proj=perspective(Math.PI/2,1,.04,250);
+  this.operatorMesh=new AvatarAsset3D(gl);this.map=null;this.quality='medium';this.lastFps=60;this.width=1;this.height=1;this.zoom=0;this.proj=perspective(Math.PI/2,1,.04,250);
   this.eye={x:0,y:1.6,z:0,yaw:0,pitch:0};this.staticCount=0;this.fog=[.11,.23,.28];
   gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);this.setQuality('medium');
  }
  setQuality(q){this.quality=q;this.ratio=(q==='low'?Math.min(devicePixelRatio||1,.72):q==='medium'?Math.min(devicePixelRatio||1,1):q==='ultra'?Math.min(devicePixelRatio||1,1.8):1);this.resize();if(this.map)this.loadMap(this.map);}
  resize(){const w=Math.max(1,Math.round(innerWidth*this.ratio)),h=Math.max(1,Math.round(innerHeight*this.ratio));if(this.width===w&&this.height===h)return;this.width=w;this.height=h;this.canvas.width=w;this.canvas.height=h;this.gl.viewport(0,0,w,h);this.proj=perspective(Math.PI/180*(75-29*this.zoom),w/h,.04,280);}
  bindBuffer(buffer){const gl=this.gl;gl.bindBuffer(gl.ARRAY_BUFFER,buffer);const stride=10*4;for(const [name,size,offset] of [['aPos',3,0],['aNormal',3,12],['aUV',2,24],['aMat',1,32],['aTint',1,36]]){const loc=this.locations[name];gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,size,gl.FLOAT,false,stride,offset);}}
- useWorld(view,time,mood){const gl=this.gl;gl.useProgram(this.p);gl.uniformMatrix4fv(this.uniforms.uProj,false,this.proj);gl.uniformMatrix4fv(this.uniforms.uView,false,view);gl.uniform1f(this.uniforms.uMood,mood);gl.uniform1f(this.uniforms.uTime,time);gl.uniform1f(this.uniforms.uDetails,this.quality==='low'?.5:1);gl.uniform3fv(this.uniforms.uFog,this.fog);}
+ useWorld(view,time,mood){const gl=this.gl;gl.useProgram(this.p);gl.uniformMatrix4fv(this.uniforms.uProj,false,this.proj);gl.uniformMatrix4fv(this.uniforms.uView,false,view);gl.uniform1f(this.uniforms.uMood,mood);gl.uniform1f(this.uniforms.uTime,time);gl.uniform1f(this.uniforms.uDetails,this.quality==='low'?.5:1);gl.uniform3fv(this.uniforms.uFog,this.fog);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.operatorMesh.texture);gl.uniform1i(this.uniforms.uAvatarTex,0);}
  loadMap(map){this.map=map;const g=new Geometry(),rand=rng(map.id==='port'?871:map.id==='dunes'?1204:1990),detail=this.quality==='ultra'?3:this.quality==='low'?1:2;
   this.fog=map.id==='dunes'?[.58,.49,.37]:map.id==='neon'?[.055,.072,.15]:[.18,.28,.34];
   const ground=map.ground==='sand'?'sand':'asphalt';g.addBox(0,-.35,0,270,.6,270,ground);
@@ -658,71 +910,21 @@ class ArenaRenderer {
  }
  avatar(g,p,time){
   if(p.hp<=0)return;
-  const {x,z}=p,y=p.y||0,rot=p.yaw||0,ct=p.team===0;
+  const {x,z}=p;
   const id=p.id||p.name||(String(p.team)+':'+Math.round(x)+':'+Math.round(z));
   if(!this.avatarTracks)this.avatarTracks=new Map();
   let track=this.avatarTracks.get(id);
   if(!track){track={x,z,t:time,phase:(x+z)*.31,speed:0};this.avatarTracks.set(id,track);}
   const dt=Math.max(0,Math.min(.08,time-track.t)),distance=Math.hypot(x-track.x,z-track.z);
   const instant=dt>.00001&&distance<2?Math.min(8,distance/dt):0;
-  const blend=1-Math.exp(-dt*10);
-  track.speed+=(instant-track.speed)*blend;
+  track.speed+=(instant-track.speed)*(1-Math.exp(-dt*10));
   track.phase+=dt*(4.8+track.speed*.6)*Math.min(1,track.speed/2.8);
   track.x=x;track.z=z;track.t=time;
   if(this.avatarTracks.size>40){for(const [k,v] of this.avatarTracks){if(time-v.t>30)this.avatarTracks.delete(k);}}
-  const gait=Math.min(1,track.speed/5.6),phase=track.phase;
-  const bounce=Math.abs(Math.sin(phase))*gait*.025;
-  const breath=Math.sin(time*2+(x+z)*.12)*.010;
-  const lift=Math.min(.18,Math.max(0,Math.sin(phase+Math.PI/2)))*gait;
-  const c=Math.cos(rot),si=Math.sin(rot),lean=Math.min(.07,track.speed*.008);
-  const cloth=ct?'blue':'sandstone',vest=ct?'steel':'wood',pants=ct?'steel':'shade',skin=ct?'shade':'sandstone',trim=ct?'dark':'wood';
-  const P=(lx,ly,lz)=>[x+lx*c+lz*si,y+ly+bounce,z-lx*si+lz*c];
-  const box=(lx,ly,lz,w,h,d,mat,tint=0)=>{const q=P(lx,ly,lz);g.addBox(q[0],q[1],q[2],w,h,d,mat,tint,rot);};
-  const ell=(lx,ly,lz,rx,ry,rz,mat,tint=0)=>{const q=P(lx,ly,lz);g.addEllipsoid(q[0],q[1],q[2],rx,ry,rz,mat,tint,9,6);};
-  const limb=(a,b,r,mat,tint=0)=>g.addLimb(P(...a),P(...b),r,mat,tint,8);
-  // Local procedural rig: separate hips / knees / ankles and shoulders / elbows / hands.
-  // Velocity-derived gait phase smoothly returns to an idle stance.
-  ell(0,.96,.025,.32,.22,.245,pants,-.16);
-  ell(0,1.27+breath,.0,.37,.405,.265,cloth,-.21);
-  ell(0,1.30+breath,-.19,.375,.345,.155,vest,-.12);
-  ell(0,1.23,.27,.285,.29,.15,trim,-.19); // backpack
-  box(0,1.31,-.33,.40,.10,.055,trim,-.12); // chest webbing
-  for(const side of [-1,1]){
-   const swing=Math.sin(phase+(side>0?Math.PI:0))*gait;
-   const hip=[side*.21,.87,-.01],knee=[side*.22,.53+Math.max(0,-swing)*.06,-.035+swing*.18];
-   const foot=[side*.23,.17+Math.max(0,-swing)*.12,-.10+swing*.42];
-   limb(hip,knee,.15,pants,-.16);
-   ell(...knee,.163,.145,.153,vest,-.19);
-   limb(knee,foot,.121,pants,-.32);
-   ell(foot[0],foot[1]-.065,foot[2]-.08,.17,.12,.245,'dark',-.17);
-   box(side*.21,.71,-.26,.20,.19,.06,vest,-.3); // soft thigh pocket
-   const shoulder=[side*.40,1.48+breath,-.005],elbow=[side*.54,1.23+breath,-.14+swing*.11];
-   const hand=[side*.225,1.16+breath,-.49+swing*.03];
-   ell(...shoulder,.175,.188,.178,cloth,-.20);
-   limb(shoulder,elbow,.146,cloth,-.11);
-   limb(elbow,hand,.104,cloth,-.23);
-   ell(...elbow,.125,.122,.127,vest,-.17);
-   ell(...hand,.11,.118,.11,'dark',-.13);
-   box(side*.48,1.48,-.19,.11,.16,.048,ct?'steel':'wood',.12); // unit patch
-  }
-  ell(0,1.675+breath,0,.223,.255,.215,ct?'dark':'shade',-.07);
-  if(ct){
-   ell(0,1.898+breath,.01,.290,.155,.278,'steel',-.12); // rounded protective helmet
-   box(0,1.74+breath,-.217,.42,.145,.09,'dark',-.35);
-   box(0,1.79+breath,-.250,.36,.085,.055,'glass',.1);
-   box(.30,1.77+breath,.04,.065,.19,.09,'dark',-.12);
-  }else{
-   ell(0,1.892+breath,.01,.245,.12,.253,'dark',-.19); // balaclava
-   box(0,1.75+breath,-.224,.38,.11,.05,'shade',-.06);
-   ell(0,1.51+breath,-.02,.27,.12,.28,'wood',-.14); // scarf / collar
-  }
-  // Fictional hand-held game prop, compact to preserve readable movement silhouette.
-  box(.025,1.20+breath,-.57,.18,.16,.49,'dark',-.15);
-  box(.025,1.26+breath,-.83,.115,.115,.37,'steel',-.2);
-  box(.025,1.35+breath,-.63,.11,.06,.25,trim,.05);
-  if(p.hp<30)ell(0,2.18,0,.15,.04,.15,'red',.45);
+  // Frustum-friendly LOD: no deform/draw for characters far beyond the fog.
+  if(Math.hypot(x-this.eye.x,z-this.eye.z)>104)return;
+  this.operatorMesh.emit(g,p,time,track);
  }
-
  draw(cam,actors=[],tracers=[],effects=[],gun='pulse',recoil=0,movement=0,time=0){
   this.resize();this.eye=cam;this.proj=perspective(Math.PI/180*(75-(this.scopeActive?55:29)*this.zoom),this.width/this.height,.04,280);const gl=this.gl, mood=this.map?.mood==='night'?2:this.map?.mood==='desert'?1:0;
   gl.disable(gl.DEPTH_TEST);gl.useProgram(this.skyP);gl.bindBuffer(gl.ARRAY_BUFFER,this.skyBuf);gl.enableVertexAttribArray(this.skyLoc);gl.vertexAttribPointer(this.skyLoc,2,gl.FLOAT,false,0,0);gl.uniform1f(this.skyMood,mood);gl.uniform1f(this.skyTime,time);gl.drawArrays(gl.TRIANGLES,0,6);
