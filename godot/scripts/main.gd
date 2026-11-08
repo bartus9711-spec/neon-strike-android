@@ -3,6 +3,7 @@ extends Node3D
 ## Goal: fluid movement, touch / gamepad, render settings and real lit 3D level.
 const HUD = preload("res://scripts/hud.gd")
 const ARENAS = preload("res://scripts/arenas.gd")
+const NETWORK = preload("res://scripts/network_monitor.gd")
 
 var hero: CharacterBody3D
 var camera: Camera3D
@@ -10,6 +11,8 @@ var sun: DirectionalLight3D
 var atmosphere: Environment
 var hud
 var arena
+var net
+var actor_quality := 1
 var map_index := 0
 var heading := 0.0
 var elevation := 0.0
@@ -32,15 +35,22 @@ func _ready() -> void:
     arena.configure(sun, atmosphere)
     arena.load_arena(0)
     _make_hero()
+    net = NETWORK.new()
+    add_child(net)
     hud = HUD.new()
     add_child(hud)
     hud.jump_requested.connect(func(): jump_queued = true)
     hud.action_requested.connect(func(): action_queued = true)
     hud.graphics_changed.connect(_apply_graphics)
+    hud.graphics_advanced_changed.connect(_apply_advanced_graphics)
+    hud.network_mode_changed.connect(net.set_smart_mode)
+    net.status_changed.connect(func(_desc: String): hud.set_network_info(net.get_network_text(), net.get_ping_text()))
     hud.map_requested.connect(switch_map)
     hud.configure_maps(arena.maps)
     switch_map(0)
-    _apply_graphics(2, 120, 1.0, true, 2)
+    # Restore saved Low / High / Ultra and network preferences, not hardcoded Ultra.
+    hud._emit_graphics()
+    hud.set_network_info(net.get_network_text(), net.get_ping_text())
     hud.set_message("DOTYK: LEWY DRĄŻEK + PRZECIĄGNIJ PO PRAWEJ  |  PAD: L / R", 6.0)
 
 func _setup_palette() -> void:
@@ -280,6 +290,7 @@ func switch_map(index: int) -> void:
         heading = 0.0
     elevation = -.10
     if is_instance_valid(hud):
+        arena.apply_advanced(hud.texture_toggle.button_pressed,hud.detail_select.selected)
         hud.set_map(map_index, str(arena.current_map.get("name", "ARENA")))
 
 func _make_hero() -> void:
@@ -318,10 +329,10 @@ func _physics_process(delta: float) -> void:
     if pad_connected:
         var joy := Input.get_connected_joypads()[0]
         var stick := Vector2(Input.get_joy_axis(joy, JOY_AXIS_LEFT_X), Input.get_joy_axis(joy, JOY_AXIS_LEFT_Y))
-        if stick.length() > .16:
+        if stick.length() > hud.pad_deadzone:
             movement += stick
         var look_stick := Vector2(Input.get_joy_axis(joy, JOY_AXIS_RIGHT_X), Input.get_joy_axis(joy, JOY_AXIS_RIGHT_Y))
-        if look_stick.length() > .13 and not hud.settings_open:
+        if look_stick.length() > hud.pad_deadzone and not hud.settings_open:
             _turn(look_stick * 850.0 * delta)
         var jumping := Input.is_joy_button_pressed(joy, JOY_BUTTON_A)
         if jumping and not last_jump:
@@ -362,7 +373,7 @@ func _turn(relative: Vector2) -> void:
         return
     var sensitivity: float = hud.look_sensitivity if is_instance_valid(hud) else 1.0
     heading -= relative.x * .0030 * sensitivity
-    elevation = clampf(elevation - relative.y * .0030 * sensitivity, -1.35, 1.26)
+    elevation = clampf(elevation + relative.y * .0030 * sensitivity * (1.0 if hud.invert_look_y else -1.0), -1.35, 1.26)
 
 func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not hud.settings_open:
@@ -395,6 +406,10 @@ func _collect_beacon() -> void:
         hud.set_message("ZNACZNIK ZDOBYTY!  %d / 4" % collected, 2.5)
     else:
         hud.set_message("PODEJDŹ BLIŻEJ ŚWIECĄCEGO ZNACZNIKA", 2.0)
+
+func _apply_advanced_graphics(textured: bool, detail: int, actor_lod: int) -> void:
+    actor_quality = actor_lod
+    arena.apply_advanced(textured, detail)
 
 func _apply_graphics(profile: int, fps: int, scale: float, shadows: bool, aa: int) -> void:
     Engine.max_fps = fps
