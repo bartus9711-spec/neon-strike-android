@@ -34,7 +34,53 @@ func _run() -> void:
         quit(7)
         return
     main.hud._emit_graphics()
-    print("CI_VISUAL_ASSERTIONS_OK: 3D scene, mobile stick, Bluetooth pad polling, Ultra / FPS")
+    if Engine.max_fps != 120:
+        push_error("CI: 120 FPS configuration was not applied")
+        quit(9)
+        return
+    # Simulate separate virtual thumbstick and right-side look touch pointers.
+    var left_press := InputEventScreenTouch.new()
+    left_press.index = 1
+    left_press.pressed = true
+    left_press.position = Vector2(100, 560)
+    main.hud._input(left_press)
+    var left_drag := InputEventScreenDrag.new()
+    left_drag.index = 1
+    left_drag.position = Vector2(170, 520)
+    left_drag.relative = Vector2(70, -40)
+    main.hud._input(left_drag)
+    if main.hud.touch_move.length() < .10:
+        push_error("CI: left touch virtual movement failed")
+        quit(10)
+        return
+    var right_press := InputEventScreenTouch.new()
+    right_press.index = 2
+    right_press.pressed = true
+    right_press.position = Vector2(1050, 330)
+    main.hud._input(right_press)
+    var right_drag := InputEventScreenDrag.new()
+    right_drag.index = 2
+    right_drag.position = Vector2(1090, 310)
+    right_drag.relative = Vector2(40, -20)
+    main.hud._input(right_drag)
+    if main.hud.consume_look().length() < 1:
+        push_error("CI: right touch look control failed")
+        quit(11)
+        return
+    var left_release := InputEventScreenTouch.new()
+    left_release.index = 1
+    left_release.pressed = false
+    left_release.position = Vector2(170, 520)
+    main.hud._input(left_release)
+    if main.hud.touch_move.length() != 0:
+        push_error("CI: virtual movement failed to release")
+        quit(12)
+        return
+    var right_release := InputEventScreenTouch.new()
+    right_release.index = 2
+    right_release.pressed = false
+    main.hud._input(right_release)
+    print("CI_VISUAL_ASSERTIONS_OK: Godot 3D, dual touch inputs, Ultra and 120 FPS options; real Bluetooth pad still needs device test")
     await create_timer(3.0).timeout
     var folder := ProjectSettings.globalize_path("res://visual-qa")
     DirAccess.make_dir_recursive_absolute(folder)
