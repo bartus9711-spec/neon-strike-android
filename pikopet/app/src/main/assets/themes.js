@@ -200,6 +200,8 @@
  const oldSettings=showSettings;
  showSettings=function(){
    oldSettings();
+   const themeButton=$("sheetBody").querySelector('[data-go="themes"]');
+   if(themeButton)themeButton.textContent="🎨 64 obudowy";
    const actions=$("sheetBody").querySelector(".action-list");
    actions?.insertAdjacentHTML("afterbegin",'<button class="primary" data-go="activities">💞 12 zabaw z pupilem</button>');
  };
