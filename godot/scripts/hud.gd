@@ -4,9 +4,13 @@ signal jump_requested
 signal action_requested
 signal graphics_changed(profile: int, fps: int, scale: float, shadows: bool, aa: int)
 signal map_requested(index: int)
+signal graphics_advanced_changed(textures_enabled: bool, world_detail: int, actor_quality: int)
+signal network_mode_changed(enabled: bool)
 
 var touch_move := Vector2.ZERO
 var look_sensitivity := 1.0
+var pad_deadzone := .16
+var invert_look_y := false
 var sprint_enabled := false
 var settings_open := false
 var current_fps := 0
@@ -26,6 +30,8 @@ var status_label: Label
 var map_select: OptionButton
 var map_title := "NABRZEŻE 17"
 var fps_label: Label
+var network_label: Label
+var ping_label: Label
 var hint_label: Label
 var touch_base: Panel
 var touch_knob: Panel
@@ -38,6 +44,12 @@ var shadow_toggle: CheckButton
 var aa_select: OptionButton
 var sensitivity_slider: HSlider
 var settings_scale_label: Label
+var texture_toggle: CheckButton
+var detail_select: OptionButton
+var actor_select: OptionButton
+var network_toggle: CheckButton
+var pad_dead_slider: HSlider
+var invert_toggle: CheckButton
 
 var _profile := 2
 var _fps := 120
@@ -73,6 +85,16 @@ func _ready() -> void:
     fps_label.position = Vector2(-225, 10)
     fps_label.size = Vector2(95, 40)
     ui.add_child(fps_label)
+    network_label = _label("SIEĆ: SYSTEM", 12, Color(.78,.91,.92))
+    network_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+    network_label.position = Vector2(-392, 62)
+    network_label.size = Vector2(253, 26)
+    ui.add_child(network_label)
+    ping_label = _label("PING: —", 12, Color(.82,.90,.97))
+    ping_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+    ping_label.position = Vector2(-392, 86)
+    ping_label.size = Vector2(253, 26)
+    ui.add_child(ping_label)
     settings_button = _button("⚙ GRAFIKA")
     settings_button.anchor_left = 1
     settings_button.anchor_right = 1
@@ -251,8 +273,8 @@ func _make_settings() -> void:
     settings_panel.anchor_bottom = .5
     settings_panel.offset_left = -260
     settings_panel.offset_right = 260
-    settings_panel.offset_top = -250
-    settings_panel.offset_bottom = 250
+    settings_panel.offset_top = -290
+    settings_panel.offset_bottom = 290
     var frame := StyleBoxFlat.new()
     frame.bg_color = Color(.055,.105,.148,.98)
     frame.border_color = Color(.31,.71,.71,.8)
@@ -299,6 +321,22 @@ func _make_settings() -> void:
         aa_select.add_item(item)
     aa_select.select(1)
     v.add_child(aa_select)
+    texture_toggle = CheckButton.new()
+    texture_toggle.text = "Tekstury PBR — wyłącz na słabym telefonie"
+    texture_toggle.button_pressed = true
+    v.add_child(texture_toggle)
+    v.add_child(_label("Detale otoczenia",15,Color(.58,.79,.83)))
+    detail_select = OptionButton.new()
+    for item in ["LOW — bez dodatków i świateł punktowych","HIGH — dodatki, mniej świateł","ULTRA — pełne efekty"]:
+        detail_select.add_item(item)
+    detail_select.select(2)
+    v.add_child(detail_select)
+    v.add_child(_label("Jakość postaci (dla przyszłych modeli 3D)",15,Color(.58,.79,.83)))
+    actor_select = OptionButton.new()
+    for item in ["LOW — oszczędna geometria","HIGH — normalna","ULTRA — pełna"]:
+        actor_select.add_item(item)
+    actor_select.select(1)
+    v.add_child(actor_select)
     v.add_child(_label("Czułość kamery", 15, Color(.58,.79,.83)))
     sensitivity_slider = HSlider.new()
     sensitivity_slider.min_value = .40
@@ -306,18 +344,71 @@ func _make_settings() -> void:
     sensitivity_slider.step = .10
     sensitivity_slider.value = 1.0
     v.add_child(sensitivity_slider)
+    v.add_child(_label("Martwa strefa gałek pada",15,Color(.58,.79,.83)))
+    pad_dead_slider = HSlider.new()
+    pad_dead_slider.min_value = .06
+    pad_dead_slider.max_value = .35
+    pad_dead_slider.step = .01
+    pad_dead_slider.value = .16
+    v.add_child(pad_dead_slider)
+    invert_toggle = CheckButton.new()
+    invert_toggle.text = "Odwróć oś Y rozglądania"
+    v.add_child(invert_toggle)
+    v.add_child(_label("INTERNET / WI-FI / DANE",18,Color(.92,.96,1)))
+    network_toggle = CheckButton.new()
+    network_toggle.text = "Auto — wybierz lepsze łącze DLA GRY (eksperymentalne)"
+    v.add_child(network_toggle)
+    v.add_child(_label("Wymaga wtyczki Android. Dane komórkowe mogą kosztować; nie zmienia ustawień całego telefonu.",12,Color(.76,.80,.81)))
+    v.add_child(_label("PING to serwer gry jest dostępny dopiero po uruchomieniu multiplayera.",12,Color(.76,.80,.81)))
     v.add_child(_label("120 FPS to cel: zależy od GPU, ekranu i limitów systemu.", 12, Color(.77,.81,.78)))
     var close := _button("ZAPISZ I WRÓĆ")
     close.pressed.connect(toggle_settings)
     v.add_child(close)
-    for control in [profile_select, fps_select, scale_slider, shadow_toggle, aa_select, sensitivity_slider]:
+    for control in [fps_select, scale_slider, shadow_toggle, aa_select, sensitivity_slider, pad_dead_slider, texture_toggle, detail_select, actor_select, invert_toggle, network_toggle]:
         if control is Range:
             control.value_changed.connect(func(_new: float): _emit_graphics())
         elif control is BaseButton and not control is OptionButton:
             control.toggled.connect(func(_on: bool): _emit_graphics())
         else:
             control.item_selected.connect(func(_idx: int): _emit_graphics())
+    profile_select.item_selected.connect(_on_profile_selected)
     settings_panel.visible = false
+
+func _on_profile_selected(idx: int) -> void:
+    # Profiles set practical defaults; every option remains individually editable.
+    _setting_up = true
+    if idx == 0:
+        scale_slider.value = .70
+        aa_select.select(0)
+        shadow_toggle.button_pressed = false
+        texture_toggle.button_pressed = false
+        detail_select.select(0)
+        actor_select.select(0)
+        fps_select.select(1)
+    elif idx == 1:
+        scale_slider.value = .90
+        aa_select.select(1)
+        shadow_toggle.button_pressed = true
+        texture_toggle.button_pressed = true
+        detail_select.select(1)
+        actor_select.select(1)
+        fps_select.select(1)
+    else:
+        scale_slider.value = 1.0
+        aa_select.select(2)
+        shadow_toggle.button_pressed = true
+        texture_toggle.button_pressed = true
+        detail_select.select(2)
+        actor_select.select(2)
+        fps_select.select(3)
+    _setting_up = false
+    _emit_graphics()
+
+func set_network_info(network_text: String, ping_text: String) -> void:
+    if is_instance_valid(network_label):
+        network_label.text = "SIEĆ: " + network_text
+    if is_instance_valid(ping_label):
+        ping_label.text = "PING: " + ping_text
 
 func _emit_graphics() -> void:
     if _setting_up:
@@ -328,9 +419,13 @@ func _emit_graphics() -> void:
     _shadows = shadow_toggle.button_pressed
     _aa = 0 if aa_select.selected == 0 else 2 if aa_select.selected == 1 else 4
     look_sensitivity = sensitivity_slider.value
+    pad_deadzone = pad_dead_slider.value
+    invert_look_y = invert_toggle.button_pressed
     settings_scale_label.text = "Rozdzielczość 3D: %d%%" % roundi(_scale * 100)
     _save_prefs()
     graphics_changed.emit(_profile, _fps, _scale, _shadows, _aa)
+    graphics_advanced_changed.emit(texture_toggle.button_pressed, detail_select.selected, actor_select.selected)
+    network_mode_changed.emit(network_toggle.button_pressed)
 
 func _save_prefs() -> void:
     var save := ConfigFile.new()
@@ -339,7 +434,13 @@ func _save_prefs() -> void:
     save.set_value("render", "scale", _scale)
     save.set_value("render", "shadows", _shadows)
     save.set_value("render", "aa", aa_select.selected)
+    save.set_value("render", "textures", texture_toggle.button_pressed)
+    save.set_value("render", "detail", detail_select.selected)
+    save.set_value("render", "actors", actor_select.selected)
+    save.set_value("network", "app_auto_switch", network_toggle.button_pressed)
     save.set_value("input", "sensitivity", look_sensitivity)
+    save.set_value("input", "deadzone", pad_deadzone)
+    save.set_value("input", "invert_y", invert_look_y)
     save.save("user://teamcs-graphics.cfg")
 
 func _load_prefs() -> void:
@@ -352,6 +453,12 @@ func _load_prefs() -> void:
     scale_slider.value = clampf(float(save.get_value("render","scale",1.0)),.6,1.0)
     shadow_toggle.button_pressed = bool(save.get_value("render","shadows",true))
     aa_select.select(clampi(int(save.get_value("render","aa",1)),0,2))
+    texture_toggle.button_pressed = bool(save.get_value("render","textures",true))
+    detail_select.select(clampi(int(save.get_value("render","detail",2)),0,2))
+    actor_select.select(clampi(int(save.get_value("render","actors",1)),0,2))
+    network_toggle.button_pressed = bool(save.get_value("network","app_auto_switch",false))
+    pad_dead_slider.value = clampf(float(save.get_value("input","deadzone",.16)),.06,.35)
+    invert_toggle.button_pressed = bool(save.get_value("input","invert_y",false))
     sensitivity_slider.value = clampf(float(save.get_value("input","sensitivity",1)),.4,2.4)
 
 func toggle_settings() -> void:
