@@ -81,10 +81,12 @@ public final class TeamCSNetwork extends GodotPlugin {
     private synchronized boolean maybeSwitch(ConnectivityManager cm, boolean first) {
         if (!smart) return false;
         long now = SystemClock.elapsedRealtime();
-        if (!first && now - lastSwitch < COOLDOWN_MS) return false;
         Network defaultNetwork = cm.getActiveNetwork();
         Network baseline = selected != null ? selected : defaultNetwork;
         float baselineScore = score(baseline == null ? null : cm.getNetworkCapabilities(baseline));
+        // Fail over immediately if the selected network has vanished; cooldown
+        // is only for healthy connections to prevent Wi-Fi/cellular ping-pong.
+        if (!first && baselineScore >= 0f && now - lastSwitch < COOLDOWN_MS) return false;
         Network best = null;
         float bestScore = -1f;
         boolean wifi = false, mobile = false;
