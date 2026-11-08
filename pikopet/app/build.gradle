@@ -1,5 +1,5 @@
 plugins { id 'com.android.application' }
 android { namespace 'com.pikopet.mobile'; compileSdk 35
- defaultConfig { applicationId 'com.pikopet.mobile.deluxe'; minSdk 24; targetSdk 34; versionCode 10; versionName '2.0' }
+ defaultConfig { applicationId 'com.pikopet.mobile.deluxe64'; minSdk 24; targetSdk 34; versionCode 21; versionName '2.1' }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
