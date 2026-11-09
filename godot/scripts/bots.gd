@@ -195,7 +195,9 @@ func _spawn(team: int, slot: int) -> Vector3:
     if list.is_empty():
         return Vector3(-27,0,25) if team == 0 else Vector3(27,0,-25)
     for offset in range(list.size()):
-        var point: Array = list[(slot+offset)%list.size()]
+        # Human occupies cyan spawn zero: keep the allied animated characters away from the camera.
+        var assigned := slot + offset + (1 if team == 0 else 0)
+        var point: Array = list[assigned%list.size()]
         var x := float(point[0])
         var z := float(point[1])
         if not arena._spot_obstructed(x,z,.66):
