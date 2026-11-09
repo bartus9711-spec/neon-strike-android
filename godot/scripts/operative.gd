@@ -146,9 +146,14 @@ func _import_real_human(team: int) -> bool:
     var human := packed.instantiate() as Node3D
     if human == null:
         return false
-    # Some source GLBs carry editor visibility flags. The game owns visibility
+    # Some source GLBs carry editor visibility flags on an intermediate
+    # Node3D/Skeleton3D, not just on the mesh itself. The game owns visibility
     # and must not silently ship an invisible operator after import.
     human.visible = true
+    for spatial_node in human.find_children("*","Node3D",true,false):
+        var spatial := spatial_node as Node3D
+        if is_instance_valid(spatial):
+            spatial.visible = true
     # Keep the original glTF root and armature transforms untouched. Imported
     # assets use wildly different units and a Z-up authoring convention.
     var shell := Node3D.new()
@@ -175,6 +180,8 @@ func _import_real_human(team: int) -> bool:
         if not is_instance_valid(instance):
             continue
         instance.visible = true
+        instance.visibility_range_begin = 0.0
+        instance.visibility_range_end = 120.0
         imported_mesh_count += 1
         var into_fit: Transform3D = fit.global_transform.affine_inverse() * instance.global_transform
         var bounds := instance.get_aabb()
@@ -258,10 +265,16 @@ func force_render_visibility() -> void:
         root.visible = true
     if is_instance_valid(imported_model):
         imported_model.visible = true
+        for spatial_node in imported_model.find_children("*","Node3D",true,false):
+            var spatial := spatial_node as Node3D
+            if is_instance_valid(spatial):
+                spatial.visible = true
         for mesh_node in imported_model.find_children("*","MeshInstance3D",true,false):
             var mesh_instance := mesh_node as MeshInstance3D
             if is_instance_valid(mesh_instance):
                 mesh_instance.visible = true
+                mesh_instance.visibility_range_begin = 0.0
+                mesh_instance.visibility_range_end = 120.0
         imported_model_visible = true
 
 func build(team: int, character_variant: int, actor_quality: int) -> void:
