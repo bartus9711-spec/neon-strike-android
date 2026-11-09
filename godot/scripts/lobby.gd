@@ -172,6 +172,7 @@ func _stage() -> void:
     camera.fov = 42.0
     camera.near = 0.03
     camera.far = 120.0
+    camera.cull_mask = 1
     world.add_child(camera)
     camera.look_at(Vector3(0,.86,-.04),Vector3.UP)
     camera.make_current()
