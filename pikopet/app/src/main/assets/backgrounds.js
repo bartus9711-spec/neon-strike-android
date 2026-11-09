@@ -76,5 +76,5 @@
  });
  const originalRoute=route;
  route=function(where){if(where==='backgrounds')showBackgrounds();else originalRoute(where);};
- window.TamagotchiBackgrounds={themes,apply,showBackgrounds,get selected(){return selected;}};
+ window.TamagotchiBackgrounds={themes,art,apply,showBackgrounds,get selected(){return selected;}};
 })();
