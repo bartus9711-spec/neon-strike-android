@@ -6,12 +6,14 @@ const ARENAS = preload("res://scripts/arenas.gd")
 const NETWORK = preload("res://scripts/network_monitor.gd")
 const BOTS = preload("res://scripts/bots.gd")
 const WEATHER = preload("res://scripts/environment_fx.gd")
+const LOBBY = preload("res://scripts/lobby.gd")
 
 var hero: CharacterBody3D
 var camera: Camera3D
 var sun: DirectionalLight3D
 var atmosphere: Environment
 var hud
+var lobby
 var arena
 var net
 var bots
@@ -79,13 +81,47 @@ func _ready() -> void:
     hud.network_mode_changed.connect(net.set_smart_mode)
     net.status_changed.connect(func(_desc: String): hud.set_network_info(net.get_network_text(), net.get_ping_text()))
     hud.map_requested.connect(switch_map)
+    hud.restart_requested.connect(_return_to_lobby)
     hud.configure_maps(arena.maps)
     switch_map(0)
     # Restore saved Low / High / Ultra and network preferences, not hardcoded Ultra.
     hud._emit_graphics()
     hud.set_network_info(net.get_network_text(), net.get_ping_text())
-    hud.set_message("MECZ 4 × 4: PULS ⚡ / ŁADUJ ↻   •   RUCH: LEWY DRĄŻEK   •   CELOWANIE: PRAWY", 6.0)
+    # A proper front-end: game simulation and touch input are stopped until PLAY.
+    lobby = LOBBY.new()
+    add_child(lobby)
+    lobby.configure(arena.maps)
+    lobby.play_requested.connect(_start_from_lobby)
+    lobby.settings_requested.connect(_open_settings_from_lobby)
+    bots.process_mode = Node.PROCESS_MODE_DISABLED
+    hud.process_mode = Node.PROCESS_MODE_DISABLED
+    hud.visible = false
     print("TEAMCS_MATCH_READY: native Godot 4v4 actor_count=",bots.count_bots()," map_count=",arena.maps.size())
+
+func _start_from_lobby(index: int) -> void:
+    hud.visible = true
+    hud.process_mode = Node.PROCESS_MODE_INHERIT
+    bots.process_mode = Node.PROCESS_MODE_INHERIT
+    switch_map(index)
+    hud.set_message("TEAMCS 4v4  •  SOLO Z BOTAMI  •  8 AREN  •  POWODZENIA!", 3.0)
+
+func _open_settings_from_lobby() -> void:
+    # Settings are the existing genuine Low/High/Ultra controls, not a mockup.
+    lobby.hide_lobby()
+    hud.visible = true
+    hud.process_mode = Node.PROCESS_MODE_INHERIT
+    hud.toggle_settings()
+
+func _return_to_lobby() -> void:
+    Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+    if hud.settings_open:
+        hud.toggle_settings()
+    bots.process_mode = Node.PROCESS_MODE_DISABLED
+    hud.visible = false
+    hud.process_mode = Node.PROCESS_MODE_DISABLED
+    lobby.show_lobby()
+    lobby.refresh_stats()
+    hud.touch_move = Vector2.ZERO
 
 func _create_arcade_tone(frequency_start: float, frequency_end: float, duration: float) -> AudioStreamWAV:
     # Original synthesized energy-tag sounds; no external files or copyrighted music.
@@ -397,6 +433,8 @@ func _make_hero() -> void:
     add_child(hero)
 
 func _physics_process(delta: float) -> void:
+    if is_instance_valid(lobby) and lobby.active:
+        return
     elapsed += delta
     pulse_cooldown = maxf(0.0,pulse_cooldown-delta)
     scanner_recoil = move_toward(scanner_recoil,0.0,delta*6.5)
@@ -504,6 +542,8 @@ func _turn(relative: Vector2) -> void:
     elevation = clampf(elevation + relative.y * .0030 * sensitivity * (1.0 if hud.invert_look_y else -1.0), -1.35, 1.26)
 
 func _unhandled_input(event: InputEvent) -> void:
+    if is_instance_valid(lobby) and lobby.active:
+        return
     if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not hud.settings_open:
         _turn(event.relative)
     if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and not hud.settings_open and not OS.has_feature("mobile"):
@@ -683,6 +723,8 @@ func _on_player_tagged() -> void:
         hud.set_message("OSŁONA ODNOWIONA  •  POWRÓT DO MECZU",2.)
 
 func _on_round_finished(winner: int) -> void:
+    if is_instance_valid(lobby):
+        lobby.award_match(winner == 0)
     var result_text := "CYAN WYGRYWA  •  RUNDA ZAKOŃCZONA" if winner == 0 else "MAGENTA WYGRYWA  •  RUNDA ZAKOŃCZONA"
     hud.set_message(result_text,5.)
     next_round = 5.0
