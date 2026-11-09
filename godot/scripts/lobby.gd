@@ -177,7 +177,8 @@ func _stage() -> void:
         _stage_block(world,Vector3(bx,2.56,3.82),Vector3(.65,.08,.13),Color(.74,.68,.59))
     for team in range(2):
         var actor = OPERATOR.new()
-        actor.position = Vector3(-.76 if team==0 else .76,-.10,0.12)
+        # Camera looks in +Z, so world X is horizontally mirrored on screen.
+        actor.position = Vector3(.76 if team==0 else -.76,-.10,0.12)
         actor.rotation.y = -.17 if team==0 else .21
         world.add_child(actor)
         actor.build(team,1+gear_variant if team==0 else 2,2)
@@ -192,6 +193,14 @@ func _stage_block(world: Node3D, p: Vector3, dimensions: Vector3, color: Color) 
     var material := StandardMaterial3D.new()
     material.albedo_color = color
     material.roughness = .96
+    # Reuse the same CC0 wall and paving textures as the actual arenas.
+    var image_path := "res://assets/painted_plaster_wall_diff.jpg" if dimensions.y >= 2.0 else "res://assets/asphalt_01_diff.jpg" if dimensions.x > 6.0 else ""
+    if image_path != "" and ResourceLoader.exists(image_path):
+        material.albedo_texture = load(image_path)
+        material.albedo_color = color.lightened(.28)
+        material.uv1_triplanar = true
+        material.uv1_world_triplanar = true
+        material.uv1_scale = Vector3(.43,.43,.43)
     node.material_override = material
     world.add_child(node)
 

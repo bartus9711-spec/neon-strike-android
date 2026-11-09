@@ -201,6 +201,7 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         arm.position = Vector3(.395*flank,.37,0)
         torso.add_child(arm)
         _capsule(arm,Vector3(0,-.19,0),.128,.48,uniform,"Sleeve")
+        _capsule(arm,Vector3(0,-.365,-.008),.115,.23,uniform_secondary,"FabricElbowConnector")
         _sphere(arm,Vector3(0,-.075,-.01),Vector3(.25,.21,.245),uniform_secondary,"ClothShoulderOverlay")
         if blue:
             _sphere(arm,Vector3(0,-.082,-.012),Vector3(.24,.12,.235),armor_edge,"CurvedArmourPauldron")
@@ -224,6 +225,7 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         leg.position = Vector3(flank*.17,1.06,0)
         root.add_child(leg)
         _capsule(leg,Vector3(0,-.22,0),.161,.58,uniform,"UniformThigh")
+        _capsule(leg,Vector3(0,-.50,0),.145,.22,uniform_secondary,"FabricKneeConnector")
         _sphere(leg,Vector3(flank*.12,-.24,-.015),Vector3(.15,.27,.175),uniform_secondary,"ThighFabricCargoPocket")
         _sphere(leg,Vector3(0,-.53,-.075),Vector3(.30,.24,.21),armor_edge,"KneeGuard")
         var shin := Node3D.new()
