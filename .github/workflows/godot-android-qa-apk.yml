@@ -1,6 +1,10 @@
 name: TeamCS Native Godot 4.7.2 Android QA APK
 on:
   workflow_dispatch:
+  push:
+    branches: [teamcs-visual-upgrade-20261109]
+    paths:
+      - ".github/workflows/godot-android-qa-apk.yml"
 
 jobs:
   native-android-qa:
