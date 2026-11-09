@@ -64,4 +64,10 @@ if ! grep -q "TEAMCS_MATCH_READY" "$GITHUB_WORKSPACE/teamcs-emulator-logcat.txt"
     echo "No scene-ready signal in Android logcat: game may have failed after launching" >&2
     exit 32
 fi
+for marker in TEAMCS_PREVIEW_LAYOUT TEAMCS_PREVIEW_ACTOR TEAMCS_PREVIEW_PIXEL; do
+  if ! grep -q "$marker" "$GITHUB_WORKSPACE/teamcs-emulator-logcat.txt"; then
+    echo "Missing $marker diagnostic: the live Android lobby preview was not verified" >&2
+    exit 33
+  fi
+done
 echo "EMULATOR_INSTALL_AND_SCENE_RUNNING_OK"
