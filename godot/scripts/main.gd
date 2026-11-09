@@ -136,6 +136,7 @@ func _buy_item(item_id: String) -> void:
     var message: String = arsenal.buy(item_id)
     shield = 100 if arsenal.has_armor else 80
     energy = arsenal.ammo()
+    _apply_weapon_visual()
     buy_menu.refresh(message)
     _update_match_hud()
 
@@ -145,6 +146,7 @@ func _close_buy_phase() -> void:
     hud.visible = true
     bots.process_mode = Node.PROCESS_MODE_INHERIT
     energy = arsenal.ammo()
+    _apply_weapon_visual()
     hud.set_message("GOTOWOŚĆ BOJOWA — RUNDA %d" % bots.round_number,2.0)
     _update_match_hud()
 
@@ -153,6 +155,7 @@ func _switch_weapon_slot(slot: int) -> void:
         return
     if arsenal.select_slot(slot):
         energy = arsenal.ammo()
+        _apply_weapon_visual()
         _update_match_hud()
 
 func _open_settings_from_lobby() -> void:
@@ -638,6 +641,8 @@ func _turn(relative: Vector2) -> void:
 func _unhandled_input(event: InputEvent) -> void:
     if is_instance_valid(lobby) and lobby.active:
         return
+    if buy_active:
+        return
     if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not hud.settings_open:
         _turn(event.relative)
     if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and not hud.settings_open and not OS.has_feature("mobile"):
@@ -731,6 +736,92 @@ func _make_scanner() -> void:
             grille.material_override = grip
             scanner.add_child(grille)
 
+
+func _apply_weapon_visual() -> void:
+    if not is_instance_valid(scanner):
+        return
+    # The purchased loadout must change the actual first-person silhouette.
+    # Remove only generated add-ons; the base model remains untouched.
+    var old := scanner.get_node_or_null("WeaponProfile")
+    if old != null:
+        scanner.remove_child(old)
+        old.queue_free()
+    var profile := Node3D.new()
+    profile.name = "WeaponProfile"
+    scanner.add_child(profile)
+    var id := arsenal.active_id()
+    var primary := arsenal.active_slot == 1
+    scanner.scale = Vector3(.91,.90,1.12) if primary else Vector3(.79,.78,.79)
+    scanner.position = Vector3(.44,-.46,-.72) if primary else Vector3(.42,-.43,-.76)
+    var casing := StandardMaterial3D.new()
+    casing.albedo_color = Color(.19,.23,.22) if id == "precision" else Color(.13,.16,.19)
+    casing.roughness = .48
+    casing.metallic = .42
+    var accent := StandardMaterial3D.new()
+    accent.albedo_color = Color(.73,.49,.25) if id == "rifle" else Color(.27,.68,.73)
+    accent.roughness = .32
+    accent.metallic = .50
+    var barrel_length := .0
+    match id:
+        "p2":
+            barrel_length = .14
+        "smg":
+            barrel_length = .31
+        "carbine":
+            barrel_length = .48
+        "rifle":
+            barrel_length = .60
+        "precision":
+            barrel_length = .83
+        _:
+            barrel_length = .0
+    if barrel_length > 0.0:
+        var barrel := MeshInstance3D.new()
+        barrel.name = "ProfileBarrel"
+        var cylinder := CylinderMesh.new()
+        cylinder.top_radius = .046 if id == "precision" else .065
+        cylinder.bottom_radius = cylinder.top_radius
+        cylinder.height = barrel_length
+        cylinder.radial_segments = 12
+        barrel.mesh = cylinder
+        barrel.rotation_degrees.x = 90.
+        barrel.position = Vector3(0,.04,-.53-barrel_length*.5)
+        barrel.material_override = casing
+        profile.add_child(barrel)
+        var muzzle := MeshInstance3D.new()
+        muzzle.name = "ProfileMuzzle"
+        var muzzle_mesh := CylinderMesh.new()
+        muzzle_mesh.top_radius = cylinder.top_radius*1.3
+        muzzle_mesh.bottom_radius = cylinder.bottom_radius*1.3
+        muzzle_mesh.height = .065
+        muzzle_mesh.radial_segments = 12
+        muzzle.mesh = muzzle_mesh
+        muzzle.rotation_degrees.x = 90.
+        muzzle.position = Vector3(0,.04,-.54-barrel_length)
+        muzzle.material_override = accent
+        profile.add_child(muzzle)
+    if primary:
+        var magazine := MeshInstance3D.new()
+        magazine.name = "ProfileMagazine"
+        var mag_mesh := BoxMesh.new()
+        mag_mesh.size = Vector3(.12,.31,.18)
+        magazine.mesh = mag_mesh
+        magazine.position = Vector3(0,-.23,-.15)
+        magazine.material_override = casing
+        profile.add_child(magazine)
+    if id == "precision" or id == "rifle":
+        var sight := MeshInstance3D.new()
+        sight.name = "ProfileOptic"
+        var optic := CylinderMesh.new()
+        optic.top_radius = .074
+        optic.bottom_radius = .074
+        optic.height = .29 if id == "precision" else .16
+        optic.radial_segments = 12
+        sight.mesh = optic
+        sight.rotation_degrees.x = 90.
+        sight.position = Vector3(0,.27,-.17)
+        sight.material_override = casing
+        profile.add_child(sight)
 
 func _recharge() -> void:
     if recharge_remaining > 0.0 or not arsenal.can_reload():
@@ -831,7 +922,7 @@ func _on_round_finished(winner: int) -> void:
 
 func _update_match_hud() -> void:
     if is_instance_valid(hud) and is_instance_valid(bots):
-        hud.set_combat_state(bots.ct_rounds,bots.t_rounds,shield,energy,ENERGY_MAX,bots.time_left)
+        hud.set_combat_state(bots.ct_rounds,bots.t_rounds,shield,energy,arsenal.capacity(),bots.time_left)
         hud.set_round_state(bots.round_number,bots.living_count(0),bots.living_count(1),bots.player_alive)
         hud.set_loadout_state(str(arsenal.active_weapon().get("name","P-9")),arsenal.ammo(),arsenal.reserve(),arsenal.credits,arsenal.has_armor)
 
