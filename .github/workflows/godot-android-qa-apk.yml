@@ -49,8 +49,6 @@ jobs:
           ls -lh "$HOME/.local/share/godot/export_templates/4.7.2.stable"
       - name: Fetch legally reusable PBR texture set for all eight native arenas
         run: |
-          python3 godot/tools/fetch_cc0_character.py
-          test -s godot/assets/models/RobotExpressive.glb
           python3 godot/tools/fetch_cc0_textures.py
           test -s godot/assets/asphalt_01_diff.jpg
       - name: Import Godot project, enable plugin and install Android Gradle template
@@ -123,7 +121,7 @@ jobs:
           "$TOOLS/zipalign" -c 4 TeamCS_Godot_GT7_ARM64.apk
           "$TOOLS/aapt" dump badging TeamCS_Godot_GT7_ARM64.apk | tee /tmp/teamcs-phone-badging.log
           grep -q "native-code: 'arm64-v8a'" /tmp/teamcs-phone-badging.log
-          grep -q "package: name='pl.teamcs.arena4v4vulkan'" /tmp/teamcs-phone-badging.log
+          grep -q "package: name='pl.teamcs.arena4v4human'" /tmp/teamcs-phone-badging.log
           unzip -l TeamCS_Godot_GT7_ARM64.apk | grep -q lib/arm64-v8a/libgodot_android.so
           if unzip -l TeamCS_Godot_GT7_ARM64.apk | grep -q lib/x86_64/libgodot_android.so; then
             echo "Unexpected x86_64 library in ARM64 phone package" >&2
