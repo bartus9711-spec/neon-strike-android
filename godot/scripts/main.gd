@@ -7,6 +7,8 @@ const NETWORK = preload("res://scripts/network_monitor.gd")
 const BOTS = preload("res://scripts/bots.gd")
 const WEATHER = preload("res://scripts/environment_fx.gd")
 const LOBBY = preload("res://scripts/lobby.gd")
+const ARSENAL = preload("res://scripts/arsenal.gd")
+const BUY_MENU = preload("res://scripts/buy_menu.gd")
 
 var hero: CharacterBody3D
 var camera: Camera3D
@@ -14,6 +16,9 @@ var sun: DirectionalLight3D
 var atmosphere: Environment
 var hud
 var lobby
+var arsenal
+var buy_menu
+var buy_active := false
 var arena
 var net
 var bots
@@ -53,6 +58,8 @@ func _ready() -> void:
     print("TEAMCS_RENDER_DRIVER: ", RenderingServer.get_current_rendering_driver_name(), " / ", RenderingServer.get_current_rendering_method())
     _setup_palette()
     _setup_audio()
+    arsenal = ARSENAL.new()
+    arsenal.begin_match()
     _setup_lighting()
     arena = ARENAS.new()
     add_child(arena)
@@ -80,8 +87,9 @@ func _ready() -> void:
     hud.graphics_advanced_changed.connect(_apply_advanced_graphics)
     hud.network_mode_changed.connect(net.set_smart_mode)
     net.status_changed.connect(func(_desc: String): hud.set_network_info(net.get_network_text(), net.get_ping_text()))
-    hud.map_requested.connect(switch_map)
+    hud.map_requested.connect(_change_map)
     hud.restart_requested.connect(_return_to_lobby)
+    hud.weapon_slot_requested.connect(_switch_weapon_slot)
     hud.settings_closed.connect(_on_settings_closed)
     hud.configure_maps(arena.maps)
     hud.attach_radar(hero,bots,arena)
@@ -89,6 +97,10 @@ func _ready() -> void:
     # Restore saved Low / High / Ultra and network preferences, not hardcoded Ultra.
     hud._emit_graphics()
     hud.set_network_info(net.get_network_text(), net.get_ping_text())
+    buy_menu = BUY_MENU.new()
+    add_child(buy_menu)
+    buy_menu.purchase_requested.connect(_buy_item)
+    buy_menu.continue_requested.connect(_close_buy_phase)
     # A proper front-end: game simulation and touch input are stopped until PLAY.
     lobby = LOBBY.new()
     add_child(lobby)
@@ -103,9 +115,45 @@ func _ready() -> void:
 func _start_from_lobby(index: int) -> void:
     hud.visible = true
     hud.process_mode = Node.PROCESS_MODE_INHERIT
-    bots.process_mode = Node.PROCESS_MODE_INHERIT
+    arsenal.begin_match()
     switch_map(index)
-    hud.set_message("TEAMCS 5v5 • BEZ ODRODZEŃ • 7 WYGRANYCH RUND",3.0)
+    _open_buy_phase()
+
+func _change_map(index: int) -> void:
+    arsenal.begin_match()
+    switch_map(index)
+    _open_buy_phase()
+
+func _open_buy_phase() -> void:
+    buy_active = true
+    bots.process_mode = Node.PROCESS_MODE_DISABLED
+    hud.visible = false
+    hud.touch_move = Vector2.ZERO
+    buy_menu.open(arsenal,bots.round_number)
+    _update_match_hud()
+
+func _buy_item(item_id: String) -> void:
+    var message: String = arsenal.buy(item_id)
+    shield = 100 if arsenal.has_armor else 80
+    energy = arsenal.ammo()
+    buy_menu.refresh(message)
+    _update_match_hud()
+
+func _close_buy_phase() -> void:
+    buy_active = false
+    buy_menu.close()
+    hud.visible = true
+    bots.process_mode = Node.PROCESS_MODE_INHERIT
+    energy = arsenal.ammo()
+    hud.set_message("GOTOWOŚĆ BOJOWA — RUNDA %d" % bots.round_number,2.0)
+    _update_match_hud()
+
+func _switch_weapon_slot(slot: int) -> void:
+    if buy_active or recharge_remaining > 0.0:
+        return
+    if arsenal.select_slot(slot):
+        energy = arsenal.ammo()
+        _update_match_hud()
 
 func _open_settings_from_lobby() -> void:
     # Settings are the existing genuine Low/High/Ultra controls, not a mockup.
@@ -125,6 +173,9 @@ func _on_settings_closed() -> void:
 
 func _return_to_lobby() -> void:
     Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+    buy_active = false
+    if is_instance_valid(buy_menu):
+        buy_menu.close()
     if hud.settings_open:
         hud.toggle_settings()
     bots.process_mode = Node.PROCESS_MODE_DISABLED
@@ -395,8 +446,8 @@ func switch_map(index: int) -> void:
             item.queue_free()
     beacons.clear()
     collected = 0
-    shield = 100
-    energy = ENERGY_MAX
+    shield = 80
+    energy = arsenal.ammo()
     pulse_cooldown = 0.0
     recharge_remaining = 0.0
     next_round = -1.0
@@ -426,8 +477,9 @@ func switch_map(index: int) -> void:
         _update_match_hud()
 
 func _start_next_round() -> void:
-    shield = 100
-    energy = ENERGY_MAX
+    arsenal.begin_round()
+    shield = 80
+    energy = arsenal.ammo()
     pulse_cooldown = 0.0
     recharge_remaining = 0.0
     hero.velocity = Vector3.ZERO
@@ -436,6 +488,7 @@ func _start_next_round() -> void:
     heading = atan2(spawn.x,spawn.z)
     elevation = -.10
     bots.new_round(arena.current_map,arena,hero)
+    _open_buy_phase()
     hud.set_message("RUNDA %d  •  CT 5 vs T 5" % bots.round_number,2.0)
     _update_match_hud()
 
@@ -460,14 +513,17 @@ func _make_hero() -> void:
 func _physics_process(delta: float) -> void:
     if is_instance_valid(lobby) and lobby.active:
         return
+    if buy_active:
+        return
     elapsed += delta
     pulse_cooldown = maxf(0.0,pulse_cooldown-delta)
     scanner_recoil = move_toward(scanner_recoil,0.0,delta*6.5)
     if recharge_remaining > 0.0:
         recharge_remaining = maxf(0.0,recharge_remaining-delta)
         if recharge_remaining == 0.0:
-            energy = ENERGY_MAX
-            hud.set_message("ENERGIA UZUPEŁNIONA  •  GOTOWOŚĆ",1.1)
+            arsenal.complete_reload()
+            energy = arsenal.ammo()
+            hud.set_message("PRZEŁADOWANO",1.0)
     if next_round > 0.0:
         next_round -= delta
         if next_round <= 0.0:
@@ -599,6 +655,10 @@ func _unhandled_input(event: InputEvent) -> void:
             pulse_requested = true
         if event.keycode == KEY_R:
             recharge_requested = true
+        if event.keycode == KEY_1:
+            _switch_weapon_slot(1)
+        if event.keycode == KEY_2:
+            _switch_weapon_slot(2)
 
 func _make_scanner() -> void:
     # Original sci-fi photon TAG controller model: compact consumer electronics,
@@ -673,21 +733,21 @@ func _make_scanner() -> void:
 
 
 func _recharge() -> void:
-    if energy == ENERGY_MAX or recharge_remaining > 0.0:
+    if recharge_remaining > 0.0 or not arsenal.can_reload():
         return
-    recharge_remaining = 1.55
+    recharge_remaining = arsenal.reload_seconds()
     if is_instance_valid(audio_charge):
         audio_charge.play()
-    hud.set_message("UZUPEŁNIANIE ENERGII…",1.5)
+    hud.set_message("PRZEŁADOWYWANIE…",1.0)
 
 func _emit_pulse() -> void:
     if pulse_cooldown > 0.0 or recharge_remaining > 0.0 or bots.round_over or not bots.player_alive:
         return
-    if energy <= 0:
+    if not arsenal.fire():
         _recharge()
         return
-    pulse_cooldown = .19
-    energy -= 1
+    pulse_cooldown = arsenal.cooldown()
+    energy = arsenal.ammo()
     scanner_recoil = 1.0
     if is_instance_valid(audio_pulse):
         audio_pulse.play()
@@ -697,7 +757,7 @@ func _emit_pulse() -> void:
     var result := get_world_3d().direct_space_state.intersect_ray(query)
     if not result.is_empty():
         end = result["position"]
-        var scored: bool = bots.tag_from_player(result["collider"])
+        var scored: bool = bots.tag_from_player(result["collider"],arsenal.impact())
         if scored:
             hud.set_message("RYWAL WYELIMINOWANY  •  T POZOSTAŁO: %d" % bots.living_count(1),1.2)
             hud.flash_hit()
@@ -751,7 +811,7 @@ func _pulse_visual(start: Vector3, finish: Vector3) -> void:
     tween.tween_callback(beam.queue_free)
 
 func _on_player_tagged() -> void:
-    shield = maxi(0,shield-24)
+    shield = maxi(0,shield-(17 if arsenal.has_armor else 26))
     if shield <= 0:
         bots.player_lost_shield()
         hero.velocity = Vector3.ZERO
@@ -759,6 +819,7 @@ func _on_player_tagged() -> void:
 
 func _on_round_finished(winner: int) -> void:
     var ct_wins := winner == 0
+    arsenal.reward_round(ct_wins)
     if bots.match_over:
         if is_instance_valid(lobby):
             lobby.award_match(ct_wins)
@@ -772,6 +833,7 @@ func _update_match_hud() -> void:
     if is_instance_valid(hud) and is_instance_valid(bots):
         hud.set_combat_state(bots.ct_rounds,bots.t_rounds,shield,energy,ENERGY_MAX,bots.time_left)
         hud.set_round_state(bots.round_number,bots.living_count(0),bots.living_count(1),bots.player_alive)
+        hud.set_loadout_state(str(arsenal.active_weapon().get("name","P-9")),arsenal.ammo(),arsenal.reserve(),arsenal.credits,arsenal.has_armor)
 
 func _collect_beacon() -> void:
     var closest: Node3D = null
