@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - teamcs-natural-motion-20261109-atlas
+      - teamcs-visual-render-fix-20261109-atlas
   workflow_dispatch:
 
 jobs:
