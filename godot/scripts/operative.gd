@@ -133,76 +133,90 @@ func _ring(parent: Node3D,p: Vector3,radius: float, tube: float,mat: Material,la
 func _import_real_human(team: int) -> bool:
     var model_path: String = DETAILED_HUMAN if prefer_detail_lod else RIGGED_HUMAN
     if not ResourceLoader.exists(model_path):
-        print("TEAMCS_IMPORT_MISSING: ",model_path)
         return false
     var packed := load(model_path) as PackedScene
     if packed == null:
-        print("TEAMCS_IMPORT_RESOURCE_NULL: ",model_path)
         return false
-    var node := packed.instantiate() as Node3D
-    if node == null:
-        print("TEAMCS_IMPORT_NODE_NULL: ",model_path)
+    var human := packed.instantiate() as Node3D
+    if human == null:
         return false
+    # Keep the original glTF root and armature transforms untouched. Imported
+    # assets use wildly different units and a Z-up authoring convention.
     var shell := Node3D.new()
-    shell.name = "Licensed3DHuman"
+    shell.name = "Fitted3DHuman"
     add_child(shell)
-    shell.add_child(node)
-    var bounds_min := Vector3(INF,INF,INF)
-    var bounds_max := Vector3(-INF,-INF,-INF)
-    var meshes := node.find_children("*","MeshInstance3D",true,false)
-    if node is MeshInstance3D:
-        meshes.append(node)
+    var axis_pivot := Node3D.new()
+    axis_pivot.name = "UprightOrientation"
+    shell.add_child(axis_pivot)
+    var fit := Node3D.new()
+    fit.name = "ScaledModel"
+    axis_pivot.add_child(fit)
+    var center_offset := Node3D.new()
+    center_offset.name = "OriginalModelOffset"
+    fit.add_child(center_offset)
+    center_offset.add_child(human)
+    var meshes: Array[Node] = human.find_children("*","MeshInstance3D",true,false)
+    if human is MeshInstance3D:
+        meshes.append(human)
+    var smallest := Vector3(INF,INF,INF)
+    var largest := Vector3(-INF,-INF,-INF)
     for mesh in meshes:
-        var mi := mesh as MeshInstance3D
-        var transform_to_shell: Transform3D = shell.global_transform.affine_inverse() * mi.global_transform
-        var bounds := mi.get_aabb()
-        for corner in range(8):
-            var vertex := transform_to_shell * bounds.get_endpoint(corner)
-            bounds_min = bounds_min.min(vertex)
-            bounds_max = bounds_max.max(vertex)
-    print("TEAMCS_IMPORT_BOUNDS: ",model_path," meshes=",meshes.size()," min=",bounds_min," max=",bounds_max)
+        var instance := mesh as MeshInstance3D
+        var into_fit: Transform3D = fit.global_transform.affine_inverse() * instance.global_transform
+        var bounds := instance.get_aabb()
+        for vertex in range(8):
+            var point: Vector3 = into_fit * bounds.get_endpoint(vertex)
+            smallest = smallest.min(point)
+            largest = largest.max(point)
     if meshes.is_empty():
         shell.queue_free()
         return false
-    var model_height: float = bounds_max.y - bounds_min.y
-    if model_height < .005:
-        # Imported skinned geometry sometimes reports bind-pose AABB with a collapsed
-        # vertical extent. Retain the animated mesh rather than reverting to capsules.
-        model_height = maxf(bounds_max.x-bounds_min.x,bounds_max.z-bounds_min.z)
-    if model_height < .005:
+    var extent: Vector3 = largest-smallest
+    var is_z_up: bool = extent.z > extent.y*1.45
+    var raw_height: float = extent.z if is_z_up else extent.y
+    if raw_height <= .000001:
         shell.queue_free()
         return false
-    var factor := clampf(1.75/model_height,.025,25.0)
-    var mid := (bounds_min+bounds_max)*.5
-    node.scale *= factor
-    node.position = Vector3(-mid.x*factor,-bounds_min.y*factor,-mid.z*factor)
-    node.rotation.y += PI
-    # Soft woven team patches aid identification without the old neon rings.
+    # No artificial min/max scaling clamp. A GLB authored in centimetres
+    # or micrometres must still become a 1.75 m character, not a tiny dot.
+    var factor: float = 1.75 / raw_height
+    var middle: Vector3 = (smallest+largest)*.5
+    center_offset.position = Vector3(-middle.x,-middle.y,-smallest.z) if is_z_up else Vector3(-middle.x,-smallest.y,-middle.z)
+    fit.scale = Vector3.ONE*factor
+    axis_pivot.rotation.x = -PI/2.0 if is_z_up else 0.0
+    axis_pivot.rotation.y = PI
+    # Cloth-coloured identification patch, not emissive neon head rings.
     var patch := MeshInstance3D.new()
-    patch.name = "UniformIdentificationPatch"
+    patch.name = "FabricUniformPatch"
     var patch_mesh := BoxMesh.new()
-    patch_mesh.size = Vector3(.13,.095,.032)
+    patch_mesh.size = Vector3(.12,.09,.027)
     patch.mesh = patch_mesh
-    patch.position = Vector3(.28,1.31,-.13)
+    patch.position = Vector3(.28,1.32,-.13)
     var patch_mat := StandardMaterial3D.new()
-    patch_mat.albedo_color = Color(.29,.43,.48) if team == 0 else Color(.55,.34,.24)
+    patch_mat.albedo_color = Color(.30,.43,.48) if team == 0 else Color(.51,.33,.25)
     patch_mat.roughness = .94
     patch.material_override = patch_mat
     shell.add_child(patch)
     root = shell
-    imported_model = node
-    var animation_players := node.find_children("*","AnimationPlayer",true,false)
+    imported_model = human
+    var animation_players := human.find_children("*","AnimationPlayer",true,false)
     if not animation_players.is_empty():
         imported_anim = animation_players[0] as AnimationPlayer
-        for track_name in imported_anim.get_animation_list():
-            var key := str(track_name).to_lower()
-            if anim_idle == &"" and key.contains("idle"):
-                anim_idle = track_name
-            if anim_run == &"" and (key.contains("walk") or key.contains("jog") or key.contains("run")):
-                anim_run = track_name
+        var clips := imported_anim.get_animation_list()
+        for preferred in ["ready_idle","aim_idle","idle","crouch_idle"]:
+            if clips.has(preferred):
+                anim_idle = StringName(preferred)
+                break
+        for preferred in ["ready_walk","aim_walk","walk","ready_run","aim_run","run"]:
+            if clips.has(preferred):
+                anim_run = StringName(preferred)
+                break
+        if anim_idle == &"" and not clips.is_empty():
+            anim_idle = StringName(clips[0])
         if anim_idle != &"":
             imported_anim.play(anim_idle)
-    print("TEAMCS_IMPORTED_HUMAN: ",model_path," meshes=",meshes.size()," anim_idle=",anim_idle," anim_run=",anim_run)
+    print("TEAMCS_HUMAN_FITTED: ",model_path," dimensions=",extent,
+        " upZ=",is_z_up," units=",factor," idle=",anim_idle," locomotion=",anim_run)
     return true
 
 func build(team: int, character_variant: int, actor_quality: int) -> void:
