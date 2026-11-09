@@ -215,7 +215,7 @@ func _make_controls() -> void:
     jump.offset_top = -166
     jump.offset_bottom = -111
     ui.add_child(jump)
-    var action := _button("SKAN  ◈")
+    var action := _button("ZOOM  ⊕")
     action.name = "Action"
     action.pressed.connect(func(): action_requested.emit())
     action.anchor_left = 1
@@ -580,9 +580,9 @@ func _process(delta: float) -> void:
         current_fps = roundi(Engine.get_frames_per_second())
         fps_label.text = "%d FPS" % current_fps
         fps_label.add_theme_color_override("font_color", Color(.67,1,.91) if current_fps >= _fps * .80 else Color(1,.77,.49))
-        status_label.text = "TEAMCS 3D   |   %s   |   ◈ %d/%d" % [map_title, _beacons_collected, _beacons_total]
+        status_label.text = "TEAMCS 3D   |   %s   |   MECZ 4 × 4" % map_title
         _fps_timer = 0
     if _message_left > 0:
         _message_left -= delta
         if _message_left <= 0:
-            hint_label.text = "4 × 4  •  PULS ⚡  •  ŁADUJ ↻  •  DOTYK / PAD / KLAWIATURA"
+            hint_label.text = "4 × 4  •  PULS ⚡  •  ZOOM ⊕  •  DOTYK / PAD / KLAWIATURA"
