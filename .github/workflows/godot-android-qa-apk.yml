@@ -1,4 +1,4 @@
-name: TeamCS Native Godot 4.7.2 Android QA APK
+name: TeamCS ARENA 4v4 Android Final Visual Proof
 on:
   workflow_dispatch:
   push:
