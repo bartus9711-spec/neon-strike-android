@@ -1,9 +1,7 @@
 name: TeamCS Godot APK Installability Validation
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/godot-android-apk-validation.yml'
+
 jobs:
   validate-native-apk:
     runs-on: ubuntu-24.04
