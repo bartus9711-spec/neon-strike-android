@@ -10,7 +10,9 @@ var prefer_detail_lod := false
 var imported_model: Node3D
 var imported_anim: AnimationPlayer
 var anim_idle: StringName = &""
+var anim_walk: StringName = &""
 var anim_run: StringName = &""
+var anim_sprint: StringName = &""
 var quality := 1
 var variant := 0
 var side := 0
@@ -207,10 +209,22 @@ func _import_real_human(team: int) -> bool:
             if clips.has(preferred):
                 anim_idle = StringName(preferred)
                 break
-        for preferred in ["ready_walk","aim_walk","walk","ready_run","aim_run","run"]:
+        for preferred in ["ready_walk","aim_walk","walk"]:
+            if clips.has(preferred):
+                anim_walk = StringName(preferred)
+                break
+        for preferred in ["ready_run","aim_run","run"]:
             if clips.has(preferred):
                 anim_run = StringName(preferred)
                 break
+        for preferred in ["ready_sprint","aim_sprint","sprint"]:
+            if clips.has(preferred):
+                anim_sprint = StringName(preferred)
+                break
+        if anim_walk == &"":
+            anim_walk = anim_run
+        if anim_run == &"":
+            anim_run = anim_walk
         if anim_idle == &"" and not clips.is_empty():
             anim_idle = StringName(clips[0])
         if anim_idle != &"":
@@ -406,11 +420,26 @@ func set_quality(level: int) -> void:
 func update_pose(speed: float, delta: float, aim: float = 0.0) -> void:
     if is_instance_valid(imported_model):
         if is_instance_valid(imported_anim):
-            var chosen: StringName = anim_run if speed > .65 and anim_run != &"" else anim_idle
-            if chosen != &"" and (not imported_anim.is_playing() or imported_anim.current_animation != chosen):
-                imported_anim.play(chosen,.22)
+            # Use actual imported locomotion, not the walking clip at running speed.
+            # Smooth transitions and cadence reduce the visual foot-sliding effect.
+            var chosen: StringName = anim_idle
+            var reference_speed := 1.0
+            if speed >= 4.7 and anim_sprint != &"":
+                chosen = anim_sprint
+                reference_speed = 5.2
+            elif speed >= 2.25 and anim_run != &"":
+                chosen = anim_run
+                reference_speed = 3.2
+            elif speed > .45 and anim_walk != &"":
+                chosen = anim_walk
+                reference_speed = 1.65
+            if chosen != &"":
+                if not imported_anim.is_playing() or imported_anim.current_animation != chosen:
+                    imported_anim.play(chosen,.18)
+                var desired_rate := clampf(speed / reference_speed,.75,1.35) if speed > .45 else 1.0
+                imported_anim.speed_scale = lerpf(imported_anim.speed_scale,desired_rate,clampf(delta*5.0,0.0,1.0))
         else:
-            # Static detailed suit fallback in the lobby: understated idle motion.
+            # Detailed, unanimated mesh in the lobby: subtle breathing only.
             phase += delta * .9
             root.position.y = sin(phase)*.006
         return
