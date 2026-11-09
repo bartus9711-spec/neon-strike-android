@@ -5,6 +5,7 @@ const HUD = preload("res://scripts/hud.gd")
 const ARENAS = preload("res://scripts/arenas.gd")
 const NETWORK = preload("res://scripts/network_monitor.gd")
 const BOTS = preload("res://scripts/bots.gd")
+const AUDIO = preload("res://scripts/audio_fx.gd")
 
 var hero: CharacterBody3D
 var camera: Camera3D
@@ -14,6 +15,7 @@ var hud
 var arena
 var net
 var bots
+var audio_fx
 var scanner: Node3D
 var pulse_requested := false
 var recharge_requested := false
@@ -49,6 +51,8 @@ func _ready() -> void:
     arena.configure(sun, atmosphere)
     arena.load_arena(0)
     _make_hero()
+    audio_fx = AUDIO.new()
+    add_child(audio_fx)
     net = NETWORK.new()
     add_child(net)
     bots = BOTS.new()
@@ -522,6 +526,8 @@ func _recharge() -> void:
     if energy == ENERGY_MAX or recharge_remaining > 0.0:
         return
     recharge_remaining = 1.55
+    if is_instance_valid(audio_fx):
+        audio_fx.play_effect("recharge")
     hud.set_message("UZUPEŁNIANIE ENERGII…",1.5)
 
 func _emit_pulse() -> void:
@@ -532,6 +538,8 @@ func _emit_pulse() -> void:
         return
     pulse_cooldown = .19
     energy -= 1
+    if is_instance_valid(audio_fx):
+        audio_fx.play_effect("pulse")
     if is_instance_valid(scanner):
         var swing := create_tween()
         swing.tween_property(scanner,"rotation_degrees:x",-3.0,.045)
@@ -543,6 +551,8 @@ func _emit_pulse() -> void:
     if not result.is_empty():
         end = result["position"]
         if bots.tag_from_player(result["collider"]):
+            if is_instance_valid(audio_fx):
+                audio_fx.play_effect("tag")
             hud.set_message("PUNKT DLA CYAN!  +1",1.2)
     _pulse_visual(start+(-camera.global_transform.basis.z)*.42,end)
     if energy == 0:
@@ -573,6 +583,8 @@ func _pulse_visual(start: Vector3, finish: Vector3) -> void:
 
 func _on_player_tagged() -> void:
     shield = maxi(0,shield-24)
+    if is_instance_valid(audio_fx):
+        audio_fx.play_effect("shield")
     if shield <= 0:
         bots.player_lost_shield()
         hero.global_position = arena.spawn_position()
