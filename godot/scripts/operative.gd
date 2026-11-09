@@ -4,6 +4,13 @@ extends Node3D
 ## Uniforms, padded vest, boots, helmet, visor, neck, gloves and optional utility
 ## pouches. No external model licence / network download needed.
 var phase := 0.0
+const RIGGED_HUMAN := "res://assets/models/soldier.glb"
+const DETAILED_HUMAN := "res://assets/models/soldier_tac.glb"
+var prefer_detail_lod := false
+var imported_model: Node3D
+var imported_anim: AnimationPlayer
+var anim_idle: StringName = &""
+var anim_run: StringName = &""
 var quality := 1
 var variant := 0
 var side := 0
@@ -123,10 +130,102 @@ func _ring(parent: Node3D,p: Vector3,radius: float, tube: float,mat: Material,la
     node.material_override = mat
     parent.add_child(node)
 
+func _import_real_human(team: int) -> bool:
+    var model_path: String = DETAILED_HUMAN if prefer_detail_lod else RIGGED_HUMAN
+    if not ResourceLoader.exists(model_path):
+        return false
+    var packed := load(model_path) as PackedScene
+    if packed == null:
+        return false
+    var human := packed.instantiate() as Node3D
+    if human == null:
+        return false
+    # Keep the original glTF root and armature transforms untouched. Imported
+    # assets use wildly different units and a Z-up authoring convention.
+    var shell := Node3D.new()
+    shell.name = "Fitted3DHuman"
+    add_child(shell)
+    var axis_pivot := Node3D.new()
+    axis_pivot.name = "UprightOrientation"
+    shell.add_child(axis_pivot)
+    var fit := Node3D.new()
+    fit.name = "ScaledModel"
+    axis_pivot.add_child(fit)
+    var center_offset := Node3D.new()
+    center_offset.name = "OriginalModelOffset"
+    fit.add_child(center_offset)
+    center_offset.add_child(human)
+    var meshes: Array[Node] = human.find_children("*","MeshInstance3D",true,false)
+    if human is MeshInstance3D:
+        meshes.append(human)
+    var smallest := Vector3(INF,INF,INF)
+    var largest := Vector3(-INF,-INF,-INF)
+    for mesh in meshes:
+        var instance := mesh as MeshInstance3D
+        var into_fit: Transform3D = fit.global_transform.affine_inverse() * instance.global_transform
+        var bounds := instance.get_aabb()
+        for vertex in range(8):
+            var point: Vector3 = into_fit * bounds.get_endpoint(vertex)
+            smallest = smallest.min(point)
+            largest = largest.max(point)
+    if meshes.is_empty():
+        shell.queue_free()
+        return false
+    var extent: Vector3 = largest-smallest
+    var is_z_up: bool = extent.z > extent.y*1.45
+    var raw_height: float = extent.z if is_z_up else extent.y
+    if raw_height <= .000001:
+        shell.queue_free()
+        return false
+    # No artificial min/max scaling clamp. A GLB authored in centimetres
+    # or micrometres must still become a 1.75 m character, not a tiny dot.
+    var factor: float = 1.75 / raw_height
+    var middle: Vector3 = (smallest+largest)*.5
+    center_offset.position = Vector3(-middle.x,-middle.y,-smallest.z) if is_z_up else Vector3(-middle.x,-smallest.y,-middle.z)
+    fit.scale = Vector3.ONE*factor
+    axis_pivot.rotation.x = -PI/2.0 if is_z_up else 0.0
+    axis_pivot.rotation.y = PI
+    # Cloth-coloured identification patch, not emissive neon head rings.
+    var patch := MeshInstance3D.new()
+    patch.name = "FabricUniformPatch"
+    var patch_mesh := BoxMesh.new()
+    patch_mesh.size = Vector3(.12,.09,.027)
+    patch.mesh = patch_mesh
+    patch.position = Vector3(.28,1.32,-.13)
+    var patch_mat := StandardMaterial3D.new()
+    patch_mat.albedo_color = Color(.30,.43,.48) if team == 0 else Color(.51,.33,.25)
+    patch_mat.roughness = .94
+    patch.material_override = patch_mat
+    shell.add_child(patch)
+    root = shell
+    imported_model = human
+    var animation_players := human.find_children("*","AnimationPlayer",true,false)
+    if not animation_players.is_empty():
+        imported_anim = animation_players[0] as AnimationPlayer
+        var clips := imported_anim.get_animation_list()
+        for preferred in ["ready_idle","aim_idle","idle","crouch_idle"]:
+            if clips.has(preferred):
+                anim_idle = StringName(preferred)
+                break
+        for preferred in ["ready_walk","aim_walk","walk","ready_run","aim_run","run"]:
+            if clips.has(preferred):
+                anim_run = StringName(preferred)
+                break
+        if anim_idle == &"" and not clips.is_empty():
+            anim_idle = StringName(clips[0])
+        if anim_idle != &"":
+            imported_anim.play(anim_idle)
+    print("TEAMCS_HUMAN_FITTED: ",model_path," dimensions=",extent,
+        " upZ=",is_z_up," units=",factor," idle=",anim_idle," locomotion=",anim_run)
+    return true
+
 func build(team: int, character_variant: int, actor_quality: int) -> void:
     side = team
     variant = character_variant
     quality = actor_quality
+    if _import_real_human(team):
+        set_quality(actor_quality)
+        return
     var blue := team == 0
     # CT in graphite/navy and T in dusty olive/brown, both matte fabrics.
     var dark_olive := Color(.18,.235,.255) if blue else Color(.39,.335,.245)
@@ -305,6 +404,17 @@ func set_quality(level: int) -> void:
                 mesh_node.visible = quality >= 1
 
 func update_pose(speed: float, delta: float, aim: float = 0.0) -> void:
+    if is_instance_valid(imported_model):
+        if is_instance_valid(imported_anim):
+            var chosen: StringName = anim_run if speed > .65 and anim_run != &"" else anim_idle
+            if chosen != &"" and (not imported_anim.is_playing() or imported_anim.current_animation != chosen):
+                imported_anim.play(chosen,.22)
+        else:
+            # Static detailed suit fallback in the lobby: understated idle motion.
+            phase += delta * .9
+            root.position.y = sin(phase)*.006
+        return
+    # Procedural clothed character stays as an offline importer fallback.
     # 2-3 sec/s gait; smoothly returns to idle when stopped.
     phase += delta * (2.6+minf(speed,8.0)*1.8)
     var moving := clampf(speed/3.0,0.0,1.0)

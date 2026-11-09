@@ -1,0 +1,173 @@
+name: TeamCS Integrated Human 3D and Match Economy QA
+on:
+  push:
+    branches:
+      - teamcs-integrated-humanoids-20261109-atlas
+  workflow_dispatch:
+
+jobs:
+  native-android-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+      - name: Verify native Android build environment
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          test -d "$ANDROID_HOME"
+          command -v keytool
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -alias androiddebugkey             -keyalg RSA -keysize 2048 -validity 1800 -storepass android -keypass android             -dname "CN=TeamCS QA,OU=Testing,O=TeamCS,C=PL" -noprompt
+          if [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.1"
+          fi
+      - name: Build app-only Wi-Fi and mobile network plugin
+        run: |
+          gradle -p godot/network-android --no-daemon :network:assembleDebug
+          mkdir -p godot/addons/teamcs_network/bin
+          cp godot/network-android/network/build/outputs/aar/network-debug.aar             godot/addons/teamcs_network/bin/teamcs-network-debug.aar
+          test -s godot/addons/teamcs_network/bin/teamcs-network-debug.aar
+      - name: Download matching Godot 4.7.2 editor and Android templates
+        run: |
+          set -euo pipefail
+          curl -fL --retry 4 -o /tmp/godot.zip             https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot-bin
+          chmod +x /tmp/godot-bin/Godot_v4.7.2-stable_linux.x86_64
+          ln -s /tmp/godot-bin/Godot_v4.7.2-stable_linux.x86_64 /tmp/godot
+          /tmp/godot --version
+          curl -fL --retry 4 --retry-delay 3 -o /tmp/templates.tpz             https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz
+          mkdir -p /tmp/templates-extracted "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+          unzip -q /tmp/templates.tpz             'templates/android_source.zip' 'templates/android_debug.apk'             'templates/android_release.apk' 'templates/version.txt'             -d /tmp/templates-extracted
+          cp /tmp/templates-extracted/templates/{android_source.zip,android_debug.apk,android_release.apk,version.txt}             "$HOME/.local/share/godot/export_templates/4.7.2.stable/"
+          ls -lh "$HOME/.local/share/godot/export_templates/4.7.2.stable"
+      - name: Fetch legally reusable PBR texture set for all eight native arenas
+        run: |
+          python3 godot/tools/fetch_cc0_textures.py
+          test -s godot/assets/asphalt_01_diff.jpg
+      - name: Download and validate licensed humanoid 3D meshes
+        run: |
+          set -euo pipefail
+          python3 godot/tools/fetch_human_models.py
+          test -s godot/assets/models/soldier.glb
+          test -s godot/assets/models/soldier_tac.glb
+      - name: Import Godot project, enable plugin and install Android Gradle template
+        run: |
+          set -o pipefail
+          /tmp/godot --headless --path godot --editor --import --quit 2>&1 | tee /tmp/godot-import.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script|Failed to load resource' /tmp/godot-import.log; then
+            echo "Godot script import failed — do not export APK" >&2
+            exit 14
+          fi
+          /tmp/godot --headless --path godot --editor             --script res://tools/configure_android_export.gd 2>&1 | tee /tmp/godot-sdk.log
+          # Godot probes the Android ADB service even when exporting without a device.
+          "$ANDROID_HOME/platform-tools/adb" start-server
+          "$ANDROID_HOME/platform-tools/adb" devices
+          # Godot 4.7 CLI installs the Gradle template only together with --export-debug.
+          test -s "$HOME/.local/share/godot/export_templates/4.7.2.stable/android_source.zip"
+      - name: Verify real imported humanoid geometry, proportions and rig animations
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=4s 60s /tmp/godot --headless --path godot --script res://tests/humanoid_model_smoke.gd 2>&1 | tee /tmp/humanoid-smoke.log
+          grep -q 'TEAMCS_HUMAN_IMPORT_PASS' /tmp/humanoid-smoke.log
+          grep -q 'TEAMCS_HUMAN_FITTED' /tmp/humanoid-smoke.log
+      - name: Verify real economy, buy buttons and ammunition state
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 90s /tmp/godot --headless --path godot --script res://tests/economy_smoke.gd 2>&1 | tee /tmp/economy-smoke.log
+          grep -q 'TEAMCS_ECONOMY_PASS' /tmp/economy-smoke.log
+      - name: Export signed native test APK (NEVER publishes official release)
+        run: |
+          set -o pipefail
+          # The QA APK includes both arm64 for the GT 7 and x86_64 for actual Android emulator validation.
+          sed -i 's#architectures/x86_64=false#architectures/x86_64=true#' godot/export_presets.cfg
+          /tmp/godot --headless --path godot --editor --install-android-build-template --export-debug "Android GT7 QA"             "$GITHUB_WORKSPACE/TeamCS_Godot_GT7_QA.apk" 2>&1 | tee /tmp/godot-export.log
+          test -f godot/android/build/build.gradle
+          test -s TeamCS_Godot_GT7_QA.apk
+          grep -q "BUILD SUCCESSFUL" /tmp/godot-export.log || echo "Gradle summary not found, verifying APK directly"
+      - name: Validate APK is native Godot and includes Android network plugin
+        run: |
+          set -euo pipefail
+          unzip -l TeamCS_Godot_GT7_QA.apk | grep -E 'lib/arm64-v8a/libgodot_android.so|lib/arm64-v8a/libgodot'
+          unzip -p TeamCS_Godot_GT7_QA.apk classes.dex > /tmp/teamcs-classes.dex
+          if ! strings /tmp/teamcs-classes.dex | grep -q 'TeamCSNetwork'; then
+            echo "Native Wi-Fi/mobile plugin class missing from APK" >&2
+            exit 1
+          fi
+          # Fail the QA release if Android would install an invisible/no-launcher app.
+          TOOLS="$ANDROID_HOME/build-tools/35.0.1"
+          "$TOOLS/apksigner" verify --verbose --print-certs TeamCS_Godot_GT7_QA.apk
+          "$TOOLS/aapt" dump badging TeamCS_Godot_GT7_QA.apk | grep -E '^(package:|sdkVersion:|targetSdkVersion:|native-code:|application-label:)' | tee /tmp/teamcs-badging.log
+          # Godot 4.7 exports a launcher activity-alias; aapt badging doesn't list
+          # aliases as launchable-activity, even when MAIN/LAUNCHER is present.
+          "$TOOLS/aapt" dump xmltree TeamCS_Godot_GT7_QA.apk AndroidManifest.xml > /tmp/teamcs-manifest.log
+          grep -q 'android.intent.action.MAIN' /tmp/teamcs-manifest.log
+          grep -q 'android.intent.category.LAUNCHER' /tmp/teamcs-manifest.log
+          grep -q 'GodotAppLauncher' /tmp/teamcs-manifest.log
+          "$TOOLS/zipalign" -c -v 4 TeamCS_Godot_GT7_QA.apk
+          ls -lh TeamCS_Godot_GT7_QA.apk
+      - name: Enable KVM for real Android emulator install/launch test
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install and launch the actual exported APK on Android 15 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: default
+          arch: x86_64
+          profile: "Nexus 4"
+          cores: 4
+          ram-size: 4096M
+          emulator-options: -no-window -gpu lavapipe -noaudio -no-boot-anim -camera-back none
+          script: |
+            python3 -m pip install --quiet Pillow
+            bash .github/scripts/teamcs-android-emulator-smoke.sh
+      - name: Export smaller ARM64-only APK for the actual GT 7, same signed TeamCS game
+        run: |
+          set -euo pipefail
+          sed -i 's#architectures/x86_64=true#architectures/x86_64=false#' godot/export_presets.cfg
+          /tmp/godot --headless --path godot --editor --export-debug "Android GT7 QA" \
+            "$GITHUB_WORKSPACE/TeamCS_Godot_GT7_ARM64.apk" 2>&1 | tee /tmp/godot-export-arm64.log
+          test -s TeamCS_Godot_GT7_ARM64.apk
+          TOOLS="$ANDROID_HOME/build-tools/35.0.1"
+          "$TOOLS/apksigner" verify --verbose TeamCS_Godot_GT7_ARM64.apk
+          "$TOOLS/zipalign" -c 4 TeamCS_Godot_GT7_ARM64.apk
+          "$TOOLS/aapt" dump badging TeamCS_Godot_GT7_ARM64.apk | tee /tmp/teamcs-phone-badging.log
+          grep -q "native-code: 'arm64-v8a'" /tmp/teamcs-phone-badging.log
+          grep -q "package: name='pl.teamcs.arena4v4human'" /tmp/teamcs-phone-badging.log
+          unzip -l TeamCS_Godot_GT7_ARM64.apk | grep -q lib/arm64-v8a/libgodot_android.so
+          if unzip -l TeamCS_Godot_GT7_ARM64.apk | grep -q lib/x86_64/libgodot_android.so; then
+            echo "Unexpected x86_64 library in ARM64 phone package" >&2
+            exit 1
+          fi
+          ls -lh TeamCS_Godot_GT7_ARM64.apk
+      - name: Upload native Android QA APK and export logs (private test artifact, not Play Store release)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TeamCS-Godot-GT7-QA
+          path: |
+            TeamCS_Godot_GT7_QA.apk
+            TeamCS_Godot_GT7_ARM64.apk
+            /tmp/humanoid-smoke.log
+            /tmp/economy-smoke.log
+            /tmp/godot-import.log
+            /tmp/godot-sdk.log
+            /tmp/godot-template.log
+            /tmp/godot-export.log
+            /tmp/godot-export-arm64.log
+            teamcs-emulator-smoke.png
+            teamcs-emulator-logcat.txt
+          if-no-files-found: warn
+          retention-days: 14

@@ -14,6 +14,8 @@ var balance_text: Label
 var performance_text: Label
 var profile_text: Label
 var preview: SubViewport
+var preview_frame: SubViewportContainer
+var preview_debug_logged := false
 var previews: Array[Node3D] = []
 var preview_clock := 0.0
 var credits := 650
@@ -109,7 +111,7 @@ func _ready() -> void:
     _stage()
     _text(root,"OPERATOR CT",15,Color(.67,.83,.88),.29,.82,.47,.865)
     _text(root,"OPERATOR T",15,Color(.89,.73,.58),.53,.82,.70,.865)
-    _text(root,"ŻYWE MODELE GODOT 3D  •  PODGLĄD",12,Color(.71,.72,.74),.28,.905,.71,.945)
+    _text(root,"MODELE 3D: BAMEN / DANLYVOSTOK  •  CC BY 4.0",12,Color(.71,.72,.74),.28,.905,.71,.945)
     _panel(root,.75,.125,.986,.97,Color(.07,.094,.108,.98))
     _text(root,"WYBIERZ MAPĘ",17,Color(.96,.95,.90),.765,.148,.98,.20)
     map_picker = OptionButton.new()
@@ -129,20 +131,25 @@ func _stage() -> void:
     var frame := SubViewportContainer.new()
     frame.name = "Operator3DPreview"
     frame.stretch = true
+    frame.stretch_shrink = 1
     frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
     _place(frame,.268,.27,.732,.825)
     root.add_child(frame)
     preview = SubViewport.new()
-    preview.size = Vector2i(700,540)
-    preview.transparent_bg = true
-    preview.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
+    # This is an opaque 3D render target. Android Vulkan can skip a transparent
+    # secondary viewport when no previous visible frame has been composited.
+    preview.size = Vector2i(560,400)
+    preview.transparent_bg = false
+    preview.render_target_update_mode = SubViewport.UPDATE_ALWAYS
     preview.own_world_3d = true
     frame.add_child(preview)
+    preview_frame = frame
     var world := Node3D.new()
     preview.add_child(world)
     var ambient := WorldEnvironment.new()
     var env := Environment.new()
-    env.background_mode = Environment.BG_CLEAR_COLOR
+    env.background_mode = Environment.BG_COLOR
+    env.background_color = Color(.11,.145,.17)
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     env.ambient_light_color = Color(.50,.61,.68)
     env.ambient_light_energy = .65
@@ -161,9 +168,9 @@ func _stage() -> void:
     var camera := Camera3D.new()
     camera.position = Vector3(0,1.29,-3.50)
     camera.fov = 47.0
-    camera.current = true
     world.add_child(camera)
     camera.look_at(Vector3(0,1.03,0),Vector3.UP)
+    camera.make_current()
     # A muted urban set, placed behind the live 3D operators. No neon effects.
     _stage_block(world,Vector3(0,-.19,1.25),Vector3(8.0,.23,7.0),Color(.22,.23,.22))
     _stage_block(world,Vector3(-2.85,2.25,2.75),Vector3(2.5,4.5,1.0),Color(.48,.44,.37))
@@ -177,6 +184,7 @@ func _stage() -> void:
         _stage_block(world,Vector3(bx,2.56,3.82),Vector3(.65,.08,.13),Color(.74,.68,.59))
     for team in range(2):
         var actor = OPERATOR.new()
+        actor.prefer_detail_lod = true
         # Camera looks in +Z, so world X is horizontally mirrored on screen.
         actor.position = Vector3(.76 if team==0 else -.76,-.10,0.12)
         actor.rotation.y = -.17 if team==0 else .21
@@ -269,6 +277,7 @@ func _purchase_gear() -> void:
         var prior: Node3D = previews[0]
         var host: Node = prior.get_parent()
         var new_operator = OPERATOR.new()
+        new_operator.prefer_detail_lod = true
         new_operator.position = prior.position
         new_operator.rotation = prior.rotation
         host.add_child(new_operator)
@@ -314,6 +323,13 @@ func _process(delta: float) -> void:
     if not active:
         return
     preview_clock += delta
+    if not preview_debug_logged and preview_clock > 2.0 and is_instance_valid(preview):
+        preview_debug_logged = true
+        var viewport_texture := preview.get_texture()
+        print("TEAMCS_PREVIEW_LAYOUT: frame=",preview_frame.size," viewport=",preview.size," cam=",preview.get_camera_3d())
+        var screenshot := viewport_texture.get_image()
+        if screenshot != null and not screenshot.is_empty():
+            print("TEAMCS_PREVIEW_PIXEL: ",screenshot.get_pixel(int(screenshot.get_width()/2),int(screenshot.get_height()/2)))
     for i in range(previews.size()):
         if is_instance_valid(previews[i]):
             previews[i].update_pose(.25+absf(sin(preview_clock*.6+float(i)))*.15,delta,0.0)
