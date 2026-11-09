@@ -67,6 +67,8 @@ jobs:
       - name: Export signed native test APK (NEVER publishes official release)
         run: |
           set -o pipefail
+          # The QA APK includes both arm64 for the GT 7 and x86_64 for actual Android emulator validation.
+          sed -i 's#architectures/x86_64=false#architectures/x86_64=true#' godot/export_presets.cfg
           /tmp/godot --headless --path godot --editor --install-android-build-template --export-debug "Android GT7 QA"             "$GITHUB_WORKSPACE/TeamCS_Godot_GT7_QA.apk" 2>&1 | tee /tmp/godot-export.log
           test -f godot/android/build/build.gradle
           test -s TeamCS_Godot_GT7_QA.apk
@@ -92,6 +94,22 @@ jobs:
           grep -q 'GodotAppLauncher' /tmp/teamcs-manifest.log
           "$TOOLS/zipalign" -c -v 4 TeamCS_Godot_GT7_QA.apk
           ls -lh TeamCS_Godot_GT7_QA.apk
+      - name: Enable KVM for real Android emulator install/launch test
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install and launch the actual exported APK on Android 15 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7_pro
+          cores: 2
+          ram-size: 3072M
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash .github/scripts/teamcs-android-emulator-smoke.sh
       - name: Upload native Android QA APK and export logs (private test artifact, not Play Store release)
         if: always()
         uses: actions/upload-artifact@v4
@@ -103,5 +121,7 @@ jobs:
             /tmp/godot-sdk.log
             /tmp/godot-template.log
             /tmp/godot-export.log
+            teamcs-emulator-smoke.png
+            teamcs-emulator-logcat.txt
           if-no-files-found: warn
           retention-days: 14
