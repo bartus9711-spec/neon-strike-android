@@ -39,7 +39,7 @@ func _run() -> void:
         quit(24)
         return
     var first_rig = main.bots.roster[0]["operative"]
-    if first_rig == null or not is_instance_valid(first_rig) or first_rig.left_leg == null or first_rig.helmet == null:
+    if first_rig == null or not is_instance_valid(first_rig) or first_rig.left_leg == null or first_rig.helmet == null or first_rig.left_shin == null or first_rig.left_forearm == null:
         push_error("CI: procedural human operative geometry/animation pivots missing")
         quit(25)
         return
@@ -62,6 +62,24 @@ func _run() -> void:
         return
     main.bots.apply_actor_quality(1)
     print("CI_HUMAN_CHARACTER_LOD_OK: articulated body, animated walk, detailed apparel and mobile performance tiers")
+    main.switch_map(5)
+    await process_frame
+    if main.weather.effect_name != "snow" or main.weather.active_count < 20:
+        push_error("CI: Alpine 3D weather snow missing or not batched")
+        quit(34)
+        return
+    main.weather.set_detail(0)
+    if main.weather.active_count != 0:
+        push_error("CI: Low weather LOD failed to disable atmosphere particles")
+        quit(35)
+        return
+    main.switch_map(2)
+    if main.weather.effect_name != "rain":
+        push_error("CI: Neon arena needs visual rain layer")
+        quit(36)
+        return
+    main.switch_map(0)
+    print("CI_WEATHER_AND_HUMANOID_DETAIL_OK: snow/rain, curved armour, articulated elbows/knees and Low LOD")
     var ally: CharacterBody3D = main.bots.roster[0]["body"]
     if ally.global_position.distance_to(main.hero.global_position) < 3.0:
         push_error("CI: human player spawned inside AI teammate")
