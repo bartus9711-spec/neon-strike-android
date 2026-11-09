@@ -17,6 +17,10 @@ var net
 var bots
 var weather
 var scanner: Node3D
+var scanner_recoil := 0.0
+var audio_pulse: AudioStreamPlayer
+var audio_hit: AudioStreamPlayer
+var audio_charge: AudioStreamPlayer
 var pulse_requested := false
 var recharge_requested := false
 var pulse_cooldown := 0.0
@@ -46,6 +50,7 @@ func _ready() -> void:
         DisplayServer.screen_set_orientation(DisplayServer.SCREEN_LANDSCAPE)
     print("TEAMCS_RENDER_DRIVER: ", RenderingServer.get_current_rendering_driver_name(), " / ", RenderingServer.get_current_rendering_method())
     _setup_palette()
+    _setup_audio()
     _setup_lighting()
     arena = ARENAS.new()
     add_child(arena)
@@ -81,6 +86,43 @@ func _ready() -> void:
     hud.set_network_info(net.get_network_text(), net.get_ping_text())
     hud.set_message("MECZ 4 × 4: PULS ⚡ / ŁADUJ ↻   •   RUCH: LEWY DRĄŻEK   •   CELOWANIE: PRAWY", 6.0)
     print("TEAMCS_MATCH_READY: native Godot 4v4 actor_count=",bots.count_bots()," map_count=",arena.maps.size())
+
+func _create_arcade_tone(frequency_start: float, frequency_end: float, duration: float) -> AudioStreamWAV:
+    # Original synthesized energy-tag sounds; no external files or copyrighted music.
+    var wav := AudioStreamWAV.new()
+    var frames := int(22050.0*duration)
+    var buffer := PackedByteArray()
+    buffer.resize(frames*2)
+    var phase := 0.0
+    for i in range(frames):
+        var t := float(i)/float(frames)
+        var frequency := lerpf(frequency_start,frequency_end,t)
+        phase += TAU*frequency/22050.0
+        var envelope := pow(1.0-t,2.4)*minf(1.0,t*55.0)
+        var sample := roundi(sin(phase)*envelope*8600.0)
+        buffer.encode_s16(i*2,clampi(sample,-32768,32767))
+    wav.format = AudioStreamWAV.FORMAT_16_BITS
+    wav.mix_rate = 22050
+    wav.stereo = false
+    wav.data = buffer
+    return wav
+
+func _setup_audio() -> void:
+    audio_pulse = AudioStreamPlayer.new()
+    audio_pulse.name = "PhotonPulseSFX"
+    audio_pulse.stream = _create_arcade_tone(840.0,280.0,.16)
+    audio_pulse.volume_db = -15.
+    add_child(audio_pulse)
+    audio_hit = AudioStreamPlayer.new()
+    audio_hit.name = "HitConfirmSFX"
+    audio_hit.stream = _create_arcade_tone(610.0,1280.0,.18)
+    audio_hit.volume_db = -16.
+    add_child(audio_hit)
+    audio_charge = AudioStreamPlayer.new()
+    audio_charge.name = "EnergyRechargeSFX"
+    audio_charge.stream = _create_arcade_tone(290.0,720.0,.22)
+    audio_charge.volume_db = -19.
+    add_child(audio_charge)
 
 func _setup_palette() -> void:
     var colors := {
@@ -357,6 +399,7 @@ func _make_hero() -> void:
 func _physics_process(delta: float) -> void:
     elapsed += delta
     pulse_cooldown = maxf(0.0,pulse_cooldown-delta)
+    scanner_recoil = move_toward(scanner_recoil,0.0,delta*6.5)
     if recharge_remaining > 0.0:
         recharge_remaining = maxf(0.0,recharge_remaining-delta)
         if recharge_remaining == 0.0:
@@ -435,12 +478,22 @@ func _physics_process(delta: float) -> void:
         var bounce := minf(speed/7.0,1.0)
         scanner.position.y = -.43 + sin(elapsed*10.7)*.011*bounce
         scanner.rotation.z = -.05 + sin(elapsed*5.1)*.021*bounce
+        scanner.rotation.x = -.10 + scanner_recoil*.23
+        scanner.position.z = -.76 + scanner_recoil*.07
         camera.position.y = 1.54 + sin(elapsed*11.0)*.015*bounce
     # Updating CanvasLayer labels on every physics tick wastes mobile CPU/GPU time.
     # Scores still update instantly through their existing signals.
     hud_update_timer += delta
     if hud_update_timer >= .15:
         hud_update_timer = 0.0
+        if not hud.settings_open:
+            var aim_start := camera.global_position
+            var aim_end := aim_start-camera.global_transform.basis.z*75.
+            var aim_query := PhysicsRayQueryParameters3D.create(aim_start,aim_end,1|4,[hero.get_rid()])
+            var aim_hit := get_world_3d().direct_space_state.intersect_ray(aim_query)
+            hud.set_target_state(not aim_hit.is_empty() and bots.is_active_rival(aim_hit.get("collider")))
+        else:
+            hud.set_target_state(false)
         _update_match_hud()
 
 func _turn(relative: Vector2) -> void:
@@ -545,6 +598,8 @@ func _recharge() -> void:
     if energy == ENERGY_MAX or recharge_remaining > 0.0:
         return
     recharge_remaining = 1.55
+    if is_instance_valid(audio_charge):
+        audio_charge.play()
     hud.set_message("UZUPEŁNIANIE ENERGII…",1.5)
 
 func _emit_pulse() -> void:
@@ -555,17 +610,44 @@ func _emit_pulse() -> void:
         return
     pulse_cooldown = .19
     energy -= 1
+    scanner_recoil = 1.0
+    if is_instance_valid(audio_pulse):
+        audio_pulse.play()
     var start := camera.global_position
     var end := start - camera.global_transform.basis.z * 74.0
     var query := PhysicsRayQueryParameters3D.create(start,end,1|4,[hero.get_rid()])
     var result := get_world_3d().direct_space_state.intersect_ray(query)
     if not result.is_empty():
         end = result["position"]
-        if bots.tag_from_player(result["collider"]):
+        var scored: bool = bots.tag_from_player(result["collider"])
+        if scored:
             hud.set_message("PUNKT DLA CYAN!  +1",1.2)
+            hud.flash_hit()
+            if is_instance_valid(audio_hit):
+                audio_hit.play()
+        _impact_flash(end,scored)
     _pulse_visual(start+(-camera.global_transform.basis.z)*.42,end)
     if energy == 0:
         _recharge()
+
+func _impact_flash(position: Vector3, scored: bool) -> void:
+    # Brief non-graphic energy impact with a controlled one-shot mesh effect.
+    var flash := MeshInstance3D.new()
+    var ball := SphereMesh.new()
+    ball.radius = .17 if scored else .11
+    ball.height = .34 if scored else .22
+    ball.radial_segments = 10
+    ball.rings = 5
+    flash.mesh = ball
+    var mat := StandardMaterial3D.new()
+    mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    mat.albedo_color = Color(.51,1.0,.82) if scored else Color(.42,.86,1.0)
+    flash.material_override = mat
+    add_child(flash)
+    flash.global_position = position
+    var animation := create_tween()
+    animation.tween_property(flash,"scale",Vector3(.08,.08,.08),.18).set_trans(Tween.TRANS_CUBIC)
+    animation.tween_callback(flash.queue_free)
 
 func _pulse_visual(start: Vector3, finish: Vector3) -> void:
     var segment := finish-start
