@@ -1,0 +1,41 @@
+name: TeamCS Godot APK Installability Validation
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/godot-android-apk-validation.yml'
+jobs:
+  validate-native-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch existing Godot Android test build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 42537487370 --repo "$GITHUB_REPOSITORY" -n TeamCS-Godot-GT7-QA -D /tmp/native-qa
+          find /tmp/native-qa -type f -printf '%p %s bytes\n'
+          test -s /tmp/native-qa/TeamCS_Godot_GT7_QA.apk
+      - name: Cryptographically verify installer signing and manifest
+        run: |
+          set -euo pipefail
+          APK=/tmp/native-qa/TeamCS_Godot_GT7_QA.apk
+          TOOLS="$ANDROID_HOME/build-tools/35.0.1"
+          if [ ! -x "$TOOLS/apksigner" ]; then
+            TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+          fi
+          "$TOOLS/apksigner" verify --verbose --print-certs "$APK"
+          "$TOOLS/aapt" dump badging "$APK" | grep -E "^(package:|sdkVersion:|targetSdkVersion:|native-code:|application-label:|launchable-activity:)"
+          "$TOOLS/zipalign" -c -v 4 "$APK"
+      - name: Check APK manifest and Godot runtime architecture
+        run: |
+          set -euo pipefail
+          APK=/tmp/native-qa/TeamCS_Godot_GT7_QA.apk
+          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump permissions "$APK" || true
+          unzip -l "$APK" | grep 'lib/arm64-v8a/libgodot_android.so'
+          unzip -p "$APK" classes.dex | strings | grep -m1 -E '(TeamCSNetwork|teamcs)' || true
+          echo "APK_STATIC_INSTALL_CHECK_SUCCESS"
