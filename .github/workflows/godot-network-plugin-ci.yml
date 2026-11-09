@@ -1,11 +1,7 @@
 name: TeamCS Godot Android Network Plugin Build
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "godot/network-android/**"
-      - "godot/addons/teamcs_network/**"
-      - ".github/workflows/godot-network-plugin-ci.yml"
+
 jobs:
   build-native-network-plugin:
     runs-on: ubuntu-24.04
