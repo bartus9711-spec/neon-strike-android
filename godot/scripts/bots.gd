@@ -186,7 +186,7 @@ func _spawn(team: int, slot: int) -> Vector3:
 func apply_actor_quality(quality: int) -> void:
     actor_quality = clampi(quality,0,2)
     for entry in roster:
-        var rig: Node3D = entry["operative"]
+        var rig = entry["operative"]
         if is_instance_valid(rig):
             rig.set_quality(actor_quality)
 
