@@ -71,6 +71,7 @@ func _ready() -> void:
     hud._emit_graphics()
     hud.set_network_info(net.get_network_text(), net.get_ping_text())
     hud.set_message("MECZ 4 × 4: PULS ⚡ / ŁADUJ ↻   •   RUCH: LEWY DRĄŻEK   •   CELOWANIE: PRAWY", 6.0)
+    print("TEAMCS_MATCH_READY: native Godot 4v4 actor_count=",bots.count_bots()," map_count=",arena.maps.size())
 
 func _setup_palette() -> void:
     var colors := {
