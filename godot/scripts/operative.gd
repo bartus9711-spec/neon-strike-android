@@ -115,9 +115,12 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
     root.add_child(torso)
     _sphere(torso,Vector3(0,.09,0),Vector3(.66,.77,.35),uniform,"TexturedTorso")
     _sphere(torso,Vector3(0,-.32,0),Vector3(.52,.35,.35),uniform_secondary,"BeltHip")
-    _block(torso,Vector3(0,.10,-.23),Vector3(.50,.56,.17),armor,"ContouredArmourVest")
+    # Rounded layered fibre-composite plates follow the torso instead of a cardboard block.
+    _sphere(torso,Vector3(0,.10,-.224),Vector3(.57,.59,.20),armor,"ErgonomicArmourVest")
+    _sphere(torso,Vector3(-.18,.03,-.29),Vector3(.16,.43,.08),armor_edge,"LeftRibProtection")
+    _sphere(torso,Vector3(.18,.03,-.29),Vector3(.16,.43,.08),armor_edge,"RightRibProtection")
     _sphere(torso,Vector3(0,.36,-.14),Vector3(.63,.17,.43),armor_edge,"ShoulderArmorBridge")
-    _block(torso,Vector3(0,-.25,-.22),Vector3(.43,.11,.14),glove,"UtilityBelt")
+    _sphere(torso,Vector3(0,-.25,-.20),Vector3(.48,.13,.18),glove,"CurvedUtilityBelt")
     _capsule(torso,Vector3(0,.54,0),.105,.23,skin,"Neck")
     helmet = Node3D.new()
     helmet.name = "HeadRig"
@@ -126,7 +129,7 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
     _sphere(helmet,Vector3(0,.015,0),Vector3(.36,.43,.34),skin,"FaceAndHead")
     _sphere(helmet,Vector3(0,.16,0),Vector3(.415,.25,.37),armor,"TacticalHelmet")
     _sphere(helmet,Vector3(0,.025,-.175),Vector3(.35,.145,.09),visor,"TintedGoggles")
-    _block(helmet,Vector3(0,.16,-.24),Vector3(.32,.042,.08),armor_edge,"VisorRim")
+    _sphere(helmet,Vector3(0,.16,-.24),Vector3(.35,.052,.095),armor_edge,"CurvedVisorRim")
     _sphere(helmet,Vector3(0,-.10,-.165),Vector3(.31,.11,.075),glove,"FabricFaceCover")
     _sphere(helmet,Vector3(-.19,.03,0),Vector3(.075,.15,.16),armor_edge,"EarProtectionLeft")
     _sphere(helmet,Vector3(.19,.03,0),Vector3(.075,.15,.16),armor_edge,"EarProtectionRight")
@@ -137,7 +140,7 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         arm.position = Vector3(.395*flank,.37,0)
         torso.add_child(arm)
         _capsule(arm,Vector3(0,-.19,0),.128,.48,uniform,"Sleeve")
-        _sphere(arm,Vector3(0,-.075,-.01),Vector3(.265,.22,.275),armor_edge,"ArmourPauldron")
+        _sphere(arm,Vector3(0,-.075,-.01),Vector3(.28,.23,.29),armor_edge,"CurvedArmourPauldron")
         _capsule(arm,Vector3(0,-.53,-.055),.105,.41,uniform_secondary,"Forearm")
         _sphere(arm,Vector3(0,-.77,-.075),Vector3(.20,.20,.18),glove,"Glove")
         _sphere(arm,Vector3(0,-.43,-.14),Vector3(.20,.17,.09),armor,"ElbowGuard")
@@ -166,10 +169,17 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
     for ix in range(3):
         _block(detail,Vector3((float(ix)-1.)*.155,1.10,-.34),Vector3(.13,.18,.085),armor_edge,"UtilityPouch"+str(ix))
         _block(detail,Vector3((float(ix)-1.)*.155,1.175,-.386),Vector3(.13,.026,.015),glove,"PouchFastener"+str(ix))
-    _block(detail,Vector3(-.27,.86,-.13),Vector3(.13,.19,.21),armor_edge,"SidePackLeft")
-    _block(detail,Vector3(.27,.86,-.13),Vector3(.13,.19,.21),armor_edge,"SidePackRight")
+    _sphere(detail,Vector3(-.27,.86,-.13),Vector3(.15,.21,.22),armor_edge,"SoftUtilityPackLeft")
+    _sphere(detail,Vector3(.27,.86,-.13),Vector3(.15,.21,.22),armor_edge,"SoftUtilityPackRight")
     _block(detail,Vector3(0,1.50,-.245),Vector3(.11,.038,.028),accent,"ChestStatusLED")
     _sphere(detail,Vector3(-.08,1.76,-.24),Vector3(.09,.032,.02),accent,"OpticalGlassReflection")
+    # Ultra apparel: soft padded back radio, ribbing, knee fabric stitching and shoulder fasteners.
+    _sphere(detail,Vector3(.21,1.23,.29),Vector3(.19,.31,.13),glove,"CommsBatteryBackpack")
+    _sphere(detail,Vector3(.21,1.35,.367),Vector3(.10,.09,.05),accent,"CommsIndicator")
+    for flank in [-1.0,1.0]:
+        _sphere(detail,Vector3(flank*.265,1.48,-.16),Vector3(.16,.075,.13),armor_edge,"CollarSeam")
+        for n in range(3):
+            _sphere(detail,Vector3(flank*.155,.73-float(n)*.075,-.14),Vector3(.13,.029,.075),uniform_secondary,"FabricKneeStitch")
     set_quality(actor_quality)
 
 func set_quality(level: int) -> void:
