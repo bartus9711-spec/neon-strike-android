@@ -133,12 +133,15 @@ func _ring(parent: Node3D,p: Vector3,radius: float, tube: float,mat: Material,la
 func _import_real_human(team: int) -> bool:
     var model_path: String = DETAILED_HUMAN if prefer_detail_lod else RIGGED_HUMAN
     if not ResourceLoader.exists(model_path):
+        print("TEAMCS_IMPORT_MISSING: ",model_path)
         return false
     var packed := load(model_path) as PackedScene
     if packed == null:
+        print("TEAMCS_IMPORT_RESOURCE_NULL: ",model_path)
         return false
     var node := packed.instantiate() as Node3D
     if node == null:
+        print("TEAMCS_IMPORT_NODE_NULL: ",model_path)
         return false
     var shell := Node3D.new()
     shell.name = "Licensed3DHuman"
@@ -157,10 +160,19 @@ func _import_real_human(team: int) -> bool:
             var vertex := transform_to_shell * bounds.get_endpoint(corner)
             bounds_min = bounds_min.min(vertex)
             bounds_max = bounds_max.max(vertex)
-    if meshes.is_empty() or bounds_max.y - bounds_min.y < .005:
+    print("TEAMCS_IMPORT_BOUNDS: ",model_path," meshes=",meshes.size()," min=",bounds_min," max=",bounds_max)
+    if meshes.is_empty():
         shell.queue_free()
         return false
-    var factor := clampf(1.75/(bounds_max.y-bounds_min.y),.025,25.0)
+    var model_height: float = bounds_max.y - bounds_min.y
+    if model_height < .005:
+        # Imported skinned geometry sometimes reports bind-pose AABB with a collapsed
+        # vertical extent. Retain the animated mesh rather than reverting to capsules.
+        model_height = maxf(bounds_max.x-bounds_min.x,bounds_max.z-bounds_min.z)
+    if model_height < .005:
+        shell.queue_free()
+        return false
+    var factor := clampf(1.75/model_height,.025,25.0)
     var mid := (bounds_min+bounds_max)*.5
     node.scale *= factor
     node.position = Vector3(-mid.x*factor,-bounds_min.y*factor,-mid.z*factor)
