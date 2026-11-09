@@ -38,7 +38,7 @@ func _run() -> void:
         push_error("CI: 4v4 gameplay actors missing")
         quit(24)
         return
-    var first_rig: Node3D = main.bots.roster[0]["operative"]
+    var first_rig = main.bots.roster[0]["operative"
     if first_rig == null or not is_instance_valid(first_rig) or first_rig.left_leg == null or first_rig.helmet == null:
         push_error("CI: procedural human operative geometry/animation pivots missing")
         quit(25)
