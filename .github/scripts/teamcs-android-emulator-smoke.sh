@@ -35,9 +35,15 @@ w,h=struct.unpack(">II",blob[16:24])
 print("TEAMCS_EMULATOR_RENDER_PIXELS:",w,h,"bytes=",len(blob))
 if w<=h:
     sys.exit("TEAMCS_SCREEN_PORTRAIT: FPS must start landscape")
-if len(blob)<85000:
-    sys.exit("TEAMCS_SCREEN_BLANK: screenshot too small, likely black Vulkan render")
-print("TEAMCS_LANDSCAPE_RENDER_NONBLANK")
+from PIL import Image
+im=Image.open(p).convert("RGB").resize((160,90))
+samples=list(im.getdata())
+color_pixels=sum(max(rgb)-min(rgb)>=30 for rgb in samples)
+black_pixels=sum(max(rgb)<17 for rgb in samples)
+print("TEAMCS_VISUAL_TEST: colorful=", color_pixels," black=",black_pixels," total=",len(samples))
+if color_pixels<400 or black_pixels>len(samples)*.97:
+    sys.exit("TEAMCS_SCREEN_NO_GAME_SCENE: black screen or Android overlay, NOT a rendered 3D match")
+print("TEAMCS_LANDSCAPE_GAMEPLAY_RENDER_VERIFIED")
 PY
 adb shell pidof "$PKG" | tee /tmp/teamcs-pid.log || true
 if ! test -s /tmp/teamcs-pid.log; then
