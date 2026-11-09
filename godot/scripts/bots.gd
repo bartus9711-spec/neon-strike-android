@@ -1,12 +1,12 @@
 extends Node3D
 ## TeamCS 3D arena match: 4 vs 4, non-graphic energy-tag FPS gameplay.
-## Animated original CC0 humanoid GLB, team uniforms, collision, AI and respawns.
+## Original procedural humanoid operators, dynamic body rigs and terrain-aware bot navigation.
 ## AI can tag an opponent only with a clear line of sight.
 signal score_changed(cyan: int, magenta: int)
 signal player_tagged()
 signal round_finished(winner: int)
 
-const MODEL_PATH := "res://assets/models/RobotExpressive.glb"
+const OPERATIVE = preload("res://scripts/operative.gd")
 const WIN_SCORE := 12
 const RESPAWN_DELAY := 3.4
 
@@ -26,8 +26,6 @@ var _model_resource: PackedScene
 
 func _ready() -> void:
     _rng.randomize()
-    if ResourceLoader.exists(MODEL_PATH):
-        _model_resource = load(MODEL_PATH) as PackedScene
     _colored_materials = [_make_team_material(Color(.09,.85,.95)),_make_team_material(Color(1,.25,.61))]
 
 func _make_team_material(color: Color) -> StandardMaterial3D:
@@ -129,52 +127,23 @@ func _make_actor(team: int, name: String, position: Vector3, index: int) -> Dict
     var animated: Node3D = Node3D.new()
     animated.name = "Character"
     actor.add_child(animated)
-    var animation_player: AnimationPlayer = null
-    var high_model: Node3D = null
-    var low_proxy: Node3D = null
-    if _model_resource != null:
-        var model := _model_resource.instantiate() as Node3D
-        if model != null:
-            high_model = model
-            animated.add_child(model)
-            _fit_model(model)
-            model.rotation.y = PI
-            for node in model.find_children("*","AnimationPlayer",true,false):
-                animation_player = node as AnimationPlayer
-                break
-    if _model_resource != null:
-        low_proxy = Node3D.new()
-        low_proxy.name = "LowEndBodyProxy"
-        animated.add_child(low_proxy)
-        _fallback_avatar(low_proxy,team)
-        low_proxy.visible = false
-    else:
-        _fallback_avatar(animated,team)
-    _color_disc(actor,team)
+    var operator: Node3D = OPERATIVE.new()
+    operator.name = "AnimatedArmouredHumanoid"
+    animated.add_child(operator)
+    operator.build(team,index,actor_quality)
     var entry := {
-        "body":actor, "visual":animated, "animation_player":animation_player,
-        "high_model":high_model, "low_proxy":low_proxy,
+        "body":actor, "visual":animated, "operative":operator,
         "team":team, "index":index, "alive":true, "respawn":0.0,
-        "cooldown":_rng.randf_range(.5,2.2), "think":0.0,
-        "goal":Vector3.ZERO, "motion":0.0, "speed":_rng.randf_range(2.7,3.5),
+        "cooldown":_rng.randf_range(.6,2.0), "think":0.0,
+        "goal":Vector3.ZERO, "motion":0.0, "speed":_rng.randf_range(2.8,3.7),
         "avoid":float(_rng.randi_range(-1,1))
     }
-    _play(entry,"Idle")
     return entry
 
 func _play(bot: Dictionary, action: String) -> void:
-    var player: AnimationPlayer = bot["animation_player"]
-    if player == null or actor_quality == 0 or (actor_quality == 1 and int(bot["index"]) % 2 == 1):
-        return
-    var desired := action.to_lower()
-    for animation_name in player.get_animation_list():
-        if str(animation_name).to_lower().contains(desired):
-            if player.current_animation != str(animation_name):
-                player.play(str(animation_name),.24)
-            return
-    var names := player.get_animation_list()
-    if names.size() > 0 and player.current_animation == "":
-        player.play(str(names[0]))
+    # The custom humanoid rig now handles natural walk and idle poses.
+    # Store logical state here so legacy AI transitions stay compatible.
+    bot["animation_state"] = action
 
 func new_round(data: Dictionary, arena_node: Node3D, player_body: CharacterBody3D) -> void:
     for entry in roster:
@@ -217,18 +186,9 @@ func _spawn(team: int, slot: int) -> Vector3:
 func apply_actor_quality(quality: int) -> void:
     actor_quality = clampi(quality,0,2)
     for entry in roster:
-        var p: AnimationPlayer = entry["animation_player"]
-        var imported: Node3D = entry["high_model"]
-        var proxy: Node3D = entry["low_proxy"]
-        if is_instance_valid(imported):
-            imported.visible = actor_quality != 0
-        if is_instance_valid(proxy):
-            proxy.visible = actor_quality == 0
-        if p != null:
-            if actor_quality == 0 or (actor_quality == 1 and int(entry["index"])%2 == 1):
-                p.stop()
-            else:
-                _play(entry,"Idle")
+        var rig: Node3D = entry["operative"]
+        if is_instance_valid(rig):
+            rig.set_quality(actor_quality)
 
 func _best_target(bot: Dictionary) -> Node3D:
     var origin: Node3D = bot["body"]
@@ -307,10 +267,13 @@ func _physics_process(delta: float) -> void:
             body.velocity.y = 5.0 if body.is_on_floor() else body.velocity.y
             entry["think"] = 0.0
         if distance > .3:
-            var desired_angle := atan2(destination.x,destination.z)
+            var desired_angle := atan2(-destination.x,-destination.z)
             body.rotation.y = lerp_angle(body.rotation.y,desired_angle,delta*7.0)
         var walking := body.velocity.length() > 1.5 and distance > 7.5
         _play(entry,"Walking" if walking else "Idle")
+        var rig: Node3D = entry["operative"]
+        if is_instance_valid(rig):
+            rig.update_pose(Vector2(body.velocity.x,body.velocity.z).length() if walking else 0.0,delta)
         if float(entry["cooldown"]) <= 0 and distance < 22 and distance > .5:
             var target := _best_target(entry)
             if target != null and _has_sight(body,target):
