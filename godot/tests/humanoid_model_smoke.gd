@@ -19,7 +19,7 @@ func _run() -> void:
         actor.build(index,index,2)
         _verify(is_instance_valid(actor.imported_model),"model imported team "+str(index))
         if is_instance_valid(actor.imported_model):
-            var geometry := actor.imported_model.find_children("*","MeshInstance3D",true,false)
+            var geometry: Array[Node] = actor.imported_model.find_children("*","MeshInstance3D",true,false)
             _verify(geometry.size()>0,"imported model has mesh team "+str(index))
             print("TEAMCS_HUMAN_GEOMETRY team=",index," meshes=",geometry.size())
             var aabb_count := 0
