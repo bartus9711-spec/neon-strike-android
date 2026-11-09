@@ -25,7 +25,7 @@
      const img=pics[i];if(img?.complete&&img.naturalWidth){c.drawImage(img,32+i*140,56,95,95);}
    }
    c.fillStyle="#5c3c6d";c.fillRect(0,0,300,37);
-   c.fillStyle="#fff9da";c.font="bold 17px sans-serif";c.textAlign="center";c.fillText("PIKOPET · FRIENDS ♥",150,25);
+   c.fillStyle="#fff9da";c.font="bold 17px sans-serif";c.textAlign="center";c.fillText("TAMAGOTCHI ♥",150,25);
    c.fillStyle="#36223d";c.font="bold 13px sans-serif";
    c.fillText(String(S.pet.name||"Pupil").slice(0,12),83,179);
    c.fillText(String(LINK.other.name||"Gość").slice(0,12),224,179);
