@@ -413,6 +413,17 @@ public final class PetLink {
       lastGift=now;
       JSONObject p=obj("gift");sendWire(p);sendEvent(p);
     }
+    @JavascriptInterface public boolean giftItem(String id){
+      if(!authorized)return false;
+      String safe=id==null?"":id.replaceAll("[^a-z]","");
+      if(!java.util.Arrays.asList("treat","ball","plush","blanket","collar","crown","costume","lantern","toys","premium").contains(safe))return false;
+      long now=System.currentTimeMillis();
+      if(now-lastGift<120000){status("Kolejny prezent można wysłać za 2 minuty.");return false;}
+      try{
+        JSONObject p=obj("gift_item");p.put("item",safe);
+        lastGift=now;sendWire(p);sendEvent(p);return true;
+      }catch(Exception e){return false;}
+    }
     @JavascriptInterface public void startCoop(){
       if(!authorized)return;
       JSONObject p=obj("coop_start");sendWire(p);sendEvent(p);
