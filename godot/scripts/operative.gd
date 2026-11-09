@@ -147,7 +147,7 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
             right_arm = arm
         var leg := Node3D.new()
         leg.name = "LeftLegRig" if left else "RightLegRig"
-        leg.position = Vector3(flank*.17,.79,0)
+        leg.position = Vector3(flank*.17,1.06,0)
         root.add_child(leg)
         _capsule(leg,Vector3(0,-.22,0),.161,.58,uniform,"UniformThigh")
         _sphere(leg,Vector3(0,-.53,-.075),Vector3(.30,.24,.21),armor_edge,"KneeGuard")
