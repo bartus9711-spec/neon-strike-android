@@ -458,7 +458,7 @@ func _make_settings() -> void:
         detail_select.add_item(item)
     detail_select.select(1)
     v.add_child(detail_select)
-    v.add_child(_label("Jakość postaci (dla przyszłych modeli 3D)",15,Color(.58,.79,.83)))
+    v.add_child(_label("Jakość modeli postaci 3D",15,Color(.58,.79,.83)))
     actor_select = OptionButton.new()
     for item in ["LOW — oszczędna geometria","HIGH — normalna","ULTRA — pełna"]:
         actor_select.add_item(item)
@@ -488,6 +488,9 @@ func _make_settings() -> void:
     v.add_child(_label("Wymaga wtyczki Android. Dane komórkowe mogą kosztować; nie zmienia ustawień całego telefonu.",12,Color(.76,.80,.81)))
     v.add_child(_label("PING to serwer gry jest dostępny dopiero po uruchomieniu multiplayera.",12,Color(.76,.80,.81)))
     v.add_child(_label("120 FPS to cel: zależy od GPU, ekranu i limitów systemu.", 12, Color(.77,.81,.78)))
+    var back_to_menu := _button("MENU GŁÓWNE")
+    back_to_menu.pressed.connect(func(): restart_requested.emit())
+    v.add_child(back_to_menu)
     var close := _button("ZAPISZ I WRÓĆ")
     close.pressed.connect(toggle_settings)
     v.add_child(close)
