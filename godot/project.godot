@@ -20,9 +20,12 @@ window/handheld/orientation=0
 common/physics_ticks_per_second=60
 
 [rendering]
-renderer/rendering_method="mobile"
+renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 gl_compatibility/driver.android="opengl3"
+limits/opengl/max_lights_per_object=2
+limits/opengl/max_renderable_lights=12
+limits/opengl/max_decals=0
 textures/default_filters/use_nearest_mipmap_filter=false
 textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.06, 0.10, 0.16, 1)
