@@ -17,7 +17,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh run download 42537487370 --repo "$GITHUB_REPOSITORY" -n TeamCS-Godot-GT7-QA -D /tmp/native-qa
+          gh run download 42538681151 --repo "$GITHUB_REPOSITORY" -n TeamCS-Godot-GT7-QA -D /tmp/native-qa
           find /tmp/native-qa -type f -printf '%p %s bytes\n'
           APK_PATH=$(find /tmp/native-qa -type f -name TeamCS_Godot_GT7_QA.apk -print -quit)
           test -n "$APK_PATH"
@@ -32,7 +32,13 @@ jobs:
             TOOLS="$ANDROID_HOME/build-tools/35.0.0"
           fi
           "$TOOLS/apksigner" verify --verbose --print-certs "$APK"
-          "$TOOLS/aapt" dump badging "$APK" | grep -E "^(package:|sdkVersion:|targetSdkVersion:|native-code:|application-label:|launchable-activity:)"
+          "$TOOLS/aapt" dump badging "$APK" | grep -E "^(package:|sdkVersion:|targetSdkVersion:|native-code:|application-label:|launchable-activity:)" || true
+          "$TOOLS/aapt" dump xmltree "$APK" AndroidManifest.xml > /tmp/teamcs-manifest.txt
+          grep -A 28 -B 6 -E 'GodotAppLauncher|GodotApp|android.intent.category.LAUNCHER|android.intent.action.MAIN' /tmp/teamcs-manifest.txt | head -125
+          if ! grep -q "android.intent.category.LAUNCHER" /tmp/teamcs-manifest.txt; then
+            echo "Missing Android launcher intent in manifest" >&2
+            exit 1
+          fi
           "$TOOLS/zipalign" -c -v 4 "$APK"
       - name: Check APK manifest and Godot runtime architecture
         run: |
