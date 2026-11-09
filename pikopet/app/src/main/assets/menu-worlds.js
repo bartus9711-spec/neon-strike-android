@@ -1,0 +1,22 @@
+(function(){
+ const api=window.TamagotchiBackgrounds;if(!api)return;
+ const key='tama_menu_theme_v1';let selected=Number(localStorage.getItem(key)||0);if(!Number.isInteger(selected)||selected<0||selected>=api.themes.length)selected=0;
+ const css=document.createElement('style');css.textContent='#overlay .sheet{position:relative;isolation:isolate;background:linear-gradient(145deg,#291d39e8,#20162de9);border-color:var(--menu-border,#dca9d2)!important;box-shadow:0 0 24px var(--menu-glow,#b883bc66)!important;overflow:hidden}#overlay .sheet:before{content:"";position:absolute;inset:0;z-index:-2;background-image:var(--menu-image);background-size:cover;background-position:center;opacity:.43;pointer-events:none}#overlay .sheet:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#21152edb,#24162fbb 30%,#1b122cdd);pointer-events:none}#overlay .sheet-head,#overlay .sheet-body{position:relative;z-index:1}#overlay .sheet button.primary,#overlay .sheet button.secondary,#overlay .sheet .menu-card{border-color:var(--menu-border,#e4a5d4);box-shadow:0 2px 8px var(--menu-glow,#bc6bba44)}#overlay .sheet .sheet-head{background:#1c1425a8}.menu-world-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.menu-world-choice{background:#241a33;color:#fff3df;border:2px solid #ab87ba;border-radius:13px;padding:5px;overflow:hidden;font-weight:800}.menu-world-choice.active{border-color:#ffe39b;box-shadow:0 0 0 2px #ffe39b55}.menu-world-choice img{width:100%;height:136px;object-fit:cover;border-radius:9px;display:block}.menu-world-choice span{display:block;padding:6px 2px;font-size:12px}.tama-drawer{margin:9px 0;border:1px solid #b894ca;border-radius:13px;background:#21182dbb;overflow:hidden}.tama-drawer summary{padding:13px 12px;font-weight:800;cursor:pointer;list-style:none}.tama-drawer summary:after{content:"⌄";float:right;font-size:19px}.tama-drawer[open] summary:after{content:"⌃"}.tama-drawer .drawer-content{padding:10px 12px;border-top:1px solid #b894ca55}';document.head.appendChild(css);
+ function apply(n){selected=n;const t=api.themes[n];const sheet=document.querySelector('#overlay .sheet');sheet.style.setProperty('--menu-image','url("'+api.art(t)+'")');sheet.style.setProperty('--menu-border',t[3]);sheet.style.setProperty('--menu-glow',t[2]+'99');localStorage.setItem(key,String(n));}
+ apply(selected);
+ function picker(){
+ const categories=[['🎄 Święta i zima',0,10],['🌸 Wiosna i parki',10,18],['☀️ Lato i lunaparki',18,27],['🍂 Jesień',27,33],['🌌 Fantazja',33,api.themes.length]];
+ const markup='<p class="intro">Motyw menu jest niezależny od tła jajka. Oba korzystają z tych samych 41 światów. Wszystkie okna i szuflady odziedziczą wybrany wygląd.</p><button class="secondary" data-menu-match="1">🔗 Ustaw taki sam motyw jak tło jajka</button>'+categories.map(([label,a,b])=>'<div class="background-category">'+label+'</div><div class="menu-world-picker">'+api.themes.slice(a,b).map((t,i)=>{const n=a+i;return '<button class="menu-world-choice '+(selected===n?'active':'')+'" data-menu-world="'+n+'"><img src="'+api.art(t)+'" alt="'+esc(t[1])+'"><span>'+t[0]+' '+esc(t[1])+'</span></button>';}).join('')+'</div>').join('');
+ showSheet('🎨 Motyw menu · '+api.themes.length,markup,'menu-worlds');
+ }
+ const previousSettings=showSettings;
+ showSettings=function(){previousSettings();const list=$('sheetBody').querySelector('.action-list');list?.insertAdjacentHTML('beforeend','<button class="secondary" data-menu-world-open="1">🎨 Motyw menu (niezależny od jajka)</button>');};
+ const previousMenu=showMenu;
+ showMenu=function(){previousMenu();const grid=$('sheetBody').querySelector('.menu-grid');grid?.insertAdjacentHTML('afterbegin','<button class="menu-card" data-menu-world-open="1"><span class="emoji">🎨</span>Motyw menu<small>41 światów</small></button>');};
+ $('overlay').addEventListener('click',e=>{
+  if(e.target.closest('[data-menu-world-open]')){picker();return;}
+  const choice=e.target.closest('[data-menu-world]');if(choice){apply(Number(choice.dataset.menuWorld));picker();return;}
+  if(e.target.closest('[data-menu-match]')){apply(api.selected);picker();notify('🎨 Motyw menu dopasowany do tła jajka');}
+ });
+ window.TamagotchiMenuWorlds={apply,picker,get selected(){return selected;}};
+})();
