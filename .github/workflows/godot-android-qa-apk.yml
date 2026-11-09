@@ -1,6 +1,10 @@
 name: TeamCS Native Godot 4.7.2 Android QA APK
 on:
   workflow_dispatch:
+  push:
+    branches: [teamcs-art-mobile-playtest-20261109]
+    paths:
+      - ".github/workflows/godot-android-qa-apk.yml"
 
 jobs:
   native-android-qa:
@@ -61,6 +65,18 @@ jobs:
           "$ANDROID_HOME/platform-tools/adb" devices
           # Godot 4.7 CLI installs the Gradle template only together with --export-debug.
           test -s "$HOME/.local/share/godot/export_templates/4.7.2.stable/android_source.zip"
+      - name: Full 8-map 3D playtest with animated human figures and LOD
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -qq install -y xvfb libgl1-mesa-dri libgl1
+          set -o pipefail
+          xvfb-run -a -s "-screen 0 1280x720x24" \
+            /tmp/godot --path godot --rendering-method gl_compatibility \
+            --script res://tools/capture.gd 2>&1 | tee /tmp/godot-playtest.log
+          grep -q "CI_HUMAN_CHARACTER_LOD_OK" /tmp/godot-playtest.log
+          grep -q "ALL_EIGHT_ARENAS_RENDERED_AND_TESTED" /tmp/godot-playtest.log
+          test -s godot/visual-qa/teamcs-godot-preview.png
+          if grep -E 'SCRIPT ERROR|Parse Error|Invalid access|Invalid call' /tmp/godot-playtest.log; then exit 1; fi
       - name: Export signed native test APK (NEVER publishes official release)
         run: |
           set -o pipefail
@@ -143,5 +159,7 @@ jobs:
             /tmp/godot-export-arm64.log
             teamcs-emulator-smoke.png
             teamcs-emulator-logcat.txt
+            godot/visual-qa/*.png
+            /tmp/godot-playtest.log
           if-no-files-found: warn
           retention-days: 14
