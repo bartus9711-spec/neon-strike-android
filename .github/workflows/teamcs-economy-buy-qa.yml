@@ -68,6 +68,11 @@ jobs:
           "$ANDROID_HOME/platform-tools/adb" devices
           # Godot 4.7 CLI installs the Gradle template only together with --export-debug.
           test -s "$HOME/.local/share/godot/export_templates/4.7.2.stable/android_source.zip"
+      - name: Verify real economy, buy buttons and ammunition state
+        run: |
+          set -euo pipefail
+          /tmp/godot --headless --path godot --script res://tests/economy_smoke.gd 2>&1 | tee /tmp/economy-smoke.log
+          grep -q 'TEAMCS_ECONOMY_PASS' /tmp/economy-smoke.log
       - name: Export signed native test APK (NEVER publishes official release)
         run: |
           set -o pipefail
