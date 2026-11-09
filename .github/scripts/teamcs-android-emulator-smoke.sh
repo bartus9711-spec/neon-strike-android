@@ -22,6 +22,20 @@ adb shell dumpsys activity activities | grep -E 'ResumedActivity|mResumed|pl.tea
 adb shell screencap -p /sdcard/teamcs-smoke.png
 adb pull /sdcard/teamcs-smoke.png "$GITHUB_WORKSPACE/teamcs-emulator-smoke.png"
 adb logcat -d -v brief > "$GITHUB_WORKSPACE/teamcs-emulator-logcat.txt"
+python3 - "$GITHUB_WORKSPACE/teamcs-emulator-smoke.png" <<'PY'
+import struct, sys, pathlib
+p=pathlib.Path(sys.argv[1])
+blob=p.read_bytes()
+if blob[:8] != b'\x89PNG\r\n\x1a\n':
+    sys.exit("TEAMCS_SCREEN_INVALID: screenshot is not PNG")
+w,h=struct.unpack(">II",blob[16:24])
+print("TEAMCS_EMULATOR_RENDER_PIXELS:",w,h,"bytes=",len(blob))
+if w<=h:
+    sys.exit("TEAMCS_SCREEN_PORTRAIT: FPS must start landscape")
+if len(blob)<85000:
+    sys.exit("TEAMCS_SCREEN_BLANK: screenshot too small, likely black Vulkan render")
+print("TEAMCS_LANDSCAPE_RENDER_NONBLANK")
+PY
 adb shell pidof "$PKG" | tee /tmp/teamcs-pid.log || true
 if ! test -s /tmp/teamcs-pid.log; then
     echo "TEAMCS_CLOSED: saved screenshot and logcat" >&2
