@@ -609,4 +609,29 @@ func _lighting() -> void:
         atmosphere.fog_enabled = not night
         atmosphere.fog_density = .002 if snow else .0018 if desert else .0034
         atmosphere.fog_light_color = Color(.71,.79,.87) if snow else Color(.78,.68,.50) if desert else Color(.31,.46,.62)
-        atmosphere.ambient_light_energy = .47 if night else .9 if snow else .71
+        atmosphere.ambient_light_energy = .55 if night else .9 if snow else .74
+        # Each arena has its own authored sky conditions, not a single blue daytime.
+        # ProceduralSkyMaterial stays cheap on mobile and does not require HDR textures.
+        if atmosphere.sky != null:
+            var sky_material := atmosphere.sky.sky_material as ProceduralSkyMaterial
+            if sky_material != null:
+                if night:
+                    sky_material.sky_top_color = Color(.018,.035,.082)
+                    sky_material.sky_horizon_color = Color(.085,.13,.22)
+                    sky_material.ground_horizon_color = Color(.09,.10,.15)
+                    sky_material.ground_bottom_color = Color(.045,.045,.055)
+                elif desert:
+                    sky_material.sky_top_color = Color(.11,.31,.54)
+                    sky_material.sky_horizon_color = Color(.72,.57,.40)
+                    sky_material.ground_horizon_color = Color(.56,.41,.29)
+                    sky_material.ground_bottom_color = Color(.20,.17,.13)
+                elif snow:
+                    sky_material.sky_top_color = Color(.11,.34,.65)
+                    sky_material.sky_horizon_color = Color(.62,.76,.87)
+                    sky_material.ground_horizon_color = Color(.72,.78,.82)
+                    sky_material.ground_bottom_color = Color(.35,.40,.42)
+                else:
+                    sky_material.sky_top_color = Color(.065,.28,.53)
+                    sky_material.sky_horizon_color = Color(.43,.65,.81)
+                    sky_material.ground_horizon_color = Color(.49,.50,.48)
+                    sky_material.ground_bottom_color = Color(.20,.23,.26)
