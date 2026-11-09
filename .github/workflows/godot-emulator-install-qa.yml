@@ -1,10 +1,7 @@
 name: TeamCS Android 16 Emulator Install and Screenshot QA
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/scripts/teamcs-android-emulator-smoke.sh"
-      - ".github/workflows/godot-emulator-install-qa.yml"
+
 jobs:
   emulator-install:
     runs-on: ubuntu-24.04
