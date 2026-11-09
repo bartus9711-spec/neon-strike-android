@@ -112,6 +112,25 @@ jobs:
           ram-size: 3072M
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: bash .github/scripts/teamcs-android-emulator-smoke.sh
+      - name: Export smaller ARM64-only APK for the actual GT 7, same signed 4v4 game
+        run: |
+          set -euo pipefail
+          sed -i 's#architectures/x86_64=true#architectures/x86_64=false#' godot/export_presets.cfg
+          /tmp/godot --headless --path godot --editor --export-debug "Android GT7 QA" \
+            "$GITHUB_WORKSPACE/TeamCS_Godot_GT7_ARM64.apk" 2>&1 | tee /tmp/godot-export-arm64.log
+          test -s TeamCS_Godot_GT7_ARM64.apk
+          TOOLS="$ANDROID_HOME/build-tools/35.0.1"
+          "$TOOLS/apksigner" verify --verbose TeamCS_Godot_GT7_ARM64.apk
+          "$TOOLS/zipalign" -c 4 TeamCS_Godot_GT7_ARM64.apk
+          "$TOOLS/aapt" dump badging TeamCS_Godot_GT7_ARM64.apk | tee /tmp/teamcs-phone-badging.log
+          grep -q "native-code: 'arm64-v8a'" /tmp/teamcs-phone-badging.log
+          grep -q "package: name='pl.teamcs.arena4v4qa'" /tmp/teamcs-phone-badging.log
+          unzip -l TeamCS_Godot_GT7_ARM64.apk | grep -q lib/arm64-v8a/libgodot_android.so
+          if unzip -l TeamCS_Godot_GT7_ARM64.apk | grep -q lib/x86_64/libgodot_android.so; then
+            echo "Unexpected x86_64 library in ARM64 phone package" >&2
+            exit 1
+          fi
+          ls -lh TeamCS_Godot_GT7_ARM64.apk
       - name: Upload native Android QA APK and export logs (private test artifact, not Play Store release)
         if: always()
         uses: actions/upload-artifact@v4
@@ -119,10 +138,12 @@ jobs:
           name: TeamCS-Godot-GT7-QA
           path: |
             TeamCS_Godot_GT7_QA.apk
+            TeamCS_Godot_GT7_ARM64.apk
             /tmp/godot-import.log
             /tmp/godot-sdk.log
             /tmp/godot-template.log
             /tmp/godot-export.log
+            /tmp/godot-export-arm64.log
             teamcs-emulator-smoke.png
             teamcs-emulator-logcat.txt
           if-no-files-found: warn
