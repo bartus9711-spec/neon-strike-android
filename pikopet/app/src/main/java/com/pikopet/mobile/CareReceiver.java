@@ -47,10 +47,10 @@ public class CareReceiver extends BroadcastReceiver {
      double clean=pet.optDouble("clean",99)-.13*elapsed*factor;
      boolean sick=pet.optBoolean("sick",false);
      String petName=pet.optString("name","Twój pupil");
-     if(sick){title="💊 PikoPet: potrzebna pomoc!";body=petName+" źle się czuje. Zajrzyj do gry.";}
-     else if(hunger<30){title="🍴 PikoPet: pora na jedzenie!";body=petName+" jest głodny. Nakarm swojego pupila.";}
-     else if(clean<28){title="🧹 PikoPet: czas posprzątać!";body=petName+" potrzebuje czystego domku.";}
-     else if(pet.optDouble("happy",99)-.12*elapsed*factor<30){title="💞 PikoPet: pobaw się ze mną!";body=petName+" czeka na Twoją uwagę.";}
+     if(sick){title="💊 Tamagotchi: potrzebna pomoc!";body=petName+" źle się czuje. Zajrzyj do gry.";}
+     else if(hunger<30){title="🍴 Tamagotchi: pora na jedzenie!";body=petName+" jest głodny. Nakarm swojego pupila.";}
+     else if(clean<28){title="🧹 Tamagotchi: czas posprzątać!";body=petName+" potrzebuje czystego domku.";}
+     else if(pet.optDouble("happy",99)-.12*elapsed*factor<30){title="💞 Tamagotchi: pobaw się ze mną!";body=petName+" czeka na Twoją uwagę.";}
    }catch(Exception e){return;}
    if(title==null)return;
    NotificationManager nm=(NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
