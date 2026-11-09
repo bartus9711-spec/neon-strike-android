@@ -33,6 +33,7 @@ var jump_queued := false
 var action_queued := false
 var last_jump := false
 var elapsed := 0.0
+var hud_update_timer := 0.0
 var collected := 0
 var beacons: Array[Node3D] = []
 var batches := {}
@@ -435,7 +436,12 @@ func _physics_process(delta: float) -> void:
         scanner.position.y = -.43 + sin(elapsed*10.7)*.011*bounce
         scanner.rotation.z = -.05 + sin(elapsed*5.1)*.021*bounce
         camera.position.y = 1.54 + sin(elapsed*11.0)*.015*bounce
-    _update_match_hud()
+    # Updating CanvasLayer labels on every physics tick wastes mobile CPU/GPU time.
+    # Scores still update instantly through their existing signals.
+    hud_update_timer += delta
+    if hud_update_timer >= .15:
+        hud_update_timer = 0.0
+        _update_match_hud()
 
 func _turn(relative: Vector2) -> void:
     if relative == Vector2.ZERO:
