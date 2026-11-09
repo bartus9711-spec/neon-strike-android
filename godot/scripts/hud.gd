@@ -59,9 +59,9 @@ var network_toggle: CheckButton
 var pad_dead_slider: HSlider
 var invert_toggle: CheckButton
 
-var _profile := 2
-var _fps := 120
-var _scale := 1.0
+var _profile := 1
+var _fps := 60
+var _scale := .90
 var _shadows := true
 var _aa := 2
 var _setting_up := true
@@ -360,13 +360,13 @@ func _make_settings() -> void:
     profile_select = OptionButton.new()
     for label in ["PŁYNNOŚĆ", "WYSOKA", "ULTRA"]:
         profile_select.add_item(label)
-    profile_select.selected = 2
+    profile_select.selected = 1
     v.add_child(profile_select)
     v.add_child(_label("Docelowe FPS", 15, Color(.58,.79,.83)))
     fps_select = OptionButton.new()
     for option in [30, 60, 90, 120]:
         fps_select.add_item("%d FPS" % option, option)
-    fps_select.select(3)
+    fps_select.select(1)
     v.add_child(fps_select)
     settings_scale_label = _label("Rozdzielczość 3D: 100%", 15, Color(.58,.79,.83))
     v.add_child(settings_scale_label)
@@ -374,7 +374,7 @@ func _make_settings() -> void:
     scale_slider.min_value = .60
     scale_slider.max_value = 1.00
     scale_slider.step = .05
-    scale_slider.value = 1.00
+    scale_slider.value = .90
     v.add_child(scale_slider)
     shadow_toggle = CheckButton.new()
     shadow_toggle.text = "Cienie dynamiczne"
@@ -394,7 +394,7 @@ func _make_settings() -> void:
     detail_select = OptionButton.new()
     for item in ["LOW — bez dodatków i świateł punktowych","HIGH — dodatki, mniej świateł","ULTRA — pełne efekty"]:
         detail_select.add_item(item)
-    detail_select.select(2)
+    detail_select.select(1)
     v.add_child(detail_select)
     v.add_child(_label("Jakość postaci (dla przyszłych modeli 3D)",15,Color(.58,.79,.83)))
     actor_select = OptionButton.new()
@@ -512,14 +512,14 @@ func _load_prefs() -> void:
     var save := ConfigFile.new()
     if save.load("user://teamcs-graphics.cfg") != OK:
         return
-    profile_select.select(clampi(int(save.get_value("render","profile",2)),0,2))
-    var fps := int(save.get_value("render","fps",120))
+    profile_select.select(clampi(int(save.get_value("render","profile",1)),0,2))
+    var fps := int(save.get_value("render","fps",60))
     fps_select.select([30,60,90,120].find(fps) if [30,60,90,120].has(fps) else 3)
-    scale_slider.value = clampf(float(save.get_value("render","scale",1.0)),.6,1.0)
+    scale_slider.value = clampf(float(save.get_value("render","scale",.90)),.6,1.0)
     shadow_toggle.button_pressed = bool(save.get_value("render","shadows",true))
     aa_select.select(clampi(int(save.get_value("render","aa",1)),0,2))
     texture_toggle.button_pressed = bool(save.get_value("render","textures",true))
-    detail_select.select(clampi(int(save.get_value("render","detail",2)),0,2))
+    detail_select.select(clampi(int(save.get_value("render","detail",1)),0,2))
     actor_select.select(clampi(int(save.get_value("render","actors",1)),0,2))
     network_toggle.button_pressed = bool(save.get_value("network","app_auto_switch",false))
     pad_dead_slider.value = clampf(float(save.get_value("input","deadzone",.16)),.06,.35)
