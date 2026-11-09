@@ -128,16 +128,17 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
     variant = character_variant
     quality = actor_quality
     var blue := team == 0
-    var dark_olive := Color(.25,.30,.30) if blue else Color(.31,.29,.23)
-    var palette := [Color(.21,.28,.30),Color(.32,.34,.30),Color(.30,.28,.31),Color(.26,.31,.33)]
-    dark_olive = palette[posmod(variant + team*2,palette.size())].lerp(dark_olive,.55)
+    # CT in graphite/navy and T in dusty olive/brown, both matte fabrics.
+    var dark_olive := Color(.18,.235,.255) if blue else Color(.39,.335,.245)
+    var palette := [Color(.20,.245,.25),Color(.24,.28,.25),Color(.34,.30,.26),Color(.29,.32,.29)]
+    dark_olive = dark_olive.lerp(palette[posmod(variant + team*2,palette.size())],.26)
     uniform = _material(dark_olive,.95)
     uniform_secondary = _material(dark_olive.darkened(.15),.96)
-    armor = _material(Color(.125,.155,.18) if blue else Color(.20,.175,.165),.62,.08)
-    armor_edge = _material(Color(.19,.23,.25) if blue else Color(.29,.24,.19),.56,.20)
+    armor = _material(Color(.105,.12,.13) if blue else Color(.27,.24,.205),.89,.02)
+    armor_edge = _material(Color(.19,.22,.23) if blue else Color(.35,.30,.24),.91,.01)
     skin = _material([Color(.61,.43,.32),Color(.85,.67,.51),Color(.40,.30,.24),Color(.71,.54,.39)][posmod(variant,4)],.92)
     glove = _material(Color(.10,.12,.13),.74,.13)
-    visor = _material(Color(.07,.16,.20),.17,.32)
+    visor = _material(Color(.07,.11,.13),.37,.08)
     # Team identification is dyed fabric rather than bright glowing armour.
     accent = _material(Color(.30,.47,.53) if blue else Color(.55,.35,.30),.84,.02)
     root = Node3D.new()
@@ -180,12 +181,19 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
     helmet.position = Vector3(0,.63,0)
     torso.add_child(helmet)
     _sphere(helmet,Vector3(0,.015,0),Vector3(.36,.43,.34),skin,"FaceAndHead")
-    _sphere(helmet,Vector3(0,.16,0),Vector3(.415,.25,.37),armor,"TacticalHelmet")
-    _sphere(helmet,Vector3(0,.025,-.175),Vector3(.35,.145,.09),visor,"TintedGoggles")
-    _sphere(helmet,Vector3(0,.16,-.24),Vector3(.35,.052,.095),armor_edge,"CurvedVisorRim")
-    _sphere(helmet,Vector3(0,-.10,-.165),Vector3(.31,.11,.075),glove,"FabricFaceCover")
-    _sphere(helmet,Vector3(-.19,.03,0),Vector3(.075,.15,.16),armor_edge,"EarProtectionLeft")
-    _sphere(helmet,Vector3(.19,.03,0),Vector3(.075,.15,.16),armor_edge,"EarProtectionRight")
+    if blue:
+        _sphere(helmet,Vector3(0,.17,.012),Vector3(.39,.245,.365),armor,"TacticalHelmet")
+        _sphere(helmet,Vector3(-.105,.052,-.174),Vector3(.155,.09,.075),visor,"LeftGoggleLens")
+        _sphere(helmet,Vector3(.105,.052,-.174),Vector3(.155,.09,.075),visor,"RightGoggleLens")
+        _sphere(helmet,Vector3(0,.16,-.22),Vector3(.34,.054,.078),armor_edge,"CurvedVisorRim")
+        _sphere(helmet,Vector3(-.195,.035,0),Vector3(.075,.14,.155),armor_edge,"EarProtectionLeft")
+        _sphere(helmet,Vector3(.195,.035,0),Vector3(.075,.14,.155),armor_edge,"EarProtectionRight")
+    else:
+        _sphere(helmet,Vector3(0,.045,.02),Vector3(.385,.43,.355),uniform_secondary,"FabricBalaclavaHood")
+        _sphere(helmet,Vector3(0,.032,-.173),Vector3(.295,.083,.072),skin,"VisibleEyeBand")
+        _sphere(helmet,Vector3(0,-.08,-.218),Vector3(.30,.16,.095),uniform_secondary,"WrappedFaceScarf")
+        _sphere(helmet,Vector3(0,-.235,-.065),Vector3(.37,.15,.32),uniform,"ClothNeckWrap")
+    _sphere(helmet,Vector3(0,-.13,-.18),Vector3(.30,.105,.070),glove,"FabricFaceCover")
     for flank in [-1,1]:
         var left: bool = int(flank) == -1
         var arm := Node3D.new()
@@ -193,7 +201,9 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         arm.position = Vector3(.395*flank,.37,0)
         torso.add_child(arm)
         _capsule(arm,Vector3(0,-.19,0),.128,.48,uniform,"Sleeve")
-        _sphere(arm,Vector3(0,-.075,-.01),Vector3(.28,.23,.29),armor_edge,"CurvedArmourPauldron")
+        _sphere(arm,Vector3(0,-.075,-.01),Vector3(.25,.21,.245),uniform_secondary,"ClothShoulderOverlay")
+        if blue:
+            _sphere(arm,Vector3(0,-.082,-.012),Vector3(.24,.12,.235),armor_edge,"CurvedArmourPauldron")
         var forearm := Node3D.new()
         forearm.name = "ElbowJoint"
         forearm.position = Vector3(0,-.385,-.04)
@@ -247,8 +257,9 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
     _block(detail,Vector3(0,1.50,-.245),Vector3(.11,.038,.028),accent,"ChestStatusLED")
     _sphere(detail,Vector3(-.08,1.76,-.24),Vector3(.09,.032,.02),accent,"OpticalGlassReflection")
     # Ultra apparel: soft padded back radio, ribbing, knee fabric stitching and shoulder fasteners.
-    _sphere(detail,Vector3(.21,1.23,.29),Vector3(.19,.31,.13),glove,"CommsBatteryBackpack")
-    _sphere(detail,Vector3(.21,1.35,.367),Vector3(.10,.09,.05),accent,"CommsIndicator")
+    if blue:
+        _sphere(detail,Vector3(.21,1.23,.29),Vector3(.19,.31,.13),glove,"CompactRadioPack")
+        _sphere(detail,Vector3(.21,1.35,.367),Vector3(.10,.09,.05),accent,"CommsIndicator")
     for flank in [-1.0,1.0]:
         _sphere(detail,Vector3(flank*.265,1.48,-.16),Vector3(.16,.075,.13),armor_edge,"CollarSeam")
         for n in range(3):

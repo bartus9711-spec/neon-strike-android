@@ -159,11 +159,22 @@ func _stage() -> void:
     fill.light_energy = 1.1
     world.add_child(fill)
     var camera := Camera3D.new()
-    camera.position = Vector3(0,1.35,-4.9)
+    camera.position = Vector3(0,1.29,-3.50)
     camera.fov = 47.0
     camera.current = true
     world.add_child(camera)
-    camera.look_at(Vector3(0,1.05,0),Vector3.UP)
+    camera.look_at(Vector3(0,1.03,0),Vector3.UP)
+    # A muted urban set, placed behind the live 3D operators. No neon effects.
+    _stage_block(world,Vector3(0,-.19,1.25),Vector3(8.0,.23,7.0),Color(.22,.23,.22))
+    _stage_block(world,Vector3(-2.85,2.25,2.75),Vector3(2.5,4.5,1.0),Color(.48,.44,.37))
+    _stage_block(world,Vector3(2.88,2.1,3.2),Vector3(2.45,4.2,1.25),Color(.43,.41,.38))
+    _stage_block(world,Vector3(0,2.7,4.5),Vector3(5.0,5.4,.6),Color(.34,.33,.31))
+    _stage_block(world,Vector3(-2.73,.74,2.15),Vector3(.16,1.8,.7),Color(.28,.29,.28))
+    _stage_block(world,Vector3(2.67,.72,2.50),Vector3(.16,1.8,.7),Color(.24,.26,.27))
+    for tower in range(4):
+        var bx := -2.30+float(tower)*1.5
+        _stage_block(world,Vector3(bx,1.86,3.85),Vector3(.54,1.26,.09),Color(.16,.22,.25))
+        _stage_block(world,Vector3(bx,2.56,3.82),Vector3(.65,.08,.13),Color(.74,.68,.59))
     for team in range(2):
         var actor = OPERATOR.new()
         actor.position = Vector3(-.76 if team==0 else .76,-.10,0.12)
@@ -171,6 +182,18 @@ func _stage() -> void:
         world.add_child(actor)
         actor.build(team,1+gear_variant if team==0 else 2,2)
         previews.append(actor)
+
+func _stage_block(world: Node3D, p: Vector3, dimensions: Vector3, color: Color) -> void:
+    var node := MeshInstance3D.new()
+    var mesh := BoxMesh.new()
+    mesh.size = dimensions
+    node.mesh = mesh
+    node.position = p
+    var material := StandardMaterial3D.new()
+    material.albedo_color = color
+    material.roughness = .96
+    node.material_override = material
+    world.add_child(node)
 
 func configure(maps: Array) -> void:
     if not is_instance_valid(map_picker):
