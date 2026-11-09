@@ -41,7 +41,7 @@ func _run() -> void:
         menu.refresh()
     )
     menu.open(wallet,2)
-    _check(is_instance_valid(menu.heading) and is_instance_valid(menu.wallet),"buy menu ready")
+    _check(is_instance_valid(menu.title) and is_instance_valid(menu.wallet),"buy menu ready")
     _check(menu.visible and menu.items.size() == ECONOMY.CATALOG.size(),"all catalog buttons visible")
     _check(menu.wallet.text == "3300 $","actual wallet displayed")
     var armor_button: Button = menu.items["armor"]
