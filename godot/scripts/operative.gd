@@ -131,7 +131,7 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
     _sphere(helmet,Vector3(-.19,.03,0),Vector3(.075,.15,.16),armor_edge,"EarProtectionLeft")
     _sphere(helmet,Vector3(.19,.03,0),Vector3(.075,.15,.16),armor_edge,"EarProtectionRight")
     for flank in [-1,1]:
-        var left := flank == -1
+        var left: bool = int(flank) == -1
         var arm := Node3D.new()
         arm.name = "LeftShoulderRig" if left else "RightShoulderRig"
         arm.position = Vector3(.395*flank,.37,0)
