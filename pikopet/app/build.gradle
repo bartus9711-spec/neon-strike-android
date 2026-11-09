@@ -1,5 +1,5 @@
 plugins { id 'com.android.application' }
 android { namespace 'com.pikopet.mobile'; compileSdk 35
- defaultConfig { applicationId 'com.pikopet.mobile.tamagotchi27'; minSdk 24; targetSdk 34; versionCode 27; versionName '2.7' }
+ defaultConfig { applicationId 'com.pikopet.mobile.tamagotchi28'; minSdk 24; targetSdk 34; versionCode 28; versionName '2.8' }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
