@@ -420,7 +420,11 @@ func _physics_process(delta: float) -> void:
     action_queued = false
     hud.set_status(collected, beacons.size(), hero.global_position)
     if is_instance_valid(scanner):
-        scanner.position.y = -.45 + sin(elapsed * 9) * .008 * minf(hero.velocity.length()/5.,1.)
+        var speed := Vector2(hero.velocity.x,hero.velocity.z).length()
+        var bounce := minf(speed/7.0,1.0)
+        scanner.position.y = -.43 + sin(elapsed*10.7)*.011*bounce
+        scanner.rotation.z = -.05 + sin(elapsed*5.1)*.021*bounce
+        camera.position.y = 1.54 + sin(elapsed*11.0)*.015*bounce
     _update_match_hud()
 
 func _turn(relative: Vector2) -> void:
@@ -450,48 +454,76 @@ func _unhandled_input(event: InputEvent) -> void:
             recharge_requested = true
 
 func _make_scanner() -> void:
-    # A sci-fi energy scanner is the first-person view model, not a real firearm.
+    # Original sci-fi photon TAG controller model: compact consumer electronics,
+    # rather than an abstract oval blob covering a third of the game screen.
     scanner = Node3D.new()
-    scanner.name = "ViewEnergyScanner"
-    scanner.position = Vector3(.50,-.45,-.85)
+    scanner.name = "FirstPersonPhotonTagController"
+    scanner.position = Vector3(.42,-.43,-.76)
+    scanner.rotation = Vector3(-.10,.06,-.05)
     camera.add_child(scanner)
-    var dark := StandardMaterial3D.new()
-    dark.albedo_color = Color(.10,.15,.20)
-    dark.roughness = .32
-    dark.metallic = .73
-    var accents := StandardMaterial3D.new()
-    accents.albedo_color = Color(.10,.83,.96)
-    accents.roughness = .18
-    accents.metallic = .5
-    accents.emission_enabled = true
-    accents.emission = Color(.10,.85,1.0)
-    accents.emission_energy_multiplier = 2.
+    var shell := StandardMaterial3D.new()
+    shell.albedo_color = Color(.115,.15,.18)
+    shell.roughness = .34
+    shell.metallic = .57
+    var grip := StandardMaterial3D.new()
+    grip.albedo_color = Color(.075,.095,.112)
+    grip.roughness = .85
+    var white := StandardMaterial3D.new()
+    white.albedo_color = Color(.64,.71,.74)
+    white.roughness = .31
+    white.metallic = .31
+    var leds := StandardMaterial3D.new()
+    leds.albedo_color = Color(.12,.88,.99)
+    leds.emission_enabled = true
+    leds.emission = Color(.09,.77,1.)
+    leds.emission_energy_multiplier = 1.5
+    leds.roughness = .22
+    var display := StandardMaterial3D.new()
+    display.albedo_color = Color(.05,.25,.30)
+    display.emission_enabled = true
+    display.emission = Color(.04,.19,.21)
+    display.emission_energy_multiplier = 1.
     var parts := [
-        [Vector3(.01,-.12,-.10),Vector3(.21,.34,.37),dark],
-        [Vector3(0,.04,-.22),Vector3(.22,.12,.28),dark],
-        [Vector3(0,.09,-.39),Vector3(.15,.18,.16),accents],
-        [Vector3(-.15,-.04,-.21),Vector3(.07,.14,.29),accents],
-        [Vector3(.15,-.04,-.21),Vector3(.07,.14,.29),accents]
+        [Vector3(0,.0,0),Vector3(.19,.21,.55),shell],
+        [Vector3(0,.07,-.23),Vector3(.15,.11,.20),shell],
+        [Vector3(0,.18,-.10),Vector3(.18,.038,.29),display],
+        [Vector3(0,.21,-.10),Vector3(.11,.011,.21),leds],
+        [Vector3(-.13,.035,-.07),Vector3(.045,.15,.37),white],
+        [Vector3(.13,.035,-.07),Vector3(.045,.15,.37),white],
+        [Vector3(0,-.22,.13),Vector3(.13,.32,.14),grip],
+        [Vector3(0,-.35,.13),Vector3(.18,.045,.17),shell],
+        [Vector3(0,.03,-.47),Vector3(.12,.11,.075),white],
+        [Vector3(0,.03,-.51),Vector3(.084,.078,.042),leds],
+        [Vector3(-.09,-.07,-.25),Vector3(.025,.055,.14),leds],
+        [Vector3(.09,-.07,-.25),Vector3(.025,.055,.14),leds]
     ]
-    for part in parts:
-        var item := MeshInstance3D.new()
-        var mesh := SphereMesh.new()
-        mesh.radius = .5
-        mesh.height = 1.
-        item.mesh = mesh
-        item.position = part[0]
-        item.scale = part[1]
-        item.material_override = part[2]
-        scanner.add_child(item)
-    var ring := MeshInstance3D.new()
-    var torus := TorusMesh.new()
-    torus.inner_radius = .115
-    torus.outer_radius = .145
-    ring.mesh = torus
-    ring.rotation.x = PI * .5
-    ring.position = Vector3(0,.02,-.39)
-    ring.material_override = accents
-    scanner.add_child(ring)
+    for spec in parts:
+        var node := MeshInstance3D.new()
+        var mesh := BoxMesh.new()
+        mesh.size = spec[1]
+        node.mesh = mesh
+        node.position = spec[0]
+        node.material_override = spec[2]
+        scanner.add_child(node)
+    var lens := MeshInstance3D.new()
+    var glass := SphereMesh.new()
+    glass.radius = .08
+    glass.height = .11
+    lens.mesh = glass
+    lens.position = Vector3(0,.035,-.55)
+    lens.material_override = leds
+    scanner.add_child(lens)
+    # Detailed visor frame, asymmetrical screen bezels and thermal exhaust grilles.
+    for x in [-.13,.13]:
+        for i in range(3):
+            var grille := MeshInstance3D.new()
+            var grille_mesh := BoxMesh.new()
+            grille_mesh.size = Vector3(.027,.013,.095)
+            grille.mesh = grille_mesh
+            grille.position = Vector3(x,.14,-.20+float(i)*.09)
+            grille.material_override = grip
+            scanner.add_child(grille)
+
 
 func _recharge() -> void:
     if energy == ENERGY_MAX or recharge_remaining > 0.0:
