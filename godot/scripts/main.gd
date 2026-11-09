@@ -749,8 +749,8 @@ func _apply_weapon_visual() -> void:
     var profile := Node3D.new()
     profile.name = "WeaponProfile"
     scanner.add_child(profile)
-    var id := arsenal.active_id()
-    var primary := arsenal.active_slot == 1
+    var id: String = str(arsenal.active_id())
+    var primary: bool = int(arsenal.active_slot) == 1
     scanner.scale = Vector3(.91,.90,1.12) if primary else Vector3(.79,.78,.79)
     scanner.position = Vector3(.44,-.46,-.72) if primary else Vector3(.42,-.43,-.76)
     var casing := StandardMaterial3D.new()
