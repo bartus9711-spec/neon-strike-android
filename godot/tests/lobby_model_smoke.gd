@@ -24,6 +24,10 @@ func _run() -> void:
         _assert(is_instance_valid(t_model),"T imported rigged mesh")
         _assert(bool(ct.get("prefer_detail_lod")),"CT selects tactical suit")
         _assert(not bool(t.get("prefer_detail_lod")),"T selects different soldier")
+        _assert(int(ct.get("imported_mesh_count")) > 0,"CT imported mesh count")
+        _assert(int(t.get("imported_mesh_count")) > 0,"T imported mesh count")
+        _assert(bool(ct.get("imported_model_visible")),"CT imported mesh visibility")
+        _assert(bool(t.get("imported_model_visible")),"T imported mesh visibility")
         if is_instance_valid(ct_model) and is_instance_valid(t_model):
             print("TEAMCS_LOBBY_ART_SOURCE: CT=",ct_model.scene_file_path," T=",t_model.scene_file_path)
             _assert(ct_model.scene_file_path.find("soldier_tac.glb")>=0,"CT real tactical source")
