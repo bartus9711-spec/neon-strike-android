@@ -1,4 +1,4 @@
-name: Build Tamagotchi 2.5 APK
+name: Build Tamagotchi 2.6 APK
 on:
   push:
     branches: [ pikopet-apk-build ]
@@ -29,6 +29,7 @@ jobs:
           node --check pikopet/app/src/main/assets/challenges.js
           node --check pikopet/app/src/main/assets/motion.js
           node --check pikopet/app/src/main/assets/bluetooth.js
+          node --check pikopet/app/src/main/assets/backgrounds.js
           python3 - <<'PY'
           import re, subprocess
           from pathlib import Path
@@ -41,6 +42,8 @@ jobs:
           assert '<script src="./challenges.js"></script>' in html
           assert '<script src="./motion.js"></script>' in html
           assert '<script src="./bluetooth.js"></script>' in html
+          assert '<script src="./backgrounds.js"></script>' in html
+          assert 'stocking' in (p/'backgrounds.js').read_text()
           assert 'window.PikoMotion.cozy' in html
           assert "const defs=[" in (p/'challenges.js').read_text()
           assert 'makeDiscoverable' in (p/'bluetooth.js').read_text()
@@ -56,27 +59,27 @@ jobs:
           assert 'const classics=THEMES.map' in (p/'themes.js').read_text()
           assert '64 wymienne obudowy' in (p/'themes.js').read_text()
           assert 'const BONUS=[' in (p/'games.js').read_text()
-          print('Tamagotchi 2.5: wszystkie skrypty i pliki są dostępne offline')
+          print('Tamagotchi 2.6: wszystkie skrypty i pliki są dostępne offline')
           PY
       - name: Android SDK 35
         run: test -f "$ANDROID_HOME/platforms/android-35/android.jar"
       - name: Buduj aplikacje Android
         run: gradle --no-daemon -p pikopet :app:assembleDebug --stacktrace
       - name: Przygotuj APK
-        run: cp pikopet/app/build/outputs/apk/debug/app-debug.apk Tamagotchi_Android_2_5.apk
+        run: cp pikopet/app/build/outputs/apk/debug/app-debug.apk Tamagotchi_Swieta_Tla_2_6.apk
       - name: APK do pobrania
         uses: actions/upload-artifact@v4
         with:
-          name: Tamagotchi-Android-2.5-APK
-          path: Tamagotchi_Android_2_5.apk
+          name: Tamagotchi-Swieta-Tla-2.6-APK
+          path: Tamagotchi_Swieta_Tla_2_6.apk
           if-no-files-found: error
           retention-days: 30
       - name: Publiczny instalator w Releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view tamagotchi-android-v2.5 >/dev/null 2>&1; then
-            gh release upload tamagotchi-android-v2.5 Tamagotchi_Android_2_5.apk --clobber
+          if gh release view tamagotchi-backgrounds-v2.6 >/dev/null 2>&1; then
+            gh release upload tamagotchi-backgrounds-v2.6 Tamagotchi_Swieta_Tla_2_6.apk --clobber
           else
-            gh release create tamagotchi-android-v2.5 Tamagotchi_Android_2_5.apk --target "${GITHUB_SHA}" --title "Tamagotchi 2.5 — obudowy, minigry i odwiedziny" --notes "Instalator Android (APK). Pikselowy pupil, 64 obudowy (32 klasyczne, 32 nowe Deluxe), 32 gatunki, 20 minigier, 12 zabaw, album pamiątek, zapis offline i przypomnienia o opiece. Ulepszone wykrywanie telefonow, rzeczywiste potwierdzenie widocznosci, skaner systemowy Androida i parowanie BT; Wi-Fi bez zmian. Zwierzaki chodzą po ekranie, po wizycie BT/Wi-Fi pojawia się przytulny pokoik. Można wykryć i sparować telefony Bluetooth. X cofa do poprzedniego menu, Android Wstecz działa tak samo. Budowa testowa z podpisem debug."
+            gh release create tamagotchi-backgrounds-v2.6 Tamagotchi_Swieta_Tla_2_6.apk --target "${GITHUB_SHA}" --title "Tamagotchi 2.6 — obudowy, minigry i odwiedziny" --notes "Instalator Android (APK). Pikselowy pupil, 64 obudowy (32 klasyczne, 32 nowe Deluxe), 32 gatunki, 20 minigier, 12 zabaw, album pamiątek, zapis offline i przypomnienia o opiece. Ulepszone wykrywanie telefonow, rzeczywiste potwierdzenie widocznosci, skaner systemowy Androida i parowanie BT; Wi-Fi bez zmian. Zwierzaki chodzą po ekranie, po wizycie BT/Wi-Fi pojawia się przytulny pokoik. Można wykryć i sparować telefony Bluetooth. X cofa do poprzedniego menu, Android Wstecz działa tak samo. Budowa testowa z podpisem debug."
           fi
