@@ -108,7 +108,9 @@ jobs:
           cores: 2
           ram-size: 3072M
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: bash .github/scripts/teamcs-android-emulator-smoke.sh
+          script: |
+            python3 -m pip install --quiet Pillow
+            bash .github/scripts/teamcs-android-emulator-smoke.sh
       - name: Export smaller ARM64-only APK for the actual GT 7, same signed 4v4 game
         run: |
           set -euo pipefail
@@ -121,7 +123,7 @@ jobs:
           "$TOOLS/zipalign" -c 4 TeamCS_Godot_GT7_ARM64.apk
           "$TOOLS/aapt" dump badging TeamCS_Godot_GT7_ARM64.apk | tee /tmp/teamcs-phone-badging.log
           grep -q "native-code: 'arm64-v8a'" /tmp/teamcs-phone-badging.log
-          grep -q "package: name='pl.teamcs.arena4v4qa'" /tmp/teamcs-phone-badging.log
+          grep -q "package: name='pl.teamcs.arena4v4universal'" /tmp/teamcs-phone-badging.log
           unzip -l TeamCS_Godot_GT7_ARM64.apk | grep -q lib/arm64-v8a/libgodot_android.so
           if unzip -l TeamCS_Godot_GT7_ARM64.apk | grep -q lib/x86_64/libgodot_android.so; then
             echo "Unexpected x86_64 library in ARM64 phone package" >&2
