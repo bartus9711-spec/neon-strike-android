@@ -81,28 +81,48 @@ func _ready() -> void:
     status_label.position = Vector2(22, 9)
     status_label.size = Vector2(680, 46)
     ui.add_child(status_label)
-    match_label = _label("CYAN  00  :  00  MAGENTA", 21, Color(.82,.98,1))
+    match_label = _label("CYAN  00  :  00  MAGENTA", 20, Color(.82,.98,1))
     match_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
     match_label.anchor_left = .46
     match_label.anchor_right = .46
     match_label.position = Vector2(-105,7)
     match_label.size = Vector2(300,42)
     ui.add_child(match_label)
-    shield_label = _label("OSŁONA 100%", 20, Color(.59,.97,1))
+    var combat_panel := Panel.new()
+    combat_panel.name = "CombatVitalsPanel"
+    combat_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    combat_panel.anchor_left = .5
+    combat_panel.anchor_right = .5
+    combat_panel.anchor_top = 1.
+    combat_panel.anchor_bottom = 1.
+    combat_panel.offset_left = -146
+    combat_panel.offset_right = 146
+    combat_panel.offset_top = -90
+    combat_panel.offset_bottom = -4
+    var combat_style := StyleBoxFlat.new()
+    combat_style.bg_color = Color(.035,.075,.10,.79)
+    combat_style.border_color = Color(.12,.68,.73,.60)
+    combat_style.set_border_width_all(1)
+    combat_style.set_corner_radius_all(9)
+    combat_panel.add_theme_stylebox_override("panel",combat_style)
+    ui.add_child(combat_panel)
+    shield_label = _label("OSŁONA 100%", 19, Color(.59,.97,1))
     shield_label.anchor_top = 1
     shield_label.anchor_bottom = 1
     shield_label.anchor_left = .5
     shield_label.anchor_right = .5
-    shield_label.position = Vector2(-103,-42)
-    shield_label.size = Vector2(210,38)
+    shield_label.position = Vector2(-127,-46)
+    shield_label.size = Vector2(254,33)
+    shield_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     ui.add_child(shield_label)
     power_label = _label("ENERGIA 24 / 24", 18, Color(1,.89,.55))
     power_label.anchor_top = 1
     power_label.anchor_bottom = 1
     power_label.anchor_left = .5
     power_label.anchor_right = .5
-    power_label.position = Vector2(-103,-72)
-    power_label.size = Vector2(220,32)
+    power_label.position = Vector2(-127,-76)
+    power_label.size = Vector2(254,32)
+    power_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     ui.add_child(power_label)
     map_select = OptionButton.new()
     map_select.name = "EightMapPicker"
@@ -116,6 +136,17 @@ func _ready() -> void:
     fps_label.position = Vector2(-225, 10)
     fps_label.size = Vector2(95, 40)
     ui.add_child(fps_label)
+    var network_panel := Panel.new()
+    network_panel.name = "NetworkInformationPanel"
+    network_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    network_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+    network_panel.position = Vector2(-396,60)
+    network_panel.size = Vector2(258,57)
+    var network_style := StyleBoxFlat.new()
+    network_style.bg_color = Color(.035,.075,.12,.62)
+    network_style.set_corner_radius_all(6)
+    network_panel.add_theme_stylebox_override("panel",network_style)
+    ui.add_child(network_panel)
     network_label = _label("SIEĆ: SYSTEM", 12, Color(.78,.91,.92))
     network_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
     network_label.position = Vector2(-392, 62)
@@ -141,8 +172,8 @@ func _ready() -> void:
     hint_label.anchor_right = .82
     hint_label.anchor_top = 1
     hint_label.anchor_bottom = 1
-    hint_label.offset_top = -88
-    hint_label.offset_bottom = -52
+    hint_label.offset_top = -137
+    hint_label.offset_bottom = -109
     ui.add_child(hint_label)
     _make_controls()
     _make_settings()
