@@ -130,20 +130,30 @@ func _make_actor(team: int, name: String, position: Vector3, index: int) -> Dict
     animated.name = "Character"
     actor.add_child(animated)
     var animation_player: AnimationPlayer = null
+    var high_model: Node3D = null
+    var low_proxy: Node3D = null
     if _model_resource != null:
         var model := _model_resource.instantiate() as Node3D
         if model != null:
+            high_model = model
             animated.add_child(model)
             _fit_model(model)
             model.rotation.y = PI
             for node in model.find_children("*","AnimationPlayer",true,false):
                 animation_player = node as AnimationPlayer
                 break
+    if _model_resource != null:
+        low_proxy = Node3D.new()
+        low_proxy.name = "LowEndBodyProxy"
+        animated.add_child(low_proxy)
+        _fallback_avatar(low_proxy,team)
+        low_proxy.visible = false
     else:
         _fallback_avatar(animated,team)
     _color_disc(actor,team)
     var entry := {
         "body":actor, "visual":animated, "animation_player":animation_player,
+        "high_model":high_model, "low_proxy":low_proxy,
         "team":team, "index":index, "alive":true, "respawn":0.0,
         "cooldown":_rng.randf_range(.5,2.2), "think":0.0,
         "goal":Vector3.ZERO, "motion":0.0, "speed":_rng.randf_range(2.7,3.5),
@@ -154,7 +164,7 @@ func _make_actor(team: int, name: String, position: Vector3, index: int) -> Dict
 
 func _play(bot: Dictionary, action: String) -> void:
     var player: AnimationPlayer = bot["animation_player"]
-    if player == null or actor_quality == 0:
+    if player == null or actor_quality == 0 or (actor_quality == 1 and int(bot["index"]) % 2 == 1):
         return
     var desired := action.to_lower()
     for animation_name in player.get_animation_list():
@@ -208,8 +218,14 @@ func apply_actor_quality(quality: int) -> void:
     actor_quality = clampi(quality,0,2)
     for entry in roster:
         var p: AnimationPlayer = entry["animation_player"]
+        var imported: Node3D = entry["high_model"]
+        var proxy: Node3D = entry["low_proxy"]
+        if is_instance_valid(imported):
+            imported.visible = actor_quality != 0
+        if is_instance_valid(proxy):
+            proxy.visible = actor_quality == 0
         if p != null:
-            if actor_quality == 0:
+            if actor_quality == 0 or (actor_quality == 1 and int(entry["index"])%2 == 1):
                 p.stop()
             else:
                 _play(entry,"Idle")
