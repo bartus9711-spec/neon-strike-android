@@ -10,6 +10,10 @@ func _check(result: bool, label: String) -> void:
         push_error("TEAMCS_ECONOMY_FAILURE: "+label)
 
 func _initialize() -> void:
+    # SceneTree root is not yet active during _initialize; controls need _ready.
+    call_deferred("_run")
+
+func _run() -> void:
     var wallet = ECONOMY.new()
     wallet.begin_match()
     _check(wallet.credits == 2400,"initial match credits")
@@ -37,6 +41,7 @@ func _initialize() -> void:
         menu.refresh()
     )
     menu.open(wallet,2)
+    _check(is_instance_valid(menu.heading) and is_instance_valid(menu.wallet),"buy menu ready")
     _check(menu.visible and menu.items.size() == ECONOMY.CATALOG.size(),"all catalog buttons visible")
     _check(menu.wallet.text == "3300 $","actual wallet displayed")
     var armor_button: Button = menu.items["armor"]
