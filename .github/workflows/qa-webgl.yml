@@ -1,12 +1,6 @@
 name: TeamCS WebGL QA
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'app/src/main/assets/index.html'
-      - 'tests/**'
-      - '.github/workflows/qa-webgl.yml'
   workflow_dispatch:
 
 jobs:
