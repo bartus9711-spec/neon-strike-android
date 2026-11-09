@@ -45,8 +45,8 @@ func _capsule(parent: Node3D, p: Vector3, radius: float, height: float, mat: Mat
     var mesh := CapsuleMesh.new()
     mesh.radius = radius
     mesh.height = maxf(height, radius*2.01)
-    mesh.radial_segments = 12
-    mesh.rings = 4
+    mesh.radial_segments = 18 if quality >= 2 else 12
+    mesh.rings = 7 if quality >= 2 else 4
     n.mesh = mesh
     n.position = p
     n.material_override = mat
@@ -59,8 +59,8 @@ func _sphere(parent: Node3D, p: Vector3, dims: Vector3, mat: Material, label: St
     var mesh := SphereMesh.new()
     mesh.radius = 0.5
     mesh.height = 1.0
-    mesh.radial_segments = 16
-    mesh.rings = 8
+    mesh.radial_segments = 20 if quality >= 2 else 16
+    mesh.rings = 12 if quality >= 2 else 8
     n.mesh = mesh
     n.position = p
     n.scale = dims
@@ -102,6 +102,8 @@ func _garment(parent: Node3D, rings: Array, mat: Material, label: String) -> Mes
             surface.add_vertex(p00)
             surface.add_vertex(p11)
             surface.add_vertex(p01)
+    # Merge shared ring edges before calculating normals; reduces the faceted look.
+    surface.index()
     surface.generate_normals()
     var result := MeshInstance3D.new()
     result.name = label
@@ -136,7 +138,8 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
     skin = _material([Color(.61,.43,.32),Color(.85,.67,.51),Color(.40,.30,.24),Color(.71,.54,.39)][posmod(variant,4)],.92)
     glove = _material(Color(.10,.12,.13),.74,.13)
     visor = _material(Color(.07,.16,.20),.17,.32)
-    accent = _material(Color(.20,.80,.91) if blue else Color(.98,.35,.37),.26,.35,true)
+    # Team identification is dyed fabric rather than bright glowing armour.
+    accent = _material(Color(.30,.47,.53) if blue else Color(.55,.35,.30),.84,.02)
     root = Node3D.new()
     root.name = "FullHumanoidFigure"
     add_child(root)
@@ -220,6 +223,8 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         _capsule(shin,Vector3(0,-.155,0),.129,.38,uniform_secondary,"ArticulatedShin")
         _sphere(shin,Vector3(0,-.43,-.115),Vector3(.30,.205,.45),glove,"Boot")
         _sphere(shin,Vector3(0,-.29,-.015),Vector3(.25,.145,.24),armor_edge,"SoftBootCuff")
+        # Moulded but flexible kneecap and boot collar, both following knee movement.
+        _sphere(shin,Vector3(0,-.02,-.16),Vector3(.205,.105,.08),armor_edge,"LowerKneePad")
         if left:
             left_shin = shin
         else:

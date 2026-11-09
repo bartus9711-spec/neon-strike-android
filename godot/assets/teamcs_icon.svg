@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#23313b"/><stop offset="1" stop-color="#10191f"/></linearGradient></defs>
+<rect width="256" height="256" rx="52" fill="url(#bg)"/>
+<path d="M48 76h160v19H48z" fill="#5d6870"/>
+<path d="M56 117l44-26h56l44 26v59l-46 32h-52l-46-32z" fill="#303d47" stroke="#72808a" stroke-width="5"/>
+<path d="M77 127h102v18H77z" fill="#222d33"/>
+<text x="128" y="166" font-family="DejaVu Sans,Arial,sans-serif" font-size="73" font-weight="bold" text-anchor="middle" fill="#f0efe8">T</text>
+<path d="M157 104h50v12h-50z" fill="#b5443b"/>
+<path d="M164 119h43v9h-43z" fill="#b5443b"/>
+<path d="M66 188h125v7H66z" fill="#b5443b"/>
+</svg>
