@@ -36,6 +36,7 @@ jobs:
           node --check pikopet/app/src/main/assets/friendships.js
           node --check pikopet/app/src/main/assets/retro-layout.js
           node --check pikopet/app/src/main/assets/vivid-worlds.js
+          node --check pikopet/app/src/main/assets/seasonal-music.js
           python3 - <<'PY'
           import re, subprocess
           from pathlib import Path
@@ -55,6 +56,7 @@ jobs:
           assert '<script src="./friendships.js"></script>' in html
           assert '<script src="./retro-layout.js"></script>' in html
           assert '<script src="./vivid-worlds.js"></script>' in html
+          assert '<script src="./seasonal-music.js"></script>' in html
           assert 'stocking' in (p/'backgrounds.js').read_text()
           assert 'window.PikoMotion.cozy' in html
           assert "const defs=[" in (p/'challenges.js').read_text()
