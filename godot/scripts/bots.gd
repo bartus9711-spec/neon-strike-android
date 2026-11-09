@@ -330,6 +330,14 @@ func player_lost_shield() -> void:
 func count_bots() -> int:
     return roster.size()
 
+func is_active_rival(node: Object) -> bool:
+    if node == null:
+        return false
+    for entry in roster:
+        if entry["body"] == node and int(entry["team"]) == 1 and bool(entry["alive"]):
+            return true
+    return false
+
 func count_visible_rivals() -> int:
     var n := 0
     for bot in roster:
