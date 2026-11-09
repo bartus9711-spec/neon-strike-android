@@ -138,7 +138,7 @@ func _make_actor(team: int, name: String, position: Vector3, index: int) -> Dict
     operative.build(team,index,actor_quality)
     var entry := {
         "body":actor, "visual":animated, "operative":operative,
-        "team":team, "index":index, "alive":true, "respawn":0.0,
+        "team":team, "index":index, "alive":true, "health":100, "respawn":0.0,
         "cooldown":_rng.randf_range(.6,2.0), "think":0.0,
         "goal":Vector3.ZERO, "motion":0.0, "speed":_rng.randf_range(2.8,3.7),
         "avoid":float(_rng.randi_range(-1,1))
@@ -288,13 +288,16 @@ func _physics_process(delta: float) -> void:
                     _tag(target, int(entry["team"]))
     # Opponents are dynamic 3D colliders. Camera ray from player can tag them.
 
-func _tag(body: Node3D, scoring_team: int) -> bool:
+func _tag(body: Node3D, scoring_team: int, impact: int = 100) -> bool:
     if round_over:
         return false
     for entry in roster:
         if entry["body"] != body or not bool(entry["alive"]):
             continue
         if int(entry["team"]) == scoring_team:
+            return false
+        entry["health"] = maxi(0,int(entry.get("health",100))-maxi(1,impact))
+        if int(entry["health"]) > 0:
             return false
         entry["alive"] = false
         var actor: CharacterBody3D = entry["body"]
@@ -306,10 +309,10 @@ func _tag(body: Node3D, scoring_team: int) -> bool:
         return true
     return false
 
-func tag_from_player(hit_object: Object) -> bool:
+func tag_from_player(hit_object: Object, impact: int = 100) -> bool:
     if not hit_object is Node3D:
         return false
-    return _tag(hit_object as Node3D,0)
+    return _tag(hit_object as Node3D,0,impact)
 
 func living_count(team: int) -> int:
     var result := 1 if team == 0 and player_alive else 0
