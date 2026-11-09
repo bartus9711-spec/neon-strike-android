@@ -6,12 +6,20 @@ signal graphics_changed(profile: int, fps: int, scale: float, shadows: bool, aa:
 signal map_requested(index: int)
 signal graphics_advanced_changed(textures_enabled: bool, world_detail: int, actor_quality: int)
 signal network_mode_changed(enabled: bool)
+signal pulse_requested
+signal recharge_requested
+signal restart_requested
 
 var touch_move := Vector2.ZERO
 var look_sensitivity := 1.0
 var pad_deadzone := .16
 var invert_look_y := false
 var sprint_enabled := false
+var pulse_held := false
+var match_label: Label
+var shield_label: Label
+var power_label: Label
+var restart_button: Button
 var settings_open := false
 var current_fps := 0
 var _left_pointer := -1
@@ -73,6 +81,29 @@ func _ready() -> void:
     status_label.position = Vector2(22, 9)
     status_label.size = Vector2(680, 46)
     ui.add_child(status_label)
+    match_label = _label("CYAN  00  :  00  MAGENTA", 21, Color(.82,.98,1))
+    match_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
+    match_label.anchor_left = .46
+    match_label.anchor_right = .46
+    match_label.position = Vector2(-105,7)
+    match_label.size = Vector2(300,42)
+    ui.add_child(match_label)
+    shield_label = _label("OSŁONA 100%", 20, Color(.59,.97,1))
+    shield_label.anchor_top = 1
+    shield_label.anchor_bottom = 1
+    shield_label.anchor_left = .5
+    shield_label.anchor_right = .5
+    shield_label.position = Vector2(-103,-42)
+    shield_label.size = Vector2(210,38)
+    ui.add_child(shield_label)
+    power_label = _label("ENERGIA 24 / 24", 18, Color(1,.89,.55))
+    power_label.anchor_top = 1
+    power_label.anchor_bottom = 1
+    power_label.anchor_left = .5
+    power_label.anchor_right = .5
+    power_label.position = Vector2(-103,-72)
+    power_label.size = Vector2(220,32)
+    ui.add_child(power_label)
     map_select = OptionButton.new()
     map_select.name = "EightMapPicker"
     map_select.position = Vector2(15, 66)
@@ -184,7 +215,7 @@ func _make_controls() -> void:
     jump.offset_top = -166
     jump.offset_bottom = -111
     ui.add_child(jump)
-    var action := _button("ZBIERZ  ◈")
+    var action := _button("SKAN  ◈")
     action.name = "Action"
     action.pressed.connect(func(): action_requested.emit())
     action.anchor_left = 1
@@ -196,6 +227,32 @@ func _make_controls() -> void:
     action.offset_top = -100
     action.offset_bottom = -45
     ui.add_child(action)
+    var pulse := _button("PULS  ⚡")
+    pulse.name = "Pulse"
+    pulse.add_theme_font_size_override("font_size",22)
+    pulse.button_down.connect(func(): pulse_held = true; pulse_requested.emit())
+    pulse.button_up.connect(func(): pulse_held = false)
+    pulse.anchor_left = 1
+    pulse.anchor_right = 1
+    pulse.anchor_top = 1
+    pulse.anchor_bottom = 1
+    pulse.offset_left = -260
+    pulse.offset_right = -136
+    pulse.offset_top = -114
+    pulse.offset_bottom = -23
+    ui.add_child(pulse)
+    var recharge := _button("ŁADUJ  ↻")
+    recharge.name = "Recharge"
+    recharge.pressed.connect(func(): recharge_requested.emit())
+    recharge.anchor_left = 1
+    recharge.anchor_right = 1
+    recharge.anchor_top = 1
+    recharge.anchor_bottom = 1
+    recharge.offset_left = -260
+    recharge.offset_right = -136
+    recharge.offset_top = -166
+    recharge.offset_bottom = -118
+    ui.add_child(recharge)
     var sprint := _button("BIEG")
     sprint.name = "Sprint"
     sprint.toggle_mode = true
@@ -476,11 +533,23 @@ func toggle_settings() -> void:
     _left_pointer = -1
     _right_pointer = -1
     _pending_look = Vector2.ZERO
+    pulse_held = false
     _refresh_stick()
     if settings_open:
         Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
     else:
         _emit_graphics()
+
+func set_combat_state(cyan: int, magenta: int, shield: int, power: int, capacity: int, time_left: float) -> void:
+    if is_instance_valid(match_label):
+        var minutes := int(time_left) / 60
+        var seconds := int(time_left) % 60
+        match_label.text = "CYAN %02d : %02d RÓŻ  •  %d:%02d" % [cyan,magenta,minutes,seconds]
+    if is_instance_valid(shield_label):
+        shield_label.text = "OSŁONA %d%%" % maxi(0,shield)
+        shield_label.add_theme_color_override("font_color", Color(.92,.43,.41) if shield <= 25 else Color(.59,.97,1))
+    if is_instance_valid(power_label):
+        power_label.text = "ENERGIA %d / %d" % [power,capacity]
 
 func set_status(done: int, total: int, where: Vector3) -> void:
     _beacons_collected = done
@@ -516,4 +585,4 @@ func _process(delta: float) -> void:
     if _message_left > 0:
         _message_left -= delta
         if _message_left <= 0:
-            hint_label.text = "◈  ODKRYJ ZNACZNIKI   •   DOTYK / PAD / KLAWIATURA"
+            hint_label.text = "4 × 4  •  PULS ⚡  •  ŁADUJ ↻  •  DOTYK / PAD / KLAWIATURA"
