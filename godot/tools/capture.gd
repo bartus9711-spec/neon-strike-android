@@ -33,6 +33,15 @@ func _run() -> void:
         push_error("CI: graphics profiles missing")
         quit(7)
         return
+    # Verify newly polished interface and audio are live nodes, not screenshot-only mockups.
+    if main.hud.reticle_marks.size() != 4 or main.hud.hit_label == null:
+        push_error("CI: four-part live reticle and hit confirmation missing")
+        quit(34)
+        return
+    if main.audio_pulse == null or main.audio_hit == null or main.audio_charge == null:
+        push_error("CI: original energy-tag sound assets not initialized")
+        quit(35)
+        return
     # Native FPS gameplay must really exist, not just render empty scenery.
     if main.bots.count_bots() != 7 or main.bots.count_visible_rivals() != 4:
         push_error("CI: 4v4 gameplay actors missing")
@@ -90,6 +99,17 @@ func _run() -> void:
         push_error("CI: energy-tag scoring/respawn gameplay broken")
         quit(27)
         return
+    main.hud.set_target_state(true)
+    if not main.hud._rival_target:
+        push_error("CI: enemy-aware reticle did not switch to rival state")
+        quit(36)
+        return
+    main.hud.flash_hit()
+    if main.hud.hit_feedback_time <= 0.0 or not main.hud.hit_label.visible:
+        push_error("CI: visual hit confirmation failed")
+        quit(37)
+        return
+    main.hud.set_target_state(false)
     main.switch_map(0)
     main._emit_pulse()
     if main.energy != 23 or main.pulse_cooldown <= 0.0:
