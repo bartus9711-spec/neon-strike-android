@@ -79,6 +79,37 @@ func _block(parent: Node3D, p: Vector3, dims: Vector3, mat: Material, label: Str
     parent.add_child(n)
     return n
 
+# Smooth low-poly fabric shell, built once per operator.
+# Unlike a scaled ball, the collar, waist and shoulder widths are independently
+# controlled so the figure reads as a clothed person from all camera angles.
+func _garment(parent: Node3D, rings: Array, mat: Material, label: String) -> MeshInstance3D:
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var segments := 16 if quality >= 2 else 12
+    for index in range(rings.size() - 1):
+        var lo: Vector4 = rings[index]
+        var hi: Vector4 = rings[index + 1]
+        for sector in range(segments):
+            var a := TAU * float(sector) / float(segments)
+            var b := TAU * float(sector + 1) / float(segments)
+            var p00 := Vector3(cos(a) * lo.y, lo.x, sin(a) * lo.z + lo.w)
+            var p01 := Vector3(cos(b) * lo.y, lo.x, sin(b) * lo.z + lo.w)
+            var p10 := Vector3(cos(a) * hi.y, hi.x, sin(a) * hi.z + hi.w)
+            var p11 := Vector3(cos(b) * hi.y, hi.x, sin(b) * hi.z + hi.w)
+            surface.add_vertex(p00)
+            surface.add_vertex(p10)
+            surface.add_vertex(p11)
+            surface.add_vertex(p00)
+            surface.add_vertex(p11)
+            surface.add_vertex(p01)
+    surface.generate_normals()
+    var result := MeshInstance3D.new()
+    result.name = label
+    result.mesh = surface.commit()
+    result.material_override = mat
+    parent.add_child(result)
+    return result
+
 func _ring(parent: Node3D,p: Vector3,radius: float, tube: float,mat: Material,label: String) -> void:
     var mesh := TorusMesh.new()
     mesh.inner_radius = radius
@@ -109,18 +140,33 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
     root = Node3D.new()
     root.name = "FullHumanoidFigure"
     add_child(root)
-    detail = Node3D.new()
-    detail.name = "HighGeometryAccessories"
-    root.add_child(detail)
-    # Athletic but not exaggerated human proportions: ~1.79m.
+    # Body accessories are children of the animated torso, not static world
+    # decorations: straps and pouches now follow leaning/breathing poses.
     torso = Node3D.new()
     torso.name = "UpperBodyRig"
     torso.position = Vector3(0,1.13,0)
     root.add_child(torso)
-    _sphere(torso,Vector3(0,.09,0),Vector3(.66,.77,.35),uniform,"TexturedTorso")
+    detail = Node3D.new()
+    detail.name = "HighGeometryAccessories"
+    detail.position = Vector3(0,-1.13,0)
+    torso.add_child(detail)
+    _garment(torso, [
+        Vector4(-.36,.20,.16,.02),
+        Vector4(-.28,.25,.18,.02),
+        Vector4(-.12,.28,.18,.00),
+        Vector4(.12,.34,.205,.00),
+        Vector4(.30,.33,.20,.01),
+        Vector4(.43,.22,.145,.015)
+    ],uniform,"TailoredUniformBody")
     _sphere(torso,Vector3(0,-.32,0),Vector3(.52,.35,.35),uniform_secondary,"BeltHip")
     # Rounded overlapping panels hug the body; no flat cardboard/box torso.
-    _sphere(torso,Vector3(0,.10,-.215),Vector3(.53,.57,.205),armor,"CurvedKevlarVest")
+    _garment(torso, [
+        Vector4(-.17,.226,.178,-.068),
+        Vector4(-.08,.263,.198,-.054),
+        Vector4(.14,.296,.218,-.045),
+        Vector4(.33,.286,.198,-.043),
+        Vector4(.36,.23,.17,-.04)
+    ],armor,"ContouredProtectiveVest")
     _sphere(torso,Vector3(0,.28,-.302),Vector3(.43,.23,.072),armor_edge,"UpperVestPlate")
     _sphere(torso,Vector3(0,-.08,-.295),Vector3(.43,.17,.075),armor_edge,"LowerVestPlate")
     _sphere(torso,Vector3(0,.36,-.14),Vector3(.63,.17,.43),armor_edge,"ShoulderArmorBridge")
@@ -165,6 +211,7 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         leg.position = Vector3(flank*.17,1.06,0)
         root.add_child(leg)
         _capsule(leg,Vector3(0,-.22,0),.161,.58,uniform,"UniformThigh")
+        _sphere(leg,Vector3(flank*.12,-.24,-.015),Vector3(.15,.27,.175),uniform_secondary,"ThighFabricCargoPocket")
         _sphere(leg,Vector3(0,-.53,-.075),Vector3(.30,.24,.21),armor_edge,"KneeGuard")
         var shin := Node3D.new()
         shin.name = "KneeJoint"
@@ -172,6 +219,7 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         leg.add_child(shin)
         _capsule(shin,Vector3(0,-.155,0),.129,.38,uniform_secondary,"ArticulatedShin")
         _sphere(shin,Vector3(0,-.43,-.115),Vector3(.30,.205,.45),glove,"Boot")
+        _sphere(shin,Vector3(0,-.29,-.015),Vector3(.25,.145,.24),armor_edge,"SoftBootCuff")
         if left:
             left_shin = shin
         else:
@@ -183,11 +231,11 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         # Compact team-identification patches on both shoulders: no cartoon halo.
         _block(arm,Vector3(flank*.11,-.19,-.06),Vector3(.044,.17,.18),accent,"TeamPatch")
     # High quality extras: straps, garment folds, pouches and visor reflection.
-    _block(detail,Vector3(-.24,1.24,-.255),Vector3(.07,.49,.085),glove,"LeftVestStrap")
-    _block(detail,Vector3(.24,1.24,-.255),Vector3(.07,.49,.085),glove,"RightVestStrap")
+    _capsule(detail,Vector3(-.24,1.24,-.255),.043,.51,glove,"LeftRoundedVestStrap")
+    _capsule(detail,Vector3(.24,1.24,-.255),.043,.51,glove,"RightRoundedVestStrap")
     _block(detail,Vector3(0,1.25,.25),Vector3(.48,.51,.21),armor,"BackPadding")
     for ix in range(3):
-        _block(detail,Vector3((float(ix)-1.)*.155,1.10,-.34),Vector3(.13,.18,.085),armor_edge,"UtilityPouch"+str(ix))
+        _sphere(detail,Vector3((float(ix)-1.)*.155,1.10,-.34),Vector3(.145,.19,.11),armor_edge,"RoundedUtilityPouch"+str(ix))
         _block(detail,Vector3((float(ix)-1.)*.155,1.175,-.386),Vector3(.13,.026,.015),glove,"PouchFastener"+str(ix))
     _sphere(detail,Vector3(-.27,.86,-.13),Vector3(.15,.21,.22),armor_edge,"SoftUtilityPackLeft")
     _sphere(detail,Vector3(.27,.86,-.13),Vector3(.15,.21,.22),armor_edge,"SoftUtilityPackRight")
@@ -211,7 +259,7 @@ func set_quality(level: int) -> void:
         # Medium keeps a recognisable clothed human; Ultra adds all protective
         # details. Reduce separate GPU draw calls on mobile without losing the rig.
         var high_only := ["EarProtectionLeft","EarProtectionRight","ElbowGuard","KneeGuard","PouchFastener0","PouchFastener1","PouchFastener2"]
-        var medium_only := ["VisorRim","FabricFaceCover","BeltHip","ShoulderArmorBridge"]
+        var medium_only := ["CurvedVisorRim","FabricFaceCover","BeltHip","ShoulderArmorBridge"]
         for mesh_node in root.find_children("*","MeshInstance3D",true,false):
             if str(mesh_node.name) in high_only:
                 mesh_node.visible = quality >= 2
@@ -241,8 +289,15 @@ func update_pose(speed: float, delta: float, aim: float = 0.0) -> void:
     if is_instance_valid(right_arm):
         right_arm.rotation.x = lerpf(right_arm.rotation.x,swing*.7-.18,clampf(delta*9.,0.,1.))
     if is_instance_valid(torso):
-        torso.rotation.z = sin(phase*.5)*.018*moving
-        torso.rotation.x = lerpf(torso.rotation.x,-.05*moving,clampf(delta*7.,0.,1.))
+        var smooth := clampf(delta * 7.0,0.0,1.0)
+        torso.rotation.z = lerpf(torso.rotation.z, sin(phase*.5)*.022*moving, smooth)
+        torso.rotation.y = lerpf(torso.rotation.y, sin(phase)*.045*moving, smooth)
+        torso.rotation.x = lerpf(torso.rotation.x,-.05*moving,smooth)
+        # Subtle idle breathing; no full-body size changes or collision changes.
+        torso.scale.y = lerpf(torso.scale.y,1.0+sin(phase*.65)*.0035,smooth)
+    if is_instance_valid(root):
+        # A restrained vertical gait prevents the robotic sliding appearance.
+        root.position.y = lerpf(root.position.y,absf(sin(phase))*.016*moving,clampf(delta*8.,0.,1.))
     if is_instance_valid(helmet):
         helmet.rotation.y = sin(phase*.38+variant)*.09
         helmet.rotation.x = lerpf(helmet.rotation.x,clampf(aim,-.12,.12),clampf(delta*5.,0.,1.))
