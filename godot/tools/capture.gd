@@ -38,9 +38,17 @@ func _run() -> void:
         push_error("CI: 4v4 gameplay actors missing")
         quit(24)
         return
-    if main.bots._model_resource == null:
-        push_error("CI: animated CC0 humanoid asset failed to import")
+    var first_rig: Node3D = main.bots.roster[0]["operative"]
+    if first_rig == null or not is_instance_valid(first_rig) or first_rig.left_leg == null or first_rig.helmet == null:
+        push_error("CI: procedural human operative geometry/animation pivots missing")
         quit(25)
+        return
+    first_rig.update_pose(3.5,.08)
+    if absf(first_rig.left_leg.rotation.x) < .001:
+        first_rig.update_pose(3.5,.21)
+    if absf(first_rig.left_leg.rotation.x) < .001:
+        push_error("CI: procedural humanoid gait never moved")
+        quit(31)
         return
     var ally: CharacterBody3D = main.bots.roster[0]["body"]
     if ally.global_position.distance_to(main.hero.global_position) < 3.0:
