@@ -160,16 +160,16 @@ func _stage() -> void:
     world.add_child(fill)
     var camera := Camera3D.new()
     camera.position = Vector3(0,1.35,-4.9)
-    camera.look_at(Vector3(0,1.05,0),Vector3.UP)
     camera.fov = 47.0
     camera.current = true
     world.add_child(camera)
+    camera.look_at(Vector3(0,1.05,0),Vector3.UP)
     for team in range(2):
         var actor = OPERATOR.new()
         actor.position = Vector3(-.76 if team==0 else .76,-.10,0.12)
         actor.rotation.y = -.17 if team==0 else .21
         world.add_child(actor)
-        actor.build(team,1 if team==0 else 2,2)
+        actor.build(team,1+gear_variant if team==0 else 2,2)
         previews.append(actor)
 
 func configure(maps: Array) -> void:
