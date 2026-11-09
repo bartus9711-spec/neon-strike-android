@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-PKG="pl.teamcs.arena4v4vulkan"
+PKG="pl.teamcs.arena4v4human"
 APK="$GITHUB_WORKSPACE/TeamCS_Godot_GT7_QA.apk"
 test -s "$APK"
 echo "EMULATOR_OS=$(adb shell getprop ro.build.version.release | tr -d '\r')"
