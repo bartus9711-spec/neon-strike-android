@@ -84,6 +84,7 @@ func _ready() -> void:
     hud.restart_requested.connect(_return_to_lobby)
     hud.settings_closed.connect(_on_settings_closed)
     hud.configure_maps(arena.maps)
+    hud.attach_radar(hero,bots,arena)
     switch_map(0)
     # Restore saved Low / High / Ultra and network preferences, not hardcoded Ultra.
     hud._emit_graphics()
