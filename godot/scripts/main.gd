@@ -15,6 +15,7 @@ var arena
 var net
 var bots
 var scanner: Node3D
+var scanner_recoil := 0.0
 var pulse_requested := false
 var recharge_requested := false
 var pulse_cooldown := 0.0
@@ -346,6 +347,7 @@ func _make_hero() -> void:
 func _physics_process(delta: float) -> void:
     elapsed += delta
     pulse_cooldown = maxf(0.0,pulse_cooldown-delta)
+    scanner_recoil = move_toward(scanner_recoil,0.0,delta*6.5)
     if recharge_remaining > 0.0:
         recharge_remaining = maxf(0.0,recharge_remaining-delta)
         if recharge_remaining == 0.0:
@@ -424,8 +426,20 @@ func _physics_process(delta: float) -> void:
         var bounce := minf(speed/7.0,1.0)
         scanner.position.y = -.43 + sin(elapsed*10.7)*.011*bounce
         scanner.rotation.z = -.05 + sin(elapsed*5.1)*.021*bounce
+        scanner.rotation.x = -.10 + scanner_recoil*.23
+        scanner.position.z = -.76 + scanner_recoil*.07
         camera.position.y = 1.54 + sin(elapsed*11.0)*.015*bounce
-    _update_match_hud()
+    # Keep target identification responsive without expensive physics queries each frame.
+    if Engine.get_physics_frames() % 6 == 0:
+        if not hud.settings_open:
+            var aim_start := camera.global_position
+            var aim_end := aim_start-camera.global_transform.basis.z*75.
+            var aim_query := PhysicsRayQueryParameters3D.create(aim_start,aim_end,1|4,[hero.get_rid()])
+            var aim_hit := get_world_3d().direct_space_state.intersect_ray(aim_query)
+            hud.set_target_state(not aim_hit.is_empty() and bots.is_active_rival(aim_hit.get("collider")))
+        else:
+            hud.set_target_state(false)
+        _update_match_hud()
 
 func _turn(relative: Vector2) -> void:
     if relative == Vector2.ZERO:
@@ -539,17 +553,40 @@ func _emit_pulse() -> void:
         return
     pulse_cooldown = .19
     energy -= 1
+    scanner_recoil = 1.0
     var start := camera.global_position
     var end := start - camera.global_transform.basis.z * 74.0
     var query := PhysicsRayQueryParameters3D.create(start,end,1|4,[hero.get_rid()])
     var result := get_world_3d().direct_space_state.intersect_ray(query)
     if not result.is_empty():
         end = result["position"]
-        if bots.tag_from_player(result["collider"]):
+        var scored: bool = bots.tag_from_player(result["collider"])
+        if scored:
             hud.set_message("PUNKT DLA CYAN!  +1",1.2)
+            hud.flash_hit()
+        _impact_flash(end,scored)
     _pulse_visual(start+(-camera.global_transform.basis.z)*.42,end)
     if energy == 0:
         _recharge()
+
+func _impact_flash(position: Vector3, scored: bool) -> void:
+    # Brief non-graphic energy impact with a controlled one-shot mesh effect.
+    var flash := MeshInstance3D.new()
+    var ball := SphereMesh.new()
+    ball.radius = .17 if scored else .11
+    ball.height = .34 if scored else .22
+    ball.radial_segments = 10
+    ball.rings = 5
+    flash.mesh = ball
+    var mat := StandardMaterial3D.new()
+    mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    mat.albedo_color = Color(.51,1.0,.82) if scored else Color(.42,.86,1.0)
+    flash.material_override = mat
+    add_child(flash)
+    flash.global_position = position
+    var animation := create_tween()
+    animation.tween_property(flash,"scale",Vector3(.08,.08,.08),.18).set_trans(Tween.TRANS_CUBIC)
+    animation.tween_callback(flash.queue_free)
 
 func _pulse_visual(start: Vector3, finish: Vector3) -> void:
     var segment := finish-start
