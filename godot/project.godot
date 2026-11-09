@@ -14,15 +14,19 @@ window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 window/handheld/orientation=0
+window/frame_pacing/android/enable_frame_pacing=false
 
 [physics]
 3d/default_gravity=24.0
 common/physics_ticks_per_second=60
 
 [rendering]
-renderer/rendering_method="gl_compatibility"
-renderer/rendering_method.mobile="gl_compatibility"
-gl_compatibility/driver.android="opengl3"
+renderer/rendering_method="mobile"
+renderer/rendering_method.mobile="mobile"
+; Android emulator bug Godot 4.7: Vulkan Swappy frame pacing VkResult error 5
+; Disable until upstream 4.8 fix; keeps actual Vulkan 3D and real scene.
+
+
 limits/opengl/max_lights_per_object=2
 limits/opengl/max_renderable_lights=12
 limits/opengl/max_decals=0
