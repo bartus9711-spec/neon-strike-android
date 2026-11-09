@@ -8,6 +8,10 @@ const RIGGED_HUMAN := "res://assets/models/soldier.glb"
 const DETAILED_HUMAN := "res://assets/models/soldier_tac.glb"
 var prefer_detail_lod := false
 var imported_model: Node3D
+var imported_source_path: String = ""
+var imported_mesh_count := 0
+var imported_model_height := 0.0
+var imported_model_visible := false
 var imported_anim: AnimationPlayer
 var anim_idle: StringName = &""
 var anim_walk: StringName = &""
@@ -142,6 +146,9 @@ func _import_real_human(team: int) -> bool:
     var human := packed.instantiate() as Node3D
     if human == null:
         return false
+    # Some source GLBs carry editor visibility flags. The game owns visibility
+    # and must not silently ship an invisible operator after import.
+    human.visible = true
     # Keep the original glTF root and armature transforms untouched. Imported
     # assets use wildly different units and a Z-up authoring convention.
     var shell := Node3D.new()
@@ -162,8 +169,13 @@ func _import_real_human(team: int) -> bool:
         meshes.append(human)
     var smallest := Vector3(INF,INF,INF)
     var largest := Vector3(-INF,-INF,-INF)
+    imported_mesh_count = 0
     for mesh in meshes:
         var instance := mesh as MeshInstance3D
+        if not is_instance_valid(instance):
+            continue
+        instance.visible = true
+        imported_mesh_count += 1
         var into_fit: Transform3D = fit.global_transform.affine_inverse() * instance.global_transform
         var bounds := instance.get_aabb()
         for vertex in range(8):
@@ -182,6 +194,8 @@ func _import_real_human(team: int) -> bool:
     # No artificial min/max scaling clamp. A GLB authored in centimetres
     # or micrometres must still become a 1.75 m character, not a tiny dot.
     var factor: float = 1.75 / raw_height
+    imported_source_path = model_path
+    imported_model_height = 1.75
     var middle: Vector3 = (smallest+largest)*.5
     center_offset.position = Vector3(-middle.x,-middle.y,-smallest.z) if is_z_up else Vector3(-middle.x,-smallest.y,-middle.z)
     fit.scale = Vector3.ONE*factor
@@ -200,7 +214,9 @@ func _import_real_human(team: int) -> bool:
     patch.material_override = patch_mat
     shell.add_child(patch)
     root = shell
+    shell.visible = true
     imported_model = human
+    imported_model_visible = true
     var animation_players := human.find_children("*","AnimationPlayer",true,false)
     if not animation_players.is_empty():
         imported_anim = animation_players[0] as AnimationPlayer
@@ -230,8 +246,23 @@ func _import_real_human(team: int) -> bool:
         if anim_idle != &"":
             imported_anim.play(anim_idle)
     print("TEAMCS_HUMAN_FITTED: ",model_path," dimensions=",extent,
-        " upZ=",is_z_up," units=",factor," idle=",anim_idle," locomotion=",anim_run)
+        " upZ=",is_z_up," units=",factor," meshes=",imported_mesh_count,
+        " visible=",imported_model_visible," idle=",anim_idle," locomotion=",anim_run)
     return true
+
+func force_render_visibility() -> void:
+    # Re-assert visibility after GLB import and after quality changes. This is
+    # intentionally limited to imported geometry; it never replaces materials
+    # or the licensed source mesh with a procedural placeholder.
+    if is_instance_valid(root):
+        root.visible = true
+    if is_instance_valid(imported_model):
+        imported_model.visible = true
+        for mesh_node in imported_model.find_children("*","MeshInstance3D",true,false):
+            var mesh_instance := mesh_node as MeshInstance3D
+            if is_instance_valid(mesh_instance):
+                mesh_instance.visible = true
+        imported_model_visible = true
 
 func build(team: int, character_variant: int, actor_quality: int) -> void:
     side = team
@@ -407,6 +438,7 @@ func set_quality(level: int) -> void:
         detail.visible = quality >= 2
     if is_instance_valid(root):
         root.visible = true
+        force_render_visibility()
         # Medium keeps a recognisable clothed human; Ultra adds all protective
         # details. Reduce separate GPU draw calls on mobile without losing the rig.
         var high_only := ["EarProtectionLeft","EarProtectionRight","ElbowGuard","KneeGuard","PouchFastener0","PouchFastener1","PouchFastener2"]
