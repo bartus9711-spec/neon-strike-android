@@ -80,6 +80,12 @@ jobs:
             echo "Native Wi-Fi/mobile plugin class missing from APK" >&2
             exit 1
           fi
+          # Fail the QA release if Android would install an invisible/no-launcher app.
+          TOOLS="$ANDROID_HOME/build-tools/35.0.1"
+          "$TOOLS/apksigner" verify --verbose --print-certs TeamCS_Godot_GT7_QA.apk
+          "$TOOLS/aapt" dump badging TeamCS_Godot_GT7_QA.apk | tee /tmp/teamcs-badging.log
+          grep -q "^launchable-activity:" /tmp/teamcs-badging.log
+          "$TOOLS/zipalign" -c -v 4 TeamCS_Godot_GT7_QA.apk
           ls -lh TeamCS_Godot_GT7_QA.apk
       - name: Upload native Android QA APK and export logs (private test artifact, not Play Store release)
         if: always()
