@@ -9,6 +9,7 @@ signal graphics_advanced_changed(textures_enabled: bool, world_detail: int, acto
 signal network_mode_changed(enabled: bool)
 signal pulse_requested
 signal recharge_requested
+signal weapon_slot_requested(slot: int)
 signal settings_closed
 signal restart_requested
 
@@ -23,6 +24,8 @@ var round_label: Label
 var match_label: Label
 var shield_label: Label
 var power_label: Label
+var weapon_label: Label
+var credits_label: Label
 var reticle_label: Label
 var reticle_marks: Array[ColorRect] = []
 var hit_label: Label
@@ -130,7 +133,7 @@ func _ready() -> void:
     shield_label.size = Vector2(254,33)
     shield_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     ui.add_child(shield_label)
-    power_label = _label("ENERGIA 24 / 24", 18, Color(1,.89,.55))
+    power_label = _label("AMUNICJA 12 / 48", 18, Color(1,.89,.55))
     power_label.anchor_top = 1
     power_label.anchor_bottom = 1
     power_label.anchor_left = .5
@@ -139,6 +142,20 @@ func _ready() -> void:
     power_label.size = Vector2(254,32)
     power_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     ui.add_child(power_label)
+    weapon_label = _label("P-9",16,Color(.92,.93,.87))
+    weapon_label.anchor_left = .5
+    weapon_label.anchor_right = .5
+    weapon_label.anchor_top = 1.
+    weapon_label.anchor_bottom = 1.
+    weapon_label.position = Vector2(-127,-108)
+    weapon_label.size = Vector2(254,25)
+    weapon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    ui.add_child(weapon_label)
+    credits_label = _label("",16,Color(.78,.93,.69))
+    credits_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+    credits_label.position = Vector2(-225,53)
+    credits_label.size = Vector2(220,27)
+    ui.add_child(credits_label)
     map_select = OptionButton.new()
     map_select.name = "EightMapPicker"
     map_select.position = Vector2(15, 66)
@@ -310,7 +327,7 @@ func _make_controls() -> void:
     action.offset_top = -100
     action.offset_bottom = -45
     ui.add_child(action)
-    var pulse := _button("PULS  ⚡")
+    var pulse := _button("OGIEŃ")
     pulse.name = "Pulse"
     pulse.add_theme_font_size_override("font_size",22)
     pulse.button_down.connect(func(): pulse_held = true; pulse_requested.emit())
@@ -324,7 +341,7 @@ func _make_controls() -> void:
     pulse.offset_top = -114
     pulse.offset_bottom = -23
     ui.add_child(pulse)
-    var recharge := _button("ŁADUJ  ↻")
+    var recharge := _button("PRZEŁADUJ ↻")
     recharge.name = "Recharge"
     recharge.pressed.connect(func(): recharge_requested.emit())
     recharge.anchor_left = 1
@@ -336,6 +353,18 @@ func _make_controls() -> void:
     recharge.offset_top = -166
     recharge.offset_bottom = -118
     ui.add_child(recharge)
+    for slot in [1,2]:
+        var switcher := _button("1  GŁÓWNA" if slot == 1 else "2  BOCZNA")
+        switcher.name = "WeaponSlot"+str(slot)
+        switcher.add_theme_font_size_override("font_size",13)
+        switcher.anchor_top = 1.
+        switcher.anchor_bottom = 1.
+        switcher.offset_left = 290 if slot == 1 else 405
+        switcher.offset_right = 403 if slot == 1 else 518
+        switcher.offset_top = -63
+        switcher.offset_bottom = -16
+        switcher.pressed.connect(func(): weapon_slot_requested.emit(slot))
+        ui.add_child(switcher)
     var sprint := _button("BIEG")
     sprint.name = "Sprint"
     sprint.toggle_mode = true
@@ -653,7 +682,15 @@ func set_combat_state(cyan: int, magenta: int, shield: int, power: int, capacity
         shield_label.text = "OSŁONA %d%%" % maxi(0,shield)
         shield_label.add_theme_color_override("font_color", Color(.92,.43,.41) if shield <= 25 else Color(.59,.97,1))
     if is_instance_valid(power_label):
-        power_label.text = "ENERGIA %d / %d" % [power,capacity]
+        power_label.text = "AMUNICJA %d / %d" % [power,capacity]
+
+func set_loadout_state(weapon: String, shots: int, spare: int, money: int, armor: bool) -> void:
+    if is_instance_valid(weapon_label):
+        weapon_label.text = weapon + ("  •  KAMIZELKA" if armor else "")
+    if is_instance_valid(power_label):
+        power_label.text = "AMUNICJA %d / %d" % [shots,spare]
+    if is_instance_valid(credits_label):
+        credits_label.text = "%d $" % money
 
 func set_round_state(round_no: int, alive_ct: int, alive_t: int, still_alive: bool) -> void:
     if is_instance_valid(round_label):
