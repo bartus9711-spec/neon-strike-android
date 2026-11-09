@@ -44,6 +44,16 @@ samples=list(im.getdata())
 color_pixels=sum(max(rgb)-min(rgb)>=30 for rgb in samples)
 black_pixels=sum(max(rgb)<17 for rgb in samples)
 print("TEAMCS_VISUAL_TEST: colorful=", color_pixels," black=",black_pixels," total=",len(samples))
+# Android launcher ANR/permission dialogs can hide the game while its activity
+# is running. Inspect the center for the characteristic flat, white system modal.
+# Do not falsely pass a screenshot just because its edges contain the 3D level.
+width,height=im.size
+center=im.crop((int(width*.25),int(height*.20),int(width*.75),int(height*.80)))
+whites=sum(min(rgb)>=225 and max(rgb)-min(rgb)<24 for rgb in center.getdata())
+white_ratio=whites/(center.width*center.height)
+print("TEAMCS_ANDROID_MODAL_RATIO:",round(white_ratio,3))
+if white_ratio>.22:
+    sys.exit("TEAMCS_SCREEN_ANDROID_DIALOG: system app-not-responding modal obscures gameplay")
 if color_pixels<400 or black_pixels>len(samples)*.97:
     sys.exit("TEAMCS_SCREEN_NO_GAME_SCENE: black screen or Android overlay, NOT a rendered 3D match")
 print("TEAMCS_LANDSCAPE_GAMEPLAY_RENDER_VERIFIED")
