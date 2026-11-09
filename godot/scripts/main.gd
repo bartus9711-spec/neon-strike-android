@@ -98,14 +98,14 @@ func _ready() -> void:
     bots.process_mode = Node.PROCESS_MODE_DISABLED
     hud.process_mode = Node.PROCESS_MODE_DISABLED
     hud.visible = false
-    print("TEAMCS_MATCH_READY: native Godot 4v4 actor_count=",bots.count_bots()," map_count=",arena.maps.size())
+    print("TEAMCS_MATCH_READY: 5v5 elimination bots=",bots.count_bots()," maps=",arena.maps.size())
 
 func _start_from_lobby(index: int) -> void:
     hud.visible = true
     hud.process_mode = Node.PROCESS_MODE_INHERIT
     bots.process_mode = Node.PROCESS_MODE_INHERIT
     switch_map(index)
-    hud.set_message("TEAMCS 4v4  •  SOLO Z BOTAMI  •  8 AREN  •  POWODZENIA!", 3.0)
+    hud.set_message("TEAMCS 5v5 • BEZ ODRODZEŃ • 7 WYGRANYCH RUND",3.0)
 
 func _open_settings_from_lobby() -> void:
     # Settings are the existing genuine Low/High/Ultra controls, not a mockup.
@@ -413,7 +413,7 @@ func switch_map(index: int) -> void:
         heading = 0.0
     elevation = -.10
     if is_instance_valid(bots):
-        bots.new_round(arena.current_map,arena,hero)
+        bots.begin_match(arena.current_map,arena,hero)
     if is_instance_valid(weather):
         var world_detail := 1
         if is_instance_valid(hud):
@@ -424,6 +424,20 @@ func switch_map(index: int) -> void:
         bots.apply_actor_quality(hud.actor_select.selected)
         hud.set_map(map_index, str(arena.current_map.get("name", "ARENA")))
         _update_match_hud()
+
+func _start_next_round() -> void:
+    shield = 100
+    energy = ENERGY_MAX
+    pulse_cooldown = 0.0
+    recharge_remaining = 0.0
+    hero.velocity = Vector3.ZERO
+    var spawn: Vector3 = arena.spawn_position()
+    hero.global_position = spawn
+    heading = atan2(spawn.x,spawn.z)
+    elevation = -.10
+    bots.new_round(arena.current_map,arena,hero)
+    hud.set_message("RUNDA %d  •  CT 5 vs T 5" % bots.round_number,2.0)
+    _update_match_hud()
 
 func _make_hero() -> void:
     hero = CharacterBody3D.new()
@@ -457,7 +471,20 @@ func _physics_process(delta: float) -> void:
     if next_round > 0.0:
         next_round -= delta
         if next_round <= 0.0:
-            switch_map(map_index)
+            if bots.match_over:
+                _return_to_lobby()
+                return
+            _start_next_round()
+    if bots.round_over or not bots.player_alive:
+        hero.velocity = Vector3.ZERO
+        pulse_requested = false
+        recharge_requested = false
+        action_queued = false
+        hud_update_timer += delta
+        if hud_update_timer >= .15:
+            hud_update_timer = 0.0
+            _update_match_hud()
+        return
     if recharge_requested or Input.is_physical_key_pressed(KEY_R):
         _recharge()
     recharge_requested = false
@@ -654,7 +681,7 @@ func _recharge() -> void:
     hud.set_message("UZUPEŁNIANIE ENERGII…",1.5)
 
 func _emit_pulse() -> void:
-    if pulse_cooldown > 0.0 or recharge_remaining > 0.0 or bots.round_over:
+    if pulse_cooldown > 0.0 or recharge_remaining > 0.0 or bots.round_over or not bots.player_alive:
         return
     if energy <= 0:
         _recharge()
@@ -672,7 +699,7 @@ func _emit_pulse() -> void:
         end = result["position"]
         var scored: bool = bots.tag_from_player(result["collider"])
         if scored:
-            hud.set_message("PUNKT DLA CYAN!  +1",1.2)
+            hud.set_message("RYWAL WYELIMINOWANY  •  T POZOSTAŁO: %d" % bots.living_count(1),1.2)
             hud.flash_hit()
             if is_instance_valid(audio_hit):
                 audio_hit.play()
@@ -727,22 +754,24 @@ func _on_player_tagged() -> void:
     shield = maxi(0,shield-24)
     if shield <= 0:
         bots.player_lost_shield()
-        hero.global_position = arena.spawn_position()
         hero.velocity = Vector3.ZERO
-        shield = 100
-        energy = ENERGY_MAX
-        hud.set_message("OSŁONA ODNOWIONA  •  POWRÓT DO MECZU",2.)
+        hud.set_message("WYELIMINOWANY  •  OBSERWUJ RUNDĘ",5.0)
 
 func _on_round_finished(winner: int) -> void:
-    if is_instance_valid(lobby):
-        lobby.award_match(winner == 0)
-    var result_text := "CYAN WYGRYWA  •  RUNDA ZAKOŃCZONA" if winner == 0 else "MAGENTA WYGRYWA  •  RUNDA ZAKOŃCZONA"
-    hud.set_message(result_text,5.)
-    next_round = 5.0
+    var ct_wins := winner == 0
+    if bots.match_over:
+        if is_instance_valid(lobby):
+            lobby.award_match(ct_wins)
+        hud.set_message("MECZ ZAKOŃCZONY  •  %s  •  CT %d : T %d" % ["WYGRANA CT" if ct_wins else "WYGRANA T",bots.ct_rounds,bots.t_rounds],8.0)
+        next_round = 8.0
+    else:
+        hud.set_message("RUNDA %d  •  %s  •  CT %d : T %d" % [bots.round_number,"CT WYGRYWA" if ct_wins else "T WYGRYWA",bots.ct_rounds,bots.t_rounds],4.0)
+        next_round = 4.0
 
 func _update_match_hud() -> void:
     if is_instance_valid(hud) and is_instance_valid(bots):
-        hud.set_combat_state(bots.cyan_score,bots.magenta_score,shield,energy,ENERGY_MAX,bots.time_left)
+        hud.set_combat_state(bots.ct_rounds,bots.t_rounds,shield,energy,ENERGY_MAX,bots.time_left)
+        hud.set_round_state(bots.round_number,bots.living_count(0),bots.living_count(1),bots.player_alive)
 
 func _collect_beacon() -> void:
     var closest: Node3D = null

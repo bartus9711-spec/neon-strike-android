@@ -19,6 +19,7 @@ var invert_look_y := false
 var sprint_enabled := false
 var pulse_held := false
 var radar: Control
+var round_label: Label
 var match_label: Label
 var shield_label: Label
 var power_label: Label
@@ -89,6 +90,12 @@ func _ready() -> void:
     status_label.position = Vector2(22, 9)
     status_label.size = Vector2(680, 46)
     ui.add_child(status_label)
+    round_label = _label("CT 5/5  •  T 5/5",14,Color(.83,.86,.80))
+    round_label.anchor_left = .46
+    round_label.anchor_right = .46
+    round_label.position = Vector2(-105,41)
+    round_label.size = Vector2(310,25)
+    ui.add_child(round_label)
     match_label = _label("CT  00  :  00  T", 20, Color(.90,.93,.95))
     match_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
     match_label.anchor_left = .46
@@ -647,6 +654,10 @@ func set_combat_state(cyan: int, magenta: int, shield: int, power: int, capacity
         shield_label.add_theme_color_override("font_color", Color(.92,.43,.41) if shield <= 25 else Color(.59,.97,1))
     if is_instance_valid(power_label):
         power_label.text = "ENERGIA %d / %d" % [power,capacity]
+
+func set_round_state(round_no: int, alive_ct: int, alive_t: int, still_alive: bool) -> void:
+    if is_instance_valid(round_label):
+        round_label.text = "R%d  CT %d/5  •  T %d/5%s" % [round_no,alive_ct,alive_t,"" if still_alive else "  WIDZ"]
 
 func set_status(done: int, total: int, where: Vector3) -> void:
     _beacons_collected = done

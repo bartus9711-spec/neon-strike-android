@@ -7,15 +7,20 @@ signal player_tagged()
 signal round_finished(winner: int)
 
 const OPERATIVE = preload("res://scripts/operative.gd")
-const WIN_SCORE := 12
-const RESPAWN_DELAY := 3.4
+const ROUND_TIME := 120.0
+const MATCH_WIN_ROUNDS := 7
 
 var roster: Array[Dictionary] = []
 var cyan_score := 0
 var magenta_score := 0
 var round_over := false
+var match_over := false
+var player_alive := true
+var ct_rounds := 0
+var t_rounds := 0
+var round_number := 0
 var actor_quality := 2
-var time_left := 300.0
+var time_left := ROUND_TIME
 var hero: CharacterBody3D
 var arena
 var spawn_sets: Array = []
@@ -145,6 +150,13 @@ func _play(bot: Dictionary, action: String) -> void:
     # Store logical state here so legacy AI transitions stay compatible.
     bot["animation_state"] = action
 
+func begin_match(data: Dictionary, arena_node: Node3D, player_body: CharacterBody3D) -> void:
+    ct_rounds = 0
+    t_rounds = 0
+    round_number = 0
+    match_over = false
+    new_round(data, arena_node, player_body)
+
 func new_round(data: Dictionary, arena_node: Node3D, player_body: CharacterBody3D) -> void:
     for entry in roster:
         var body: CharacterBody3D = entry["body"]
@@ -154,20 +166,20 @@ func new_round(data: Dictionary, arena_node: Node3D, player_body: CharacterBody3
     roster.clear()
     hero = player_body
     arena = arena_node
-    cyan_score = 0
-    magenta_score = 0
+    player_alive = true
     round_over = false
-    time_left = 300.0
+    round_number += 1
+    time_left = ROUND_TIME
     spawn_sets = [data.get("spawnBlue",[]), data.get("spawnRed",[])]
-    # 3 cyan allies + human, versus 4 red challengers: 4v4.
+    # Four CT bots + player, five T bots; no mid-round respawns.
     for team in [0,1]:
-        var number := 3 if team == 0 else 4
+        var number := 4 if team == 0 else 5
         for i in range(number):
             var where := _spawn(team,i)
             var actor := _make_actor(team,("ALLY_" if team == 0 else "RIVAL_")+str(i+1),where,i)
             roster.append(actor)
     apply_actor_quality(actor_quality)
-    score_changed.emit(cyan_score,magenta_score)
+    score_changed.emit(ct_rounds,t_rounds)
 
 func _spawn(team: int, slot: int) -> Vector3:
     var list: Array = spawn_sets[team]
@@ -194,7 +206,7 @@ func _best_target(bot: Dictionary) -> Node3D:
     var origin: Node3D = bot["body"]
     var best: Node3D = null
     var closest := 999999.0
-    if int(bot["team"]) == 1 and is_instance_valid(hero):
+    if int(bot["team"]) == 1 and player_alive and is_instance_valid(hero):
         var distance := origin.global_position.distance_squared_to(hero.global_position)
         if distance < closest:
             closest = distance
@@ -221,7 +233,7 @@ func _physics_process(delta: float) -> void:
         return
     time_left = maxf(0,time_left-delta)
     if time_left == 0:
-        _end_round(0 if cyan_score >= magenta_score else 1)
+        _end_round(0 if living_count(0) >= living_count(1) else 1)
         return
     for idx in range(roster.size()):
         var entry := roster[idx]
@@ -229,14 +241,6 @@ func _physics_process(delta: float) -> void:
         if not is_instance_valid(body):
             continue
         if not bool(entry["alive"]):
-            entry["respawn"] = float(entry["respawn"])-delta
-            if float(entry["respawn"]) <= 0:
-                entry["alive"] = true
-                body.global_position = _spawn(int(entry["team"]),int(entry["index"]))
-                body.visible = true
-                body.collision_layer = 4
-                body.velocity = Vector3.ZERO
-                _play(entry,"Idle")
             continue
         entry["cooldown"] = float(entry["cooldown"])-delta
         entry["think"] = float(entry["think"])-delta
@@ -293,18 +297,12 @@ func _tag(body: Node3D, scoring_team: int) -> bool:
         if int(entry["team"]) == scoring_team:
             return false
         entry["alive"] = false
-        entry["respawn"] = RESPAWN_DELAY
         var actor: CharacterBody3D = entry["body"]
         actor.visible = false
         actor.collision_layer = 0
         actor.velocity = Vector3.ZERO
-        if scoring_team == 0:
-            cyan_score += 1
-        else:
-            magenta_score += 1
-        score_changed.emit(cyan_score,magenta_score)
-        if cyan_score >= WIN_SCORE or magenta_score >= WIN_SCORE:
-            _end_round(scoring_team)
+        # Eliminations decide rounds; the scoreboard counts won rounds.
+        _evaluate_round_end()
         return true
     return false
 
@@ -313,19 +311,38 @@ func tag_from_player(hit_object: Object) -> bool:
         return false
     return _tag(hit_object as Node3D,0)
 
+func living_count(team: int) -> int:
+    var result := 1 if team == 0 and player_alive else 0
+    for entry in roster:
+        if int(entry["team"]) == team and bool(entry["alive"]):
+            result += 1
+    return result
+
+func _evaluate_round_end() -> void:
+    if round_over:
+        return
+    if living_count(0) <= 0:
+        _end_round(1)
+    elif living_count(1) <= 0:
+        _end_round(0)
+
 func _end_round(winner: int) -> void:
     if round_over:
         return
     round_over = true
+    if winner == 0:
+        ct_rounds += 1
+    else:
+        t_rounds += 1
+    match_over = ct_rounds >= MATCH_WIN_ROUNDS or t_rounds >= MATCH_WIN_ROUNDS
+    score_changed.emit(ct_rounds,t_rounds)
     round_finished.emit(winner)
 
 func player_lost_shield() -> void:
-    if round_over:
+    if round_over or not player_alive:
         return
-    magenta_score += 1
-    score_changed.emit(cyan_score,magenta_score)
-    if magenta_score >= WIN_SCORE:
-        _end_round(1)
+    player_alive = false
+    _evaluate_round_end()
 
 func count_bots() -> int:
     return roster.size()
