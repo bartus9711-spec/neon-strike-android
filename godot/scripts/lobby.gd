@@ -15,6 +15,7 @@ var performance_text: Label
 var profile_text: Label
 var preview: SubViewport
 var preview_frame: SubViewportContainer
+var preview_camera: Camera3D
 var preview_debug_logged := false
 var previews: Array[Node3D] = []
 var preview_clock := 0.0
@@ -138,8 +139,9 @@ func _stage() -> void:
     preview = SubViewport.new()
     # This is an opaque 3D render target. Android Vulkan can skip a transparent
     # secondary viewport when no previous visible frame has been composited.
-    preview.size = Vector2i(560,400)
+    preview.size = Vector2i(640,420)
     preview.transparent_bg = false
+    preview.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
     preview.render_target_update_mode = SubViewport.UPDATE_ALWAYS
     preview.own_world_3d = true
     frame.add_child(preview)
@@ -166,11 +168,14 @@ func _stage() -> void:
     fill.light_energy = 1.1
     world.add_child(fill)
     var camera := Camera3D.new()
-    camera.position = Vector3(0,1.29,-3.50)
-    camera.fov = 47.0
+    camera.position = Vector3(0,1.16,-3.05)
+    camera.fov = 42.0
+    camera.near = 0.03
+    camera.far = 120.0
     world.add_child(camera)
-    camera.look_at(Vector3(0,1.03,0),Vector3.UP)
+    camera.look_at(Vector3(0,.86,-.04),Vector3.UP)
     camera.make_current()
+    preview_camera = camera
     # A muted urban set, placed behind the live 3D operators. No neon effects.
     _stage_block(world,Vector3(0,-.19,1.25),Vector3(8.0,.23,7.0),Color(.22,.23,.22))
     _stage_block(world,Vector3(-2.85,2.25,2.75),Vector3(2.5,4.5,1.0),Color(.48,.44,.37))
@@ -182,16 +187,27 @@ func _stage() -> void:
         var bx := -2.30+float(tower)*1.5
         _stage_block(world,Vector3(bx,1.86,3.85),Vector3(.54,1.26,.09),Color(.16,.22,.25))
         _stage_block(world,Vector3(bx,2.56,3.82),Vector3(.65,.08,.13),Color(.74,.68,.59))
+    # Separate low plinths keep both operators above the textured floor and
+    # give the mobile preview a readable silhouette without neon halos.
+    _stage_block(world,Vector3(-.72,.01,-.02),Vector3(.92,.17,.82),Color(.14,.18,.20))
+    _stage_block(world,Vector3(.72,.01,-.02),Vector3(.92,.17,.82),Color(.14,.18,.20))
     for team in range(2):
         var actor = OPERATOR.new()
         # CT uses the detailed tactical suit; T uses the separate animated
         # soldier GLB. Never show identical costumes for both factions.
         actor.prefer_detail_lod = team == 0
         # Camera looks in +Z, so world X is horizontally mirrored on screen.
-        actor.position = Vector3(.76 if team==0 else -.76,-.10,0.12)
+        actor.position = Vector3(.72 if team==0 else -.72,.08,-.18)
         actor.rotation.y = -.17 if team==0 else .21
+        actor.process_mode = Node.PROCESS_MODE_ALWAYS
         world.add_child(actor)
         actor.build(team,1+gear_variant if team==0 else 2,2)
+        actor.force_render_visibility()
+        print("TEAMCS_PREVIEW_ACTOR: team=",team,
+            " source=",actor.imported_source_path,
+            " meshes=",actor.imported_mesh_count,
+            " visible=",actor.imported_model_visible,
+            " position=",actor.position)
         previews.append(actor)
 
 func _stage_block(world: Node3D, p: Vector3, dimensions: Vector3, color: Color) -> void:
@@ -325,10 +341,11 @@ func _process(delta: float) -> void:
     if not active:
         return
     preview_clock += delta
-    if not preview_debug_logged and preview_clock > 2.0 and is_instance_valid(preview):
+    if not preview_debug_logged and preview_clock > 1.0 and is_instance_valid(preview):
         preview_debug_logged = true
         var viewport_texture := preview.get_texture()
-        print("TEAMCS_PREVIEW_LAYOUT: frame=",preview_frame.size," viewport=",preview.size," cam=",preview.get_camera_3d())
+        print("TEAMCS_PREVIEW_LAYOUT: frame=",preview_frame.size," viewport=",preview.size,
+            " cam=",preview_camera," actors=",previews.size())
         var screenshot := viewport_texture.get_image()
         if screenshot != null and not screenshot.is_empty():
             print("TEAMCS_PREVIEW_PIXEL: ",screenshot.get_pixel(int(screenshot.get_width()/2),int(screenshot.get_height()/2)))
