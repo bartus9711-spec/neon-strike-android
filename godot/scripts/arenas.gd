@@ -56,6 +56,7 @@ func load_arena(index: int) -> void:
         "oldtown": _oldtown()
         "skyline": _skyline()
     _lighting()
+    _scene_dressing()
     _flush()
     apply_advanced(texture_enabled,detail_level)
 
@@ -301,6 +302,20 @@ func _building(x: float,z: float,w: float,d: float,h: float,mat: String,kind: St
                     _piece(Vector3(wx,wy,zz+float(side)*.052),Vector3(.57,1.05,.042),"glass")
                     _piece(Vector3(wx,wy,zz+float(side)*.09),Vector3(.050,1.12,.07),"stone")
                     _piece(Vector3(wx,wy-.62,zz+float(side)*.1),Vector3(1,.13,.19),"plaster")
+    # Ground floor entry, deep lintels and roof trim to break the flat cube silhouette.
+    for wall_side in [-1,1]:
+        var zzfront := z+float(wall_side)*(d*.5+.06)
+        _piece(Vector3(x,1.09,zzfront),Vector3(1.25,2.07,.09),"dark")
+        _piece(Vector3(x,1.12,zzfront+float(wall_side)*.08),Vector3(1.06,1.85,.05),"wood" if id=="oldtown" else "steel")
+        _piece(Vector3(x+.40,1.05,zzfront+float(wall_side)*.15),Vector3(.065,.15,.05),"yellow")
+        _piece(Vector3(x,2.19,zzfront),Vector3(1.48,.16,.20),"stone")
+        if h > 4:
+            _piece(Vector3(x,h-.68,zzfront),Vector3(w*.9,.105,.17),"plaster")
+            _piece(Vector3(x,h-.40,zzfront),Vector3(w*.90,.065,.19),"roof")
+    for vent_index in range(mini(5,maxi(2,int(d/3.0)))):
+        var zv := z-d*.5+(float(vent_index)+.5)*d/mini(5,maxi(2,int(d/3.0)))
+        _piece(Vector3(x+w*.50+.07,h*.65,zv),Vector3(.14,.55,.80),"dark")
+        _piece(Vector3(x+w*.50+.14,h*.65,zv),Vector3(.04,.33,.70),"rail")
     if kind in ["tower","temple"]:
         for i in range(6):
             var p := float(i)*TAU/6
@@ -520,6 +535,61 @@ func _skyline() -> void:
         var z := -33.0 if i<8 else 33.0
         _round(Vector3(x,16.2,z),.17,12.0,"rail")
         _round(Vector3(x,22.4,z),.34,.4,"cyan" if i%3==0 else "magenta")
+
+
+func _scene_dressing() -> void:
+    # Geometry is batched with existing meshes: no extra per-prop draw calls.
+    # Distinct architectural vocabulary for each of the 8 original maps.
+    var id := str(current_map.get("id",""))
+    var autumn := id in ["port","oldtown","dunes"]
+    var evening := id in ["neon","metro","skyline"]
+    var foliage_type := "foliage" if id != "alpine" else "snow"
+    for x in [-43.0,43.0]:
+        for z in [-35.0,-23.0,-11.0,1.0,13.0,25.0,37.0]:
+            var height := 1.8+float(posmod(int(absf(x)+absf(z)),3))*.32
+            _round(Vector3(x,height*.50,z),.11,height,"steel")
+            _piece(Vector3(x,height,z),Vector3(.64,.15,.40),"roof")
+            _piece(Vector3(x,height+.09,z),Vector3(.44,.045,.30),"cyan" if evening else "yellow")
+            # Plants/snowbanks by the outer paths; cover remains collision-driven JSON.
+            if id not in ["foundry","metro","skyline"]:
+                _round(Vector3(x-.8,.21,z+1.2),.44,.43,"stone")
+                _round(Vector3(x-.8,.65,z+1.2),.52,.66,foliage_type,true)
+                if id == "alpine":
+                    _round(Vector3(x-.8,1.09,z+1.2),.30,.16,"snow",true)
+    if id in ["port","foundry","metro"]:
+        for z in range(-35,36,10):
+            for x in [-29.0,29.0]:
+                _piece(Vector3(x,.07,float(z)),Vector3(.75,.06,2.45),"yellow")
+                _piece(Vector3(x,1.48,float(z)+1.2),Vector3(.09,2.95,.07),"steel")
+                _piece(Vector3(x,2.82,float(z)+1.2),Vector3(1.25,.10,.16),"yellow")
+    if id in ["neon","oldtown","dunes"]:
+        for z in [-28.0,-10.0,8.0,26.0]:
+            for x in [-34.0,34.0]:
+                _piece(Vector3(x,3.35,z),Vector3(.12,.32,3.55),"wood" if autumn else "steel")
+                for stripe in range(5):
+                    _piece(Vector3(x,3.31,z-1.4+float(stripe)*.68),Vector3(.10,.055,.36),"magenta" if evening else "orange")
+                _piece(Vector3(x,3.13,z),Vector3(.26,.11,3.25),"dark")
+    if id == "alpine":
+        for x in [-40.0,40.0]:
+            for z in [-30.0,-16.0,-2.0,12.0,26.0]:
+                _round(Vector3(x,1.14,z),.27,2.3,"wood")
+                _round(Vector3(x,2.65,z),1.32,2.7,"foliage",true)
+                _round(Vector3(x,4.1,z),.95,2.0,"snow",true)
+    if id in ["neon","skyline"]:
+        for i in range(13):
+            var z := -35.0+float(i)*5.8
+            _piece(Vector3(-42.5,4.5,z),Vector3(.22,.08,2.3),"cyan")
+            _piece(Vector3(42.5,5.8,z),Vector3(.22,.08,2.3),"magenta")
+            _piece(Vector3(-42.5,1.5,z),Vector3(.12,2.8,.07),"steel")
+            _piece(Vector3(42.5,2.0,z),Vector3(.12,3.5,.07),"steel")
+    # Small depth/detail accents on railings, crates and utilities. All instanced.
+    for i in range(14):
+        var x := -37.0+float(i%7)*12.3
+        var z := -37.0 if i<7 else 37.0
+        _piece(Vector3(x,.30,z),Vector3(1.15,.13,.62),"dark")
+        _piece(Vector3(x,.65,z-.16),Vector3(1.05,.58,.13),"rail")
+        _piece(Vector3(x,.98,z-.16),Vector3(1.09,.085,.16),"steel")
+        _piece(Vector3(x,.59,z-.16),Vector3(.05,.53,.16),"yellow" if autumn else "cyan")
 
 func _lighting() -> void:
     var id := str(current_map.get("id",""))
