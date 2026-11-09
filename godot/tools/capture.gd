@@ -80,7 +80,20 @@ func _run() -> void:
         quit(29)
         return
     main.switch_map(0)
-    print("CI_FPS_GAMEPLAY_OK: 4v4 animated actors, team score, respawn, first-person energy-tag and recharge")
+    if main.beacons.size() != 0:
+        push_error("CI: obsolete glowing prototype pickups are still rendering on the arena")
+        quit(33)
+        return
+    main.hud.action_requested.emit()
+    await process_frame
+    await process_frame
+    if not main.zoom_enabled:
+        push_error("CI: camera zoom button did not update real gameplay state")
+        quit(34)
+        return
+    main.hud.action_requested.emit()
+    await process_frame
+    print("CI_FPS_GAMEPLAY_OK: 4v4 animated humans, score, respawn, energy, zoom and sound")
     main.hud._emit_graphics()
     if Engine.max_fps != 60:
         push_error("CI: safe 60 FPS default configuration was not applied")
