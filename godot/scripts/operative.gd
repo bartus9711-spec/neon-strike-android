@@ -3,6 +3,15 @@ extends Node3D
 ## Performance-aware geometry; rigged pivots are animated every physics tick.
 ## Uniforms, padded vest, boots, helmet, visor, neck, gloves and optional utility
 ## pouches. No external model licence / network download needed.
+const MODEL_PATHS := [
+    "res://assets/characters/ct_operator.glb",
+    "res://assets/characters/t_operator.glb"
+]
+var imported_holder: Node3D
+var imported_animation: AnimationPlayer
+var imported_idle := ""
+var imported_walk := ""
+var imported_clip := ""
 var phase := 0.0
 var quality := 1
 var variant := 0
@@ -123,10 +132,81 @@ func _ring(parent: Node3D,p: Vector3,radius: float, tube: float,mat: Material,la
     node.material_override = mat
     parent.add_child(node)
 
+func _clip_containing(player: AnimationPlayer, choices: Array[String]) -> String:
+    for keyword in choices:
+        for clip in player.get_animation_list():
+            if str(clip).to_lower().contains(keyword):
+                return str(clip)
+    return ""
+
+func _load_licensed_humanoid(team: int) -> bool:
+    var path: String = MODEL_PATHS[clampi(team,0,1)]
+    if not ResourceLoader.exists(path):
+        return false
+    var packed := ResourceLoader.load(path) as PackedScene
+    if packed == null:
+        return false
+    var instance := packed.instantiate() as Node3D
+    if instance == null:
+        return false
+    imported_holder = Node3D.new()
+    imported_holder.name = "DetailedImportedHumanoid"
+    add_child(imported_holder)
+    var normalized := Node3D.new()
+    normalized.name = "NormalizedModelSpace"
+    imported_holder.add_child(normalized)
+    normalized.add_child(instance)
+    # Imported asset units differ: measure every mesh then normalize to 1.75 m.
+    var low := INF
+    var high := -INF
+    var min_x := INF
+    var max_x := -INF
+    var min_z := INF
+    var max_z := -INF
+    var mesh_count := 0
+    for node in imported_holder.find_children("*","MeshInstance3D",true,false):
+        var mesh_node := node as MeshInstance3D
+        if mesh_node == null or mesh_node.mesh == null:
+            continue
+        mesh_count += 1
+        var mesh_transform: Transform3D = normalized.global_transform.affine_inverse() * mesh_node.global_transform
+        var bound: AABB = mesh_node.get_aabb()
+        for corner_index in range(8):
+            var point: Vector3 = mesh_transform * bound.get_endpoint(corner_index)
+            low = minf(low,point.y)
+            high = maxf(high,point.y)
+            min_x = minf(min_x,point.x)
+            max_x = maxf(max_x,point.x)
+            min_z = minf(min_z,point.z)
+            max_z = maxf(max_z,point.z)
+    if mesh_count == 0 or low == INF or high-low < .001:
+        imported_holder.queue_free()
+        imported_holder = null
+        return false
+    var size_factor := clampf(1.75/(high-low),.02,18.0)
+    normalized.scale = Vector3.ONE * size_factor
+    normalized.position = Vector3(-(min_x+max_x)*.5,-low,-(min_z+max_z)*.5) * size_factor
+    var players := imported_holder.find_children("*","AnimationPlayer",true,false)
+    if not players.is_empty():
+        imported_animation = players[0] as AnimationPlayer
+        if imported_animation != null:
+            imported_idle = _clip_containing(imported_animation,["idle","stand","breathe"])
+            imported_walk = _clip_containing(imported_animation,["walk","jog","run","locomotion"])
+            if imported_idle != "":
+                imported_animation.play(imported_idle)
+                imported_clip = imported_idle
+    print("TEAMCS_REAL_HUMANOID_LOADED: ",path," meshes=",mesh_count,
+        " height=",high-low," idle=",imported_idle," walk=",imported_walk)
+    return true
+
 func build(team: int, character_variant: int, actor_quality: int) -> void:
     side = team
     variant = character_variant
     quality = actor_quality
+    if _load_licensed_humanoid(team):
+        set_quality(actor_quality)
+        return
+    push_warning("TEAMCS: licensed humanoid missing; primitive fallback for "+str(team))
     var blue := team == 0
     # CT in graphite/navy and T in dusty olive/brown, both matte fabrics.
     var dark_olive := Color(.18,.235,.255) if blue else Color(.39,.335,.245)
@@ -290,6 +370,11 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
 
 func set_quality(level: int) -> void:
     quality = clampi(level,0,2)
+    if is_instance_valid(imported_holder):
+        for mesh in imported_holder.find_children("*","MeshInstance3D",true,false):
+            var node := mesh as MeshInstance3D
+            node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if quality == 0 else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+        return
     if is_instance_valid(detail):
         detail.visible = quality >= 2
     if is_instance_valid(root):
@@ -305,7 +390,21 @@ func set_quality(level: int) -> void:
                 mesh_node.visible = quality >= 1
 
 func update_pose(speed: float, delta: float, aim: float = 0.0) -> void:
-    # 2-3 sec/s gait; smoothly returns to idle when stopped.
+    if is_instance_valid(imported_holder):
+        phase += delta * (1.8+minf(speed,8.0)*1.7)
+        var moving_now := speed > .60
+        if is_instance_valid(imported_animation):
+            var desired: String = imported_walk if moving_now else imported_idle
+            if desired != "" and desired != imported_clip:
+                imported_animation.play(desired,.14)
+                imported_clip = desired
+            imported_animation.speed_scale = clampf(speed/3.0,.75,1.45) if moving_now else 1.0
+        elif moving_now:
+            imported_holder.position.y = lerpf(imported_holder.position.y,absf(sin(phase))*.018,clampf(delta*9.,0.,1.))
+        else:
+            imported_holder.position.y = lerpf(imported_holder.position.y,0.0,clampf(delta*8.,0.,1.))
+        return
+    # Hand-generated figure is kept only as an offline asset-loading fallback.
     phase += delta * (2.6+minf(speed,8.0)*1.8)
     var moving := clampf(speed/3.0,0.0,1.0)
     var swing := sin(phase) * .56 * moving
