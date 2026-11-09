@@ -178,6 +178,15 @@ func set_quality(level: int) -> void:
         detail.visible = quality >= 2
     if is_instance_valid(root):
         root.visible = true
+        # Medium keeps a recognisable clothed human; Ultra adds all protective
+        # details. Reduce separate GPU draw calls on mobile without losing the rig.
+        var high_only := ["EarProtectionLeft","EarProtectionRight","ElbowGuard","KneeGuard","PouchFastener0","PouchFastener1","PouchFastener2"]
+        var medium_only := ["VisorRim","FabricFaceCover","BeltHip","ShoulderArmorBridge"]
+        for mesh_node in root.find_children("*","MeshInstance3D",true,false):
+            if str(mesh_node.name) in high_only:
+                mesh_node.visible = quality >= 2
+            elif str(mesh_node.name) in medium_only:
+                mesh_node.visible = quality >= 1
 
 func update_pose(speed: float, delta: float, aim: float = 0.0) -> void:
     # 2-3 sec/s gait; smoothly returns to idle when stopped.
