@@ -8,6 +8,7 @@ signal graphics_advanced_changed(textures_enabled: bool, world_detail: int, acto
 signal network_mode_changed(enabled: bool)
 signal pulse_requested
 signal recharge_requested
+signal settings_closed
 signal restart_requested
 
 var touch_move := Vector2.ZERO
@@ -604,6 +605,7 @@ func toggle_settings() -> void:
         Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
     else:
         _emit_graphics()
+        settings_closed.emit()
 
 func set_target_state(rival: bool) -> void:
     _rival_target = rival
