@@ -450,48 +450,73 @@ func _unhandled_input(event: InputEvent) -> void:
             recharge_requested = true
 
 func _make_scanner() -> void:
-    # A sci-fi energy scanner is the first-person view model, not a real firearm.
+    # Camera-space wearable future-energy wrist device.
+    # Reads like a polished game HUD prop, not a giant floating blob.
     scanner = Node3D.new()
-    scanner.name = "ViewEnergyScanner"
-    scanner.position = Vector3(.50,-.45,-.85)
+    scanner.name = "WristEnergyEmitter"
+    scanner.position = Vector3(.55,-.49,-.92)
+    scanner.rotation_degrees = Vector3(4,-10,-7)
     camera.add_child(scanner)
+
+    var armour := StandardMaterial3D.new()
+    armour.albedo_color = Color(.13,.18,.22)
+    armour.metallic = .55
+    armour.roughness = .42
     var dark := StandardMaterial3D.new()
-    dark.albedo_color = Color(.10,.15,.20)
-    dark.roughness = .32
-    dark.metallic = .73
-    var accents := StandardMaterial3D.new()
-    accents.albedo_color = Color(.10,.83,.96)
-    accents.roughness = .18
-    accents.metallic = .5
-    accents.emission_enabled = true
-    accents.emission = Color(.10,.85,1.0)
-    accents.emission_energy_multiplier = 2.
-    var parts := [
-        [Vector3(.01,-.12,-.10),Vector3(.21,.34,.37),dark],
-        [Vector3(0,.04,-.22),Vector3(.22,.12,.28),dark],
-        [Vector3(0,.09,-.39),Vector3(.15,.18,.16),accents],
-        [Vector3(-.15,-.04,-.21),Vector3(.07,.14,.29),accents],
-        [Vector3(.15,-.04,-.21),Vector3(.07,.14,.29),accents]
-    ]
-    for part in parts:
-        var item := MeshInstance3D.new()
-        var mesh := SphereMesh.new()
-        mesh.radius = .5
-        mesh.height = 1.
-        item.mesh = mesh
-        item.position = part[0]
-        item.scale = part[1]
-        item.material_override = part[2]
-        scanner.add_child(item)
-    var ring := MeshInstance3D.new()
-    var torus := TorusMesh.new()
-    torus.inner_radius = .115
-    torus.outer_radius = .145
-    ring.mesh = torus
-    ring.rotation.x = PI * .5
-    ring.position = Vector3(0,.02,-.39)
-    ring.material_override = accents
-    scanner.add_child(ring)
+    dark.albedo_color = Color(.025,.036,.049)
+    dark.metallic = .72
+    dark.roughness = .25
+    var glove := StandardMaterial3D.new()
+    glove.albedo_color = Color(.20,.24,.29)
+    glove.roughness = .87
+    var cyan := StandardMaterial3D.new()
+    cyan.albedo_color = Color(.16,.83,.93)
+    cyan.metallic = .35
+    cyan.roughness = .24
+    cyan.emission_enabled = true
+    cyan.emission = Color(.07,.67,.97)
+    cyan.emission_energy_multiplier = 1.2
+
+    # Device floats with the glove/forearm, partially cropped by screen edge.
+    for spec in [
+        [Vector3(.07,-.26,.23),Vector3(.28,.35,.50),glove],
+        [Vector3(.045,-.145,.03),Vector3(.25,.20,.42),armour],
+        [Vector3(-.01,-.01,-.20),Vector3(.28,.18,.53),dark],
+        [Vector3(-.015,.068,-.18),Vector3(.23,.045,.42),armour],
+        [Vector3(-.015,.10,-.18),Vector3(.17,.015,.29),cyan],
+        [Vector3(-.19,-.035,-.27),Vector3(.056,.115,.38),armour],
+        [Vector3(.19,-.035,-.27),Vector3(.056,.115,.38),armour],
+        [Vector3(-.19,.04,-.38),Vector3(.08,.033,.10),cyan],
+        [Vector3(.19,.04,-.38),Vector3(.08,.033,.10),cyan],
+    ]:
+        var piece := MeshInstance3D.new()
+        var cube := BoxMesh.new()
+        cube.size = spec[1]
+        piece.mesh = cube
+        piece.position = spec[0]
+        piece.material_override = spec[2]
+        scanner.add_child(piece)
+    var aperture := MeshInstance3D.new()
+    var ring := TorusMesh.new()
+    ring.inner_radius = .105
+    ring.outer_radius = .128
+    ring.rings = 9
+    ring.ring_segments = 18
+    aperture.mesh = ring
+    aperture.position = Vector3(0,.012,-.53)
+    aperture.rotation.x = PI * .5
+    aperture.material_override = cyan
+    scanner.add_child(aperture)
+    var face := MeshInstance3D.new()
+    var glass := SphereMesh.new()
+    glass.radius = .086
+    glass.height = .17
+    face.mesh = glass
+    face.scale = Vector3(.94,.94,.32)
+    face.position = Vector3(0,.012,-.55)
+    face.material_override = dark
+    scanner.add_child(face)
+
 
 func _recharge() -> void:
     if energy == ENERGY_MAX or recharge_remaining > 0.0:
@@ -507,6 +532,10 @@ func _emit_pulse() -> void:
         return
     pulse_cooldown = .19
     energy -= 1
+    if is_instance_valid(scanner):
+        var swing := create_tween()
+        swing.tween_property(scanner,"rotation_degrees:x",-3.0,.045)
+        swing.tween_property(scanner,"rotation_degrees:x",4.0,.125)
     var start := camera.global_position
     var end := start - camera.global_transform.basis.z * 74.0
     var query := PhysicsRayQueryParameters3D.create(start,end,1|4,[hero.get_rid()])
