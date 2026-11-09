@@ -4,6 +4,13 @@ extends Node3D
 ## Uniforms, padded vest, boots, helmet, visor, neck, gloves and optional utility
 ## pouches. No external model licence / network download needed.
 var phase := 0.0
+const RIGGED_HUMAN := "res://assets/models/soldier.glb"
+const DETAILED_HUMAN := "res://assets/models/soldier_tac.glb"
+var prefer_detail_lod := false
+var imported_model: Node3D
+var imported_anim: AnimationPlayer
+var anim_idle: StringName = &""
+var anim_run: StringName = &""
 var quality := 1
 var variant := 0
 var side := 0
@@ -123,10 +130,78 @@ func _ring(parent: Node3D,p: Vector3,radius: float, tube: float,mat: Material,la
     node.material_override = mat
     parent.add_child(node)
 
+func _import_real_human(team: int) -> bool:
+    var model_path: String = DETAILED_HUMAN if prefer_detail_lod else RIGGED_HUMAN
+    if not ResourceLoader.exists(model_path):
+        return false
+    var packed := load(model_path) as PackedScene
+    if packed == null:
+        return false
+    var node := packed.instantiate() as Node3D
+    if node == null:
+        return false
+    var shell := Node3D.new()
+    shell.name = "Licensed3DHuman"
+    add_child(shell)
+    shell.add_child(node)
+    var bounds_min := Vector3(INF,INF,INF)
+    var bounds_max := Vector3(-INF,-INF,-INF)
+    var meshes := node.find_children("*","MeshInstance3D",true,false)
+    if node is MeshInstance3D:
+        meshes.append(node)
+    for mesh in meshes:
+        var mi := mesh as MeshInstance3D
+        var transform_to_shell: Transform3D = shell.global_transform.affine_inverse() * mi.global_transform
+        var bounds := mi.get_aabb()
+        for corner in range(8):
+            var vertex := transform_to_shell * bounds.get_endpoint(corner)
+            bounds_min = bounds_min.min(vertex)
+            bounds_max = bounds_max.max(vertex)
+    if meshes.is_empty() or bounds_max.y - bounds_min.y < .005:
+        shell.queue_free()
+        return false
+    var factor := clampf(1.75/(bounds_max.y-bounds_min.y),.025,25.0)
+    var mid := (bounds_min+bounds_max)*.5
+    node.scale *= factor
+    node.position = Vector3(-mid.x*factor,-bounds_min.y*factor,-mid.z*factor)
+    node.rotation.y += PI
+    # Soft woven team patches aid identification without the old neon rings.
+    var patch := MeshInstance3D.new()
+    patch.name = "UniformIdentificationPatch"
+    var patch_mesh := BoxMesh.new()
+    patch_mesh.size = Vector3(.13,.095,.032)
+    patch.mesh = patch_mesh
+    patch.position = Vector3(.28,1.31,-.13)
+    var patch_mat := StandardMaterial3D.new()
+    patch_mat.albedo_color = Color(.29,.43,.48) if team == 0 else Color(.55,.34,.24)
+    patch_mat.roughness = .94
+    patch.material_override = patch_mat
+    shell.add_child(patch)
+    root = shell
+    imported_model = node
+    var animation_players := node.find_children("*","AnimationPlayer",true,false)
+    if node is AnimationPlayer:
+        animation_players.append(node)
+    if not animation_players.is_empty():
+        imported_anim = animation_players[0] as AnimationPlayer
+        for track_name in imported_anim.get_animation_list():
+            var key := str(track_name).to_lower()
+            if anim_idle == &"" and key.contains("idle"):
+                anim_idle = track_name
+            if anim_run == &"" and (key.contains("walk") or key.contains("jog") or key.contains("run")):
+                anim_run = track_name
+        if anim_idle != &"":
+            imported_anim.play(anim_idle)
+    print("TEAMCS_IMPORTED_HUMAN: ",model_path," meshes=",meshes.size()," anim_idle=",anim_idle," anim_run=",anim_run)
+    return true
+
 func build(team: int, character_variant: int, actor_quality: int) -> void:
     side = team
     variant = character_variant
     quality = actor_quality
+    if _import_real_human(team):
+        set_quality(actor_quality)
+        return
     var blue := team == 0
     # CT in graphite/navy and T in dusty olive/brown, both matte fabrics.
     var dark_olive := Color(.18,.235,.255) if blue else Color(.39,.335,.245)
@@ -305,6 +380,17 @@ func set_quality(level: int) -> void:
                 mesh_node.visible = quality >= 1
 
 func update_pose(speed: float, delta: float, aim: float = 0.0) -> void:
+    if is_instance_valid(imported_model):
+        if is_instance_valid(imported_anim):
+            var chosen: StringName = anim_run if speed > .65 and anim_run != &"" else anim_idle
+            if chosen != &"" and (not imported_anim.is_playing() or imported_anim.current_animation != chosen):
+                imported_anim.play(chosen,.22)
+        else:
+            # Static detailed suit fallback in the lobby: understated idle motion.
+            phase += delta * .9
+            root.position.y = sin(phase)*.006
+        return
+    # Procedural clothed character stays as an offline importer fallback.
     # 2-3 sec/s gait; smoothly returns to idle when stopped.
     phase += delta * (2.6+minf(speed,8.0)*1.8)
     var moving := clampf(speed/3.0,0.0,1.0)
