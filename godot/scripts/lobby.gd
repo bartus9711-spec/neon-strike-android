@@ -177,6 +177,7 @@ func _stage() -> void:
         _stage_block(world,Vector3(bx,2.56,3.82),Vector3(.65,.08,.13),Color(.74,.68,.59))
     for team in range(2):
         var actor = OPERATOR.new()
+        actor.prefer_detail_lod = true
         # Camera looks in +Z, so world X is horizontally mirrored on screen.
         actor.position = Vector3(.76 if team==0 else -.76,-.10,0.12)
         actor.rotation.y = -.17 if team==0 else .21
@@ -269,6 +270,7 @@ func _purchase_gear() -> void:
         var prior: Node3D = previews[0]
         var host: Node = prior.get_parent()
         var new_operator = OPERATOR.new()
+        new_operator.prefer_detail_lod = true
         new_operator.position = prior.position
         new_operator.rotation = prior.rotation
         host.add_child(new_operator)
