@@ -34,6 +34,7 @@ jobs:
           node --check pikopet/app/src/main/assets/menu-worlds.js
           node --check pikopet/app/src/main/assets/new-pets.js
           node --check pikopet/app/src/main/assets/friendships.js
+          node --check pikopet/app/src/main/assets/retro-layout.js
           node --check pikopet/app/src/main/assets/vivid-worlds.js
           python3 - <<'PY'
           import re, subprocess
@@ -52,6 +53,7 @@ jobs:
           assert '<script src="./menu-worlds.js"></script>' in html
           assert '<script src="./new-pets.js"></script>' in html
           assert '<script src="./friendships.js"></script>' in html
+          assert '<script src="./retro-layout.js"></script>' in html
           assert '<script src="./vivid-worlds.js"></script>' in html
           assert 'stocking' in (p/'backgrounds.js').read_text()
           assert 'window.PikoMotion.cozy' in html
@@ -88,8 +90,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view tamagotchi-friendships-v2.9 >/dev/null 2>&1; then
-            gh release upload tamagotchi-friendships-v2.9 Tamagotchi.apk --clobber
+          if gh release view tamagotchi-retro-friends-v2.9 >/dev/null 2>&1; then
+            gh release upload tamagotchi-retro-friends-v2.9 Tamagotchi.apk --clobber
           else
-            gh release create tamagotchi-friendships-v2.9 Tamagotchi.apk --target "${GITHUB_SHA}" --title "Tamagotchi 2.9 — obudowy, minigry i odwiedziny" --notes "Instalator Android (APK). Pikselowy pupil, 64 obudowy (32 klasyczne, 32 nowe Deluxe), 32 gatunki, 20 minigier, 12 zabaw, album pamiątek, zapis offline i przypomnienia o opiece. Ulepszone wykrywanie telefonow, rzeczywiste potwierdzenie widocznosci, skaner systemowy Androida i parowanie BT; Wi-Fi bez zmian. Zwierzaki chodzą po ekranie, po wizycie BT/Wi-Fi pojawia się przytulny pokoik. Można wykryć i sparować telefony Bluetooth. X cofa do poprzedniego menu, Android Wstecz działa tak samo. Budowa testowa z podpisem debug."
+            gh release create tamagotchi-retro-friends-v2.9 Tamagotchi.apk --target "${GITHUB_SHA}" --title "Tamagotchi 2.9 — obudowy, minigry i odwiedziny" --notes "Instalator Android (APK). Pikselowy pupil, 64 obudowy (32 klasyczne, 32 nowe Deluxe), 32 gatunki, 20 minigier, 12 zabaw, album pamiątek, zapis offline i przypomnienia o opiece. Ulepszone wykrywanie telefonow, rzeczywiste potwierdzenie widocznosci, skaner systemowy Androida i parowanie BT; Wi-Fi bez zmian. Zwierzaki chodzą po ekranie, po wizycie BT/Wi-Fi pojawia się przytulny pokoik. Można wykryć i sparować telefony Bluetooth. X cofa do poprzedniego menu, Android Wstecz działa tak samo. Budowa testowa z podpisem debug."
           fi
