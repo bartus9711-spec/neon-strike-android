@@ -71,7 +71,7 @@ jobs:
       - name: Verify real economy, buy buttons and ammunition state
         run: |
           set -euo pipefail
-          /tmp/godot --headless --path godot --script res://tests/economy_smoke.gd 2>&1 | tee /tmp/economy-smoke.log
+          timeout --signal=TERM --kill-after=5s 90s /tmp/godot --headless --path godot --script res://tests/economy_smoke.gd 2>&1 | tee /tmp/economy-smoke.log
           grep -q 'TEAMCS_ECONOMY_PASS' /tmp/economy-smoke.log
       - name: Export signed native test APK (NEVER publishes official release)
         run: |
