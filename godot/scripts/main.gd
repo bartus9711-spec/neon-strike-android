@@ -4,6 +4,7 @@ extends Node3D
 const HUD = preload("res://scripts/hud.gd")
 const ARENAS = preload("res://scripts/arenas.gd")
 const NETWORK = preload("res://scripts/network_monitor.gd")
+const BOTS = preload("res://scripts/bots.gd")
 
 var hero: CharacterBody3D
 var camera: Camera3D
@@ -12,6 +13,16 @@ var atmosphere: Environment
 var hud
 var arena
 var net
+var bots
+var scanner: Node3D
+var pulse_requested := false
+var recharge_requested := false
+var pulse_cooldown := 0.0
+var recharge_remaining := 0.0
+var shield := 100
+var energy := 24
+const ENERGY_MAX := 24
+var next_round := -1.0
 var actor_quality := 1
 var map_index := 0
 var heading := 0.0
@@ -37,10 +48,18 @@ func _ready() -> void:
     _make_hero()
     net = NETWORK.new()
     add_child(net)
+    bots = BOTS.new()
+    add_child(bots)
+    bots.score_changed.connect(func(_blue: int,_red: int): _update_match_hud())
+    bots.player_tagged.connect(_on_player_tagged)
+    bots.round_finished.connect(_on_round_finished)
+    _make_scanner()
     hud = HUD.new()
     add_child(hud)
     hud.jump_requested.connect(func(): jump_queued = true)
     hud.action_requested.connect(func(): action_queued = true)
+    hud.pulse_requested.connect(func(): pulse_requested = true)
+    hud.recharge_requested.connect(func(): recharge_requested = true)
     hud.graphics_changed.connect(_apply_graphics)
     hud.graphics_advanced_changed.connect(_apply_advanced_graphics)
     hud.network_mode_changed.connect(net.set_smart_mode)
@@ -51,7 +70,7 @@ func _ready() -> void:
     # Restore saved Low / High / Ultra and network preferences, not hardcoded Ultra.
     hud._emit_graphics()
     hud.set_network_info(net.get_network_text(), net.get_ping_text())
-    hud.set_message("DOTYK: LEWY DRĄŻEK + PRZECIĄGNIJ PO PRAWEJ  |  PAD: L / R", 6.0)
+    hud.set_message("MECZ 4 × 4: PULS ⚡ / ŁADUJ ↻   •   RUCH: LEWY DRĄŻEK   •   CELOWANIE: PRAWY", 6.0)
 
 func _setup_palette() -> void:
     var colors := {
@@ -277,6 +296,11 @@ func switch_map(index: int) -> void:
             item.queue_free()
     beacons.clear()
     collected = 0
+    shield = 100
+    energy = ENERGY_MAX
+    pulse_cooldown = 0.0
+    recharge_remaining = 0.0
+    next_round = -1.0
     for pos in [Vector3(-15,.95,-12),Vector3(15,.95,-12),Vector3(-12,.95,14),Vector3(14,.95,13)]:
         _make_beacon(pos)
     if is_instance_valid(hero):
@@ -289,9 +313,13 @@ func switch_map(index: int) -> void:
     else:
         heading = 0.0
     elevation = -.10
+    if is_instance_valid(bots):
+        bots.new_round(arena.current_map,arena,hero)
     if is_instance_valid(hud):
         arena.apply_advanced(hud.texture_toggle.button_pressed,hud.detail_select.selected)
+        bots.apply_actor_quality(hud.actor_select.selected)
         hud.set_map(map_index, str(arena.current_map.get("name", "ARENA")))
+        _update_match_hud()
 
 func _make_hero() -> void:
     hero = CharacterBody3D.new()
@@ -313,6 +341,26 @@ func _make_hero() -> void:
 
 func _physics_process(delta: float) -> void:
     elapsed += delta
+    pulse_cooldown = maxf(0.0,pulse_cooldown-delta)
+    if recharge_remaining > 0.0:
+        recharge_remaining = maxf(0.0,recharge_remaining-delta)
+        if recharge_remaining == 0.0:
+            energy = ENERGY_MAX
+            hud.set_message("ENERGIA UZUPEŁNIONA  •  GOTOWOŚĆ",1.1)
+    if next_round > 0.0:
+        next_round -= delta
+        if next_round <= 0.0:
+            switch_map(map_index)
+    if recharge_requested or Input.is_physical_key_pressed(KEY_R):
+        _recharge()
+    recharge_requested = false
+    var pulse_held := hud.pulse_held or Input.is_physical_key_pressed(KEY_F)
+    if not Input.get_connected_joypads().is_empty():
+        var current_pad := Input.get_connected_joypads()[0]
+        pulse_held = pulse_held or Input.get_joy_axis(current_pad,JOY_AXIS_TRIGGER_RIGHT) > .75
+    if (pulse_requested or pulse_held) and not hud.settings_open:
+        _emit_pulse()
+    pulse_requested = false
     if not is_instance_valid(hero):
         return
     var movement := Vector2.ZERO
@@ -367,6 +415,9 @@ func _physics_process(delta: float) -> void:
         _collect_beacon()
     action_queued = false
     hud.set_status(collected, beacons.size(), hero.global_position)
+    if is_instance_valid(scanner):
+        scanner.position.y = -.45 + sin(elapsed * 9) * .008 * minf(hero.velocity.length()/5.,1.)
+    _update_match_hud()
 
 func _turn(relative: Vector2) -> void:
     if relative == Vector2.ZERO:
@@ -378,8 +429,9 @@ func _turn(relative: Vector2) -> void:
 func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not hud.settings_open:
         _turn(event.relative)
-    if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and not hud.settings_open:
+    if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and not hud.settings_open and not OS.has_feature("mobile"):
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+        pulse_requested = true
     if event is InputEventKey and event.pressed:
         if event.keycode == KEY_ESCAPE:
             Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -388,6 +440,122 @@ func _unhandled_input(event: InputEvent) -> void:
             jump_queued = true
         if event.keycode == KEY_E:
             action_queued = true
+        if event.keycode == KEY_F:
+            pulse_requested = true
+        if event.keycode == KEY_R:
+            recharge_requested = true
+
+func _make_scanner() -> void:
+    # A sci-fi energy scanner is the first-person view model, not a real firearm.
+    scanner = Node3D.new()
+    scanner.name = "ViewEnergyScanner"
+    scanner.position = Vector3(.50,-.45,-.85)
+    camera.add_child(scanner)
+    var dark := StandardMaterial3D.new()
+    dark.albedo_color = Color(.10,.15,.20)
+    dark.roughness = .32
+    dark.metallic = .73
+    var accents := StandardMaterial3D.new()
+    accents.albedo_color = Color(.10,.83,.96)
+    accents.roughness = .18
+    accents.metallic = .5
+    accents.emission_enabled = true
+    accents.emission = Color(.10,.85,1.0)
+    accents.emission_energy_multiplier = 2.
+    var parts := [
+        [Vector3(.01,-.12,-.10),Vector3(.21,.34,.37),dark],
+        [Vector3(0,.04,-.22),Vector3(.22,.12,.28),dark],
+        [Vector3(0,.09,-.39),Vector3(.15,.18,.16),accents],
+        [Vector3(-.15,-.04,-.21),Vector3(.07,.14,.29),accents],
+        [Vector3(.15,-.04,-.21),Vector3(.07,.14,.29),accents]
+    ]
+    for part in parts:
+        var item := MeshInstance3D.new()
+        var mesh := SphereMesh.new()
+        mesh.radius = .5
+        mesh.height = 1.
+        item.mesh = mesh
+        item.position = part[0]
+        item.scale = part[1]
+        item.material_override = part[2]
+        scanner.add_child(item)
+    var ring := MeshInstance3D.new()
+    var torus := TorusMesh.new()
+    torus.inner_radius = .115
+    torus.outer_radius = .145
+    ring.mesh = torus
+    ring.rotation.x = PI * .5
+    ring.position = Vector3(0,.02,-.39)
+    ring.material_override = accents
+    scanner.add_child(ring)
+
+func _recharge() -> void:
+    if energy == ENERGY_MAX or recharge_remaining > 0.0:
+        return
+    recharge_remaining = 1.55
+    hud.set_message("UZUPEŁNIANIE ENERGII…",1.5)
+
+func _emit_pulse() -> void:
+    if pulse_cooldown > 0.0 or recharge_remaining > 0.0 or bots.round_over:
+        return
+    if energy <= 0:
+        _recharge()
+        return
+    pulse_cooldown = .19
+    energy -= 1
+    var start := camera.global_position
+    var end := start - camera.global_transform.basis.z * 74.0
+    var query := PhysicsRayQueryParameters3D.create(start,end,1|4,[hero.get_rid()])
+    var result := get_world_3d().direct_space_state.intersect_ray(query)
+    if not result.is_empty():
+        end = result["position"]
+        if bots.tag_from_player(result["collider"]):
+            hud.set_message("PUNKT DLA CYAN!  +1",1.2)
+    _pulse_visual(start+(-camera.global_transform.basis.z)*.42,end)
+    if energy == 0:
+        _recharge()
+
+func _pulse_visual(start: Vector3, finish: Vector3) -> void:
+    var segment := finish-start
+    if segment.length() < .1:
+        return
+    var light_mat := StandardMaterial3D.new()
+    light_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    light_mat.albedo_color = Color(.34,.96,1.,.95)
+    light_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    var beam := MeshInstance3D.new()
+    var tube := CylinderMesh.new()
+    tube.bottom_radius = .018
+    tube.top_radius = .018
+    tube.height = segment.length()
+    tube.radial_segments = 7
+    beam.mesh = tube
+    beam.material_override = light_mat
+    add_child(beam)
+    beam.global_position = (start+finish)*.5
+    beam.quaternion = Quaternion(Vector3.UP,segment.normalized())
+    var tween := create_tween()
+    tween.tween_interval(.085)
+    tween.tween_callback(beam.queue_free)
+
+func _on_player_tagged() -> void:
+    shield = maxi(0,shield-24)
+    if shield <= 0:
+        bots.player_lost_shield()
+        hero.global_position = arena.spawn_position()
+        hero.velocity = Vector3.ZERO
+        shield = 100
+        energy = ENERGY_MAX
+        hud.set_message("OSŁONA ODNOWIONA  •  POWRÓT DO MECZU",2.)
+
+func _on_round_finished(winner: int) -> void:
+    var result_text := "CYAN WYGRYWA  •  RUNDA ZAKOŃCZONA" if winner == 0 else "MAGENTA WYGRYWA  •  RUNDA ZAKOŃCZONA"
+    hud.set_message(result_text,5.)
+    next_round = 5.0
+
+func _update_match_hud() -> void:
+    if is_instance_valid(hud) and is_instance_valid(bots):
+        hud.set_combat_state(bots.cyan_score,bots.magenta_score,shield,energy,ENERGY_MAX,bots.time_left)
 
 func _collect_beacon() -> void:
     var closest: Node3D = null
@@ -410,6 +578,8 @@ func _collect_beacon() -> void:
 func _apply_advanced_graphics(textured: bool, detail: int, actor_lod: int) -> void:
     actor_quality = actor_lod
     arena.apply_advanced(textured, detail)
+    if is_instance_valid(bots):
+        bots.apply_actor_quality(actor_lod)
 
 func _apply_graphics(profile: int, fps: int, scale: float, shadows: bool, aa: int) -> void:
     Engine.max_fps = fps
@@ -417,6 +587,7 @@ func _apply_graphics(profile: int, fps: int, scale: float, shadows: bool, aa: in
     viewport.scaling_3d_scale = clampf(scale, .60, 1.0)
     viewport.msaa_3d = Viewport.MSAA_DISABLED if aa == 0 else Viewport.MSAA_2X if aa == 2 else Viewport.MSAA_4X
     sun.shadow_enabled = shadows
+    atmosphere.glow_enabled = profile == 2
     if profile == 0: # Fast
         viewport.scaling_3d_scale = minf(scale, .75)
         sun.shadow_enabled = false
