@@ -13,6 +13,9 @@ grep -q "Success" /tmp/teamcs-install.log
 adb shell pm path "$PKG" | tee /tmp/teamcs-pmpath.log
 grep -q package: /tmp/teamcs-pmpath.log
 adb logcat -c
+# Reduce software-Vulkan frame pressure on GitHub hosted emulator only.
+adb shell wm size 1280x720
+adb shell wm density 240
 # Emulator only: force the virtual display into landscape.
 adb shell settings put system accelerometer_rotation 0 || true
 adb shell settings put system user_rotation 1 || true
@@ -20,7 +23,7 @@ echo "START_ATTEMPT: ordinary Android app launcher alias"
 adb shell am start -W -n "$PKG/com.godot.game.GodotAppLauncher" | tee /tmp/teamcs-launch.log
 # This QA build deliberately disables immersive mode, avoiding Android's
 # system fullscreen tutorial so the first screenshot shows game content.
-sleep 24
+sleep 45
 adb shell dumpsys activity activities | grep -E 'ResumedActivity|mResumed|pl.teamcs' | head -12 || true
 adb shell screencap -p /sdcard/teamcs-smoke.png
 adb pull /sdcard/teamcs-smoke.png "$GITHUB_WORKSPACE/teamcs-emulator-smoke.png"
