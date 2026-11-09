@@ -44,6 +44,7 @@ func load_arena(index: int) -> void:
     scene_lights.clear()
     _materials()
     _base()
+    _visual_finish()
     for raw in current_map.get("obstacles", []):
         _obstacle(raw)
     match str(current_map.get("id", "port")):
@@ -234,6 +235,80 @@ func _base() -> void:
     if id == "oldtown":
         for z in range(-39,40,6):
             _piece(Vector3(0,-.015,float(z)),Vector3(15,.03,.13),"stone")
+
+func _visual_finish() -> void:
+    # Environment art pass: coherent material motifs per level, all GPU-instanced.
+    # No extra colliders; no new per-object draw calls or heavy mobile lights.
+    var id := str(current_map.get("id", ""))
+    if id in ["port", "foundry", "neon", "skyline"]:
+        # Lane reflectors, fine road seams and realistic painted stopping lines.
+        for i in range(27):
+            var z := -39.0 + float(i)*3.0
+            for x in [-9.5,9.5]:
+                _piece(Vector3(x,.014,z),Vector3(.048,.014,1.35),"pavers")
+            if i%6 == 0:
+                for x in [-26.0,26.0]:
+                    _piece(Vector3(x,.018,z),Vector3(5.2,.018,.085),"yellow")
+        for i in range(22):
+            var px := -42.0+float(i%11)*8.0
+            var pz := -42.0 if i<11 else 42.0
+            # Roadside tall silhouettes: narrow foot, post, short warning strip.
+            _round(Vector3(px,.51,pz),.18,1.04,"steel")
+            _piece(Vector3(px,.91,pz),Vector3(.44,.12,.44),"yellow")
+    if id in ["port", "foundry"]:
+        # Parallel protective pipes, flanges, warning stripes and yard fixtures.
+        for i in range(24):
+            var zz := -42.0 + float(i)*3.65
+            for x in [-43.0,43.0]:
+                _round(Vector3(x,.48,zz),.09,.88,"steel")
+                _piece(Vector3(x,.95,zz),Vector3(.32,.07,.25),"orange")
+        for x in [-44.0,44.0]:
+            _piece(Vector3(x,2.55,0),Vector3(.09,.09,82),"rail")
+            _piece(Vector3(x,3.24,0),Vector3(.09,.08,82),"yellow")
+    if id in ["neon","skyline","metro"]:
+        # Architectural linear lighting along the skyline.
+        for i in range(25):
+            var zz := -41.0+float(i)*3.35
+            var light := "cyan" if i%4<2 else "magenta"
+            for x in [-42.0,42.0]:
+                _piece(Vector3(x,4.12,zz),Vector3(.12,.10,1.88),light)
+        for i in range(12):
+            var xx := -34.0+float(i)*6.1
+            for z in [-42.0,42.0]:
+                _piece(Vector3(xx,5.95,z),Vector3(2.9,.12,.12),"magenta" if i%3==0 else "cyan")
+    if id in ["dunes","oldtown"]:
+        # Masonry joints and painted ceramic strips make stone facades legible.
+        for i in range(29):
+            var zz := -42.0 + float(i)*3.0
+            for x in [-41.7,41.7]:
+                _piece(Vector3(x,.14,zz),Vector3(.68,.23,1.24),"stone")
+                if i%4 == 0:
+                    _round(Vector3(x,.98,zz),.11,1.6,"copper" if materials.has("copper") else "wood")
+        for z in [-39.0,39.0]:
+            for i in range(21):
+                var px := -41.0 + float(i)*4.1
+                _piece(Vector3(px,.038,z),Vector3(.065,.038,1.7),"plaster")
+    if id == "alpine":
+        # Winter evergreen silhouettes, grippy edge markers and snow drifts.
+        for i in range(16):
+            var x := -42.0+float(i%8)*12.0
+            var z := -43.0 if i<8 else 43.0
+            _round(Vector3(x,1.3,z),.19,2.4,"wood")
+            _round(Vector3(x,3.0,z),1.55,3.2,"foliage",true)
+            _round(Vector3(x,4.25,z),1.15,2.2,"foliage",true)
+            _round(Vector3(x,5.4,z),.75,1.5,"snow",true)
+            _piece(Vector3(x,.07,z+1.8),Vector3(2.0,.13,1.7),"snow")
+    if id == "metro":
+        for i in range(32):
+            var zz := -42.0+float(i)*2.65
+            for x in [-8.6,8.6]:
+                _piece(Vector3(x,.035,zz),Vector3(.31,.07,1.24),"yellow")
+                if i%4==0:
+                    _piece(Vector3(x*1.35,1.22,zz),Vector3(.12,2.4,.10),"steel")
+            if i%2==0:
+                _piece(Vector3(0,-.003,zz),Vector3(11,.021,.15),"rail")
+    # Tiny bright lines are baked geometry rather than a heavy full-screen shader.
+
 
 func _obstacle(item: Dictionary) -> void:
     var x := float(item.get("x",0))
