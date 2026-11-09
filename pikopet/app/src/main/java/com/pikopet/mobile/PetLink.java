@@ -310,8 +310,8 @@ public final class PetLink {
       hosting=true;
       new Thread(()->{
         try{
-          btServer=bluetooth.listenUsingRfcommWithServiceRecord("PikoPet wizyta",SERVICE);
-          status("Bluetooth: czekam na połączenie drugiego PikoPeta…");
+          btServer=bluetooth.listenUsingRfcommWithServiceRecord("Tamagotchi wizyta",SERVICE);
+          status("Bluetooth: czekam na połączenie drugiego Tamagotchi…");
           BluetoothSocket s=btServer.accept();
           if(g!=generation){s.close();return;}
           bt=s;
@@ -319,7 +319,7 @@ public final class PetLink {
           btServer=null;
           session(s.getInputStream(),s.getOutputStream(),s::close,g);
         }catch(Exception e){if(g==generation)status("Bluetooth: nie udało się połączyć. Sprawdź parowanie.");}
-      },"PikoPet-BtHost").start();
+      },"Tamagotchi-BtHost").start();
     }
     @JavascriptInterface public void joinBluetooth(String address){
       if(!btOk())return;
@@ -337,7 +337,7 @@ public final class PetLink {
           if(g!=generation){s.close();return;}
           session(s.getInputStream(),s.getOutputStream(),s::close,g);
         }catch(Exception e){if(g==generation)status("Nie można połączyć przez Bluetooth. Otwórz domek na drugim telefonie.");}
-      },"PikoPet-BtJoin").start();
+      },"Tamagotchi-BtJoin").start();
     }
     @JavascriptInterface public void hostWifi(){
       close();
@@ -361,7 +361,7 @@ public final class PetLink {
           wifiServer=null;
           session(s.getInputStream(),s.getOutputStream(),s::close,g);
         }catch(Exception e){if(g==generation)status("Wi-Fi: nie można otworzyć domku. Spróbuj ponownie.");}
-      },"PikoPet-WifiHost").start();
+      },"Tamagotchi-WifiHost").start();
     }
     @JavascriptInterface public void joinWifi(String address,String code){
       if(address==null||!address.matches("(?:\\d{1,3}\\.){3}\\d{1,3}")){status("Podaj poprawny adres IPv4 gospodarza.");return;}
@@ -384,7 +384,7 @@ public final class PetLink {
           if(g!=generation){s.close();return;}
           session(s.getInputStream(),s.getOutputStream(),s::close,g);
         }catch(Exception e){if(g==generation)status("Wi-Fi: nie można połączyć. Sprawdź IP, kod i tę samą sieć.");}
-      },"PikoPet-WifiJoin").start();
+      },"Tamagotchi-WifiJoin").start();
     }
     @JavascriptInterface public void accept(){
       if(!hosting||guestPet.optString("species","").isEmpty())return;
