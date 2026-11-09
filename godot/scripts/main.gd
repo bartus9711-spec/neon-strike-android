@@ -354,7 +354,7 @@ func _physics_process(delta: float) -> void:
     if recharge_requested or Input.is_physical_key_pressed(KEY_R):
         _recharge()
     recharge_requested = false
-    var pulse_held := hud.pulse_held or Input.is_physical_key_pressed(KEY_F)
+    var pulse_held: bool = bool(hud.pulse_held) or Input.is_physical_key_pressed(KEY_F)
     if not Input.get_connected_joypads().is_empty():
         var current_pad := Input.get_connected_joypads()[0]
         pulse_held = pulse_held or Input.get_joy_axis(current_pad,JOY_AXIS_TRIGGER_RIGHT) > .75
