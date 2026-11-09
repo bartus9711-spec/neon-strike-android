@@ -19,6 +19,11 @@ var pulse_held := false
 var match_label: Label
 var shield_label: Label
 var power_label: Label
+var reticle_label: Label
+var reticle_marks: Array[ColorRect] = []
+var hit_label: Label
+var hit_feedback_time := 0.0
+var _rival_target := false
 var restart_button: Button
 var settings_open := false
 var current_fps := 0
@@ -230,10 +235,36 @@ func _make_controls() -> void:
     touch_knob.add_theme_stylebox_override("panel",knob_style)
     touch_knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
     ui.add_child(touch_knob)
-    var cross := _label("+", 24, Color(.78,1,.95,.75))
-    cross.set_anchors_preset(Control.PRESET_CENTER)
-    cross.position = Vector2(-9,-17)
-    ui.add_child(cross)
+    # Crisp, symmetrical four-segment reticle and a central phosphor dot.
+    reticle_label = _label("·", 24, Color(.70,1,.98,.95))
+    reticle_label.set_anchors_preset(Control.PRESET_CENTER)
+    reticle_label.position = Vector2(-5,-17)
+    ui.add_child(reticle_label)
+    var segments := [
+        Rect2(-1,-19,2,10),
+        Rect2(-1,9,2,10),
+        Rect2(-19,-1,10,2),
+        Rect2(9,-1,10,2)
+    ]
+    for rect in segments:
+        var mark := ColorRect.new()
+        mark.color = Color(.66,.96,1,.92)
+        mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        mark.anchor_left = .5
+        mark.anchor_right = .5
+        mark.anchor_top = .5
+        mark.anchor_bottom = .5
+        mark.offset_left = rect.position.x
+        mark.offset_top = rect.position.y
+        mark.offset_right = rect.position.x+rect.size.x
+        mark.offset_bottom = rect.position.y+rect.size.y
+        ui.add_child(mark)
+        reticle_marks.append(mark)
+    hit_label = _label("TRAFIENIE +1", 17, Color(.45,1,.87))
+    hit_label.set_anchors_preset(Control.PRESET_CENTER)
+    hit_label.position = Vector2(27,-38)
+    hit_label.visible = false
+    ui.add_child(hit_label)
     var jump := _button("SKOK  ↑")
     jump.name = "Jump"
     jump.pressed.connect(func(): jump_requested.emit())
@@ -571,6 +602,23 @@ func toggle_settings() -> void:
     else:
         _emit_graphics()
 
+func set_target_state(rival: bool) -> void:
+    _rival_target = rival
+    var tint := Color(1.0,.56,.58,.97) if rival else Color(.66,.96,1.0,.92)
+    if hit_feedback_time > 0.0:
+        tint = Color(.46,1.0,.78)
+    if is_instance_valid(reticle_label):
+        reticle_label.add_theme_color_override("font_color",tint)
+    for mark in reticle_marks:
+        if is_instance_valid(mark):
+            mark.color = tint
+
+func flash_hit() -> void:
+    hit_feedback_time = .46
+    if is_instance_valid(hit_label):
+        hit_label.visible = true
+    set_target_state(_rival_target)
+
 func set_combat_state(cyan: int, magenta: int, shield: int, power: int, capacity: int, time_left: float) -> void:
     if is_instance_valid(match_label):
         var minutes := int(time_left) / 60
@@ -606,6 +654,12 @@ func set_map(index: int, name: String) -> void:
     set_message("ARENA %d / 8  ·  %s" % [index+1, name], 2.4)
 
 func _process(delta: float) -> void:
+    if hit_feedback_time > 0.0:
+        hit_feedback_time = maxf(0.0,hit_feedback_time-delta)
+        if hit_feedback_time == 0.0:
+            if is_instance_valid(hit_label):
+                hit_label.visible = false
+            set_target_state(_rival_target)
     _fps_timer += delta
     if _fps_timer >= .4:
         current_fps = roundi(Engine.get_frames_per_second())
@@ -616,4 +670,5 @@ func _process(delta: float) -> void:
     if _message_left > 0:
         _message_left -= delta
         if _message_left <= 0:
-            hint_label.text = "4 × 4  •  PULS ⚡  •  ŁADUJ ↻  •  DOTYK / PAD / KLAWIATURA"
+            hint_label.text = ""
+            hint_label.visible = false
