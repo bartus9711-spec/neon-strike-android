@@ -31,6 +31,7 @@ var heading := 0.0
 var elevation := 0.0
 var jump_queued := false
 var action_queued := false
+var zoom_enabled := false
 var last_jump := false
 var elapsed := 0.0
 var collected := 0
@@ -304,13 +305,12 @@ func switch_map(index: int) -> void:
             item.queue_free()
     beacons.clear()
     collected = 0
+    zoom_enabled = false
     shield = 100
     energy = ENERGY_MAX
     pulse_cooldown = 0.0
     recharge_remaining = 0.0
     next_round = -1.0
-    for pos in [Vector3(-15,.95,-12),Vector3(15,.95,-12),Vector3(-12,.95,14),Vector3(14,.95,13)]:
-        _make_beacon(pos)
     if is_instance_valid(hero):
         hero.velocity = Vector3.ZERO
         var authored_spawn: Vector3 = arena.spawn_position()
@@ -413,18 +413,12 @@ func _physics_process(delta: float) -> void:
     hero.move_and_slide()
     camera.rotation.x = elevation
     hero.rotation.y = heading
-    for i in range(beacons.size()):
-        var b := beacons[i]
-        if not is_instance_valid(b):
-            continue
-        b.rotation.y += delta * .72
-        b.position.y = .92 + sin(elapsed * 2.8 + float(i)) * .14
     if action_queued:
-        _collect_beacon()
+        zoom_enabled = not zoom_enabled
     action_queued = false
-    hud.set_status(collected, beacons.size(), hero.global_position)
+    camera.fov = lerpf(camera.fov, 58.0 if zoom_enabled else 76.0, minf(1.0,delta*8.0))
     if is_instance_valid(scanner):
-        scanner.position.y = -.45 + sin(elapsed * 9) * .008 * minf(hero.velocity.length()/5.,1.)
+        scanner.position.y = -.60 + sin(elapsed * 9) * .006 * minf(hero.velocity.length()/5.,1.)
     _update_match_hud()
 
 func _turn(relative: Vector2) -> void:
@@ -458,7 +452,8 @@ func _make_scanner() -> void:
     # Reads like a polished game HUD prop, not a giant floating blob.
     scanner = Node3D.new()
     scanner.name = "WristEnergyEmitter"
-    scanner.position = Vector3(.55,-.49,-.92)
+    scanner.position = Vector3(.70,-.60,-1.14)
+    scanner.scale = Vector3.ONE * .84
     scanner.rotation_degrees = Vector3(4,-10,-7)
     camera.add_child(scanner)
 
