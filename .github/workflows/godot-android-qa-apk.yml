@@ -55,6 +55,10 @@ jobs:
         run: |
           set -o pipefail
           /tmp/godot --headless --path godot --editor --import --quit 2>&1 | tee /tmp/godot-import.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script|Failed to load resource' /tmp/godot-import.log; then
+            echo "Godot script import failed — do not export APK" >&2
+            exit 14
+          fi
           /tmp/godot --headless --path godot --editor             --script res://tools/configure_android_export.gd 2>&1 | tee /tmp/godot-sdk.log
           # Godot probes the Android ADB service even when exporting without a device.
           "$ANDROID_HOME/platform-tools/adb" start-server
