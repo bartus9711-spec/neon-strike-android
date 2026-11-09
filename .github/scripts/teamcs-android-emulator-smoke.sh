@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-PKG="pl.teamcs.arena4v4qa"
+PKG="pl.teamcs.arena4v4universal"
 APK="$GITHUB_WORKSPACE/TeamCS_Godot_GT7_QA.apk"
 test -s "$APK"
 echo "EMULATOR_OS=$(adb shell getprop ro.build.version.release | tr -d '\r')"
@@ -13,6 +13,9 @@ grep -q "Success" /tmp/teamcs-install.log
 adb shell pm path "$PKG" | tee /tmp/teamcs-pmpath.log
 grep -q package: /tmp/teamcs-pmpath.log
 adb logcat -c
+# Emulator only: force the virtual display into landscape.
+adb shell settings put system accelerometer_rotation 0 || true
+adb shell settings put system user_rotation 1 || true
 echo "START_ATTEMPT: ordinary Android app launcher alias"
 adb shell am start -W -n "$PKG/com.godot.game.GodotAppLauncher" | tee /tmp/teamcs-launch.log
 # This QA build deliberately disables immersive mode, avoiding Android's
