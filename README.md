@@ -1,21 +1,51 @@
-# NEON STRIKE V3 — Android 5v5 (wersja testowa)
-Jedna aplikacja z SOLO 5v5, pokojami MULTI P2P i 8 mapami 3D.
+# TEAMCS ARENA 4v4 — natywna gra 3D (Godot 4.7.2)
 
-## Nowości
-- **8 map:** Port Zero, Dust District, Nightshift, Ironworks, Metro 09, Alpine Base, Old Quarter i Skyline.
-- Stylizowane modele i HUD dla 5 fikcyjnie użytych broni: AK-47, M4A4, AWP, USP i Tec-9.
-- **SABOTAŻ**: wirtualny nadajnik w strefie A/B. Strona RIFT aktywuje, NOVA wyłącza. Przytrzymaj E (klawiatura), przycisk AKCJA (telefon) albo Y (pad).
-- Kosmetyczne paczki i skórki odblokowywane za grę, bez prawdziwych zakupów i losowania.
-- **RANKED BETA**: prywatne pokoje na kod oraz *lokalne* MMR, bez globalnego matchmakingu, antycheata i kont serwerowych.
-- Czułość dotyku i pada, grafika i ustawienia w trakcie gry.
+Projekt Android z rzeczywistym światem 3D, animowanymi ludzkimi postaciami,
+8 mapami i pojedynkami drużynowymi na bezkrwawe impulsy energetyczne.
 
-## Jak pobrać APK
-Otwórz [GitHub Actions](https://github.com/bartus9711-spec/neon-strike-android/actions), wybierz najnowszy zielony przebieg **Buduj NEON STRIKE APK** i pobierz paczkę **NEON-STRIKE-Android-APK** z sekcji Artifacts. W ZIP jest plik **app-debug.apk**.
+## Co faktycznie działa w natywnym prototypie
 
-**Uwaga: instalacja nowej wersji:** poprzedni APK testowy może mieć inny certyfikat debug. Wtedy Android nie pozwoli go nadinstalować — przed instalacją V3 konieczne może być odinstalowanie starej aplikacji, co usuwa jej lokalne ustawienia. Docelowe bezproblemowe aktualizacje będą wymagały stałego, prywatnego klucza podpisującego.
+- Mecz **4 na 4**: jeden gracz i trzech sojuszników przeciw czterem botom.
+- Punkty drużyn, limit rundy, odnawianie osłony oraz odradzanie postaci.
+- **Osiem aren** o różnych układach i art direction:
+  port, pustynia, nocne miasto, fabryka, metro, góry, stare miasto i wieżowce.
+- Teksturowane modele ludzkich postaci 3D z animacjami bezczynności i chodzenia.
+- Materiały fotograficzne PBR i oddzielne niebo oraz oświetlenie map.
+- Grafika Low / High / Ultra, sterowanie dotykowe, obsługa pada i klawiatury.
+- Kamera pierwszoosobowa, przybliżenie, dźwięki sterowania i efektów elektronicznych.
 
-## Status
-- Kod JS przeszedł kontrolę składni.
-- Testy w Chromium ze *zastępczym WebGL* potwierdziły 8 map, solo z 9 botami, menu, skórki, aktywację i wyłączenie wirtualnego nadajnika i ustawienia w grze.
-- **Prawdziwe renderowanie WebGL na Androidzie i pełne działanie P2P 5v5 nadal trzeba sprawdzić na telefonach.**
-- Globalny ranking online i automatyczne wyszukiwanie graczy wymagają osobnego, bezpiecznego backendu.
+## Sterowanie
+
+**Telefon:** lewy joystick = ruch, przeciąganie po prawej = obracanie kamery,
+PULS = impuls energetyczny, ŁADUJ = odnów energię, ZOOM = przybliżenie,
+SKOK = skok, BIEG = szybszy ruch.
+
+**Komputer:** WASD = ruch, F = impuls, R = energia, E = przybliżenie,
+spacja = skok, Esc = ustawienia. Można też korzystać z podłączonego pada.
+
+## Budowa
+
+Workflow `.github/workflows/godot-android-qa-apk.yml` ma tryb ręcznego
+uruchamiania: **nie** uruchamia się automatycznie przy każdym zapisie kodu.
+Wykorzystuje oficjalny silnik i szablony eksportu Godot 4.7.2, Java/Android
+Gradle oraz narzędzie PBR CC0, a na koniec kontroluje podpis APK, uruchomienie
+na emulatorze i niepusty zrzut renderowanej sceny.
+
+## Uczciwy status
+
+To **działający prototyp rozgrywki offline**, a nie ukończona komercyjna gra.
+Brakuje pełnego internetu między graczami, usług matchmakingowych, kont,
+globalnego rankingu, pełnych animacji bojowych i profesjonalnych map tworzonych
+ręcznie przez artystów 3D. Pokazywany FPS emulatora z programowym GPU nie
+stanowi pomiaru wydajności konkretnego telefonu.
+
+Zweryfikowano ekran gry w Androidzie 15 na emulatorze. Działanie na każdym
+telefonie i Androidzie 16 pozostaje do zweryfikowania praktycznie.
+
+## Prawa do assetów
+
+- Materiały tekstur: Poly Haven (CC0).
+- Animowany model człowieka Soldier.glb z repozytorium przykładów three.js
+  (źródło i powiązane powiadomienia w `godot/assets/models/README-Soldier-license.txt`).
+- Zapewniony awaryjny model RobotExpressive (Quaternius, CC0).
+- Dźwięki elektroniczne są generowane w kodzie, bez zapożyczonych nagrań.
