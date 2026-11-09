@@ -209,6 +209,23 @@ func _stage() -> void:
             " visible=",actor.imported_model_visible,
             " position=",actor.position)
         previews.append(actor)
+    # _process can be paused or inherited as disabled during Android startup.
+    # A deferred first-frame probe makes the live viewport observable without
+    # changing gameplay state.
+    call_deferred("_log_preview_diagnostics")
+
+func _log_preview_diagnostics() -> void:
+    await get_tree().process_frame
+    if preview_debug_logged or not is_instance_valid(preview):
+        return
+    preview_debug_logged = true
+    var viewport_texture := preview.get_texture()
+    print("TEAMCS_PREVIEW_LAYOUT: frame=",preview_frame.size," viewport=",preview.size,
+        " cam=",preview_camera," actors=",previews.size())
+    var screenshot := viewport_texture.get_image()
+    if screenshot != null and not screenshot.is_empty():
+        print("TEAMCS_PREVIEW_PIXEL: ",screenshot.get_pixel(
+            int(screenshot.get_width()/2),int(screenshot.get_height()/2)))
 
 func _stage_block(world: Node3D, p: Vector3, dimensions: Vector3, color: Color) -> void:
     var node := MeshInstance3D.new()
@@ -342,13 +359,7 @@ func _process(delta: float) -> void:
         return
     preview_clock += delta
     if not preview_debug_logged and preview_clock > 1.0 and is_instance_valid(preview):
-        preview_debug_logged = true
-        var viewport_texture := preview.get_texture()
-        print("TEAMCS_PREVIEW_LAYOUT: frame=",preview_frame.size," viewport=",preview.size,
-            " cam=",preview_camera," actors=",previews.size())
-        var screenshot := viewport_texture.get_image()
-        if screenshot != null and not screenshot.is_empty():
-            print("TEAMCS_PREVIEW_PIXEL: ",screenshot.get_pixel(int(screenshot.get_width()/2),int(screenshot.get_height()/2)))
+        _log_preview_diagnostics()
     for i in range(previews.size()):
         if is_instance_valid(previews[i]):
             previews[i].update_pose(.25+absf(sin(preview_clock*.6+float(i)))*.15,delta,0.0)
