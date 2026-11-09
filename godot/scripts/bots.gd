@@ -1,12 +1,12 @@
 extends Node3D
 ## TeamCS 3D arena match: 4 vs 4, non-graphic energy-tag FPS gameplay.
-## Animated original CC0 humanoid GLB, team uniforms, collision, AI and respawns.
+## Animated skinned human GLB, team patches, collision, AI and respawns.
 ## AI can tag an opponent only with a clear line of sight.
 signal score_changed(cyan: int, magenta: int)
 signal player_tagged()
 signal round_finished(winner: int)
 
-const MODEL_PATH := "res://assets/models/RobotExpressive.glb"
+const MODEL_PATH := "res://assets/models/Soldier.glb"
 const WIN_SCORE := 12
 const RESPAWN_DELAY := 3.4
 
@@ -28,6 +28,9 @@ func _ready() -> void:
     _rng.randomize()
     if ResourceLoader.exists(MODEL_PATH):
         _model_resource = load(MODEL_PATH) as PackedScene
+    elif ResourceLoader.exists("res://assets/models/RobotExpressive.glb"):
+        push_warning("TeamCS: Soldier human model unavailable; using temporary robot fallback")
+        _model_resource = load("res://assets/models/RobotExpressive.glb") as PackedScene
     _colored_materials = [_make_team_material(Color(.09,.85,.95)),_make_team_material(Color(1,.25,.61))]
 
 func _make_team_material(color: Color) -> StandardMaterial3D:
@@ -40,26 +43,40 @@ func _make_team_material(color: Color) -> StandardMaterial3D:
     mat.emission_energy_multiplier = 1.05
     return mat
 
-func _color_disc(body: Node3D, color_team: int) -> void:
-    var halo := MeshInstance3D.new()
-    halo.name = "TeamIdentification"
-    var ring := TorusMesh.new()
-    ring.inner_radius = .24
-    ring.outer_radius = .33
-    halo.mesh = ring
-    halo.position = Vector3(0,2.02,0)
-    halo.rotation_degrees.x = 90
-    halo.material_override = _colored_materials[color_team]
-    body.add_child(halo)
-    var badge := MeshInstance3D.new()
-    badge.name = "SuitChevron"
-    var chevron := SphereMesh.new()
-    chevron.radius = .095
-    chevron.height = .19
-    badge.mesh = chevron
-    badge.position = Vector3(0,1.45,.29)
-    badge.material_override = _colored_materials[color_team]
-    body.add_child(badge)
+func _color_disc(body: Node3D, team: int) -> void:
+    # Armoured team accents replace the old floating neon ring.
+    # Colour is restricted to straps and a luminous chest patch:
+    # the main skinned human suit retains its authored fabric textures.
+    var metal := StandardMaterial3D.new()
+    metal.albedo_color = Color(.065,.079,.105)
+    metal.roughness = .46
+    metal.metallic = .62
+    var emblem := _colored_materials[team]
+    for spec in [
+        [Vector3(.0,1.19,-.24),Vector3(.36,.25,.08),metal],
+        [Vector3(.0,1.28,-.295),Vector3(.21,.085,.02),emblem],
+        [Vector3(-.32,1.30,0),Vector3(.10,.075,.18),emblem],
+        [Vector3(.32,1.30,0),Vector3(.10,.075,.18),emblem],
+        [Vector3(.0,.91,.0),Vector3(.44,.065,.28),metal],
+    ]:
+        var panel := MeshInstance3D.new()
+        var shape := BoxMesh.new()
+        shape.size = spec[1]
+        panel.mesh = shape
+        panel.position = spec[0]
+        panel.material_override = spec[2]
+        body.add_child(panel)
+    var name_tag := Label3D.new()
+    name_tag.text = "CYAN" if team == 0 else "MAGENTA"
+    name_tag.font_size = 35
+    name_tag.pixel_size = .0045
+    name_tag.position = Vector3(0,2.12,0)
+    name_tag.modulate = Color(.40,.95,1.0) if team == 0 else Color(1.0,.48,.71)
+    name_tag.outline_size = 5
+    name_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+    name_tag.no_depth_test = false
+    name_tag.fixed_size = true
+    body.add_child(name_tag)
 
 func _fallback_avatar(root: Node3D, team: int) -> void:
     # Intentional contingency if CC0 GLB fetch/import failed: no box-man.
@@ -310,7 +327,7 @@ func _physics_process(delta: float) -> void:
             var desired_angle := atan2(destination.x,destination.z)
             body.rotation.y = lerp_angle(body.rotation.y,desired_angle,delta*7.0)
         var walking := body.velocity.length() > 1.5 and distance > 7.5
-        _play(entry,"Walking" if walking else "Idle")
+        _play(entry,"Walk" if walking else "Idle")
         if float(entry["cooldown"]) <= 0 and distance < 22 and distance > .5:
             var target := _best_target(entry)
             if target != null and _has_sight(body,target):
