@@ -180,6 +180,7 @@ func _import_real_human(team: int) -> bool:
         if not is_instance_valid(instance):
             continue
         instance.visible = true
+        instance.layers = 1
         instance.visibility_range_begin = 0.0
         instance.visibility_range_end = 120.0
         imported_mesh_count += 1
@@ -273,6 +274,7 @@ func force_render_visibility() -> void:
             var mesh_instance := mesh_node as MeshInstance3D
             if is_instance_valid(mesh_instance):
                 mesh_instance.visible = true
+                mesh_instance.layers = 1
                 mesh_instance.visibility_range_begin = 0.0
                 mesh_instance.visibility_range_end = 120.0
         imported_model_visible = true
