@@ -66,8 +66,8 @@ func _run() -> void:
     main.switch_map(0)
     print("CI_FPS_GAMEPLAY_OK: 4v4 animated actors, team score, respawn, first-person energy-tag and recharge")
     main.hud._emit_graphics()
-    if Engine.max_fps != 120:
-        push_error("CI: 120 FPS configuration was not applied")
+    if Engine.max_fps != 60:
+        push_error("CI: safe 60 FPS default configuration was not applied")
         quit(9)
         return
     # Simulate separate virtual thumbstick and right-side look touch pointers.
