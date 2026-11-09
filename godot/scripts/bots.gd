@@ -66,17 +66,6 @@ func _color_disc(body: Node3D, team: int) -> void:
         panel.position = spec[0]
         panel.material_override = spec[2]
         body.add_child(panel)
-    var name_tag := Label3D.new()
-    name_tag.text = "CYAN" if team == 0 else "MAGENTA"
-    name_tag.font_size = 35
-    name_tag.pixel_size = .0045
-    name_tag.position = Vector3(0,2.12,0)
-    name_tag.modulate = Color(.40,.95,1.0) if team == 0 else Color(1.0,.48,.71)
-    name_tag.outline_size = 5
-    name_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-    name_tag.no_depth_test = false
-    name_tag.fixed_size = true
-    body.add_child(name_tag)
 
 func _fallback_avatar(root: Node3D, team: int) -> void:
     # Intentional contingency if CC0 GLB fetch/import failed: no box-man.
