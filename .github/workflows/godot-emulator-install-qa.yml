@@ -19,7 +19,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh run download 42540828686 --repo "$GITHUB_REPOSITORY" -n TeamCS-Godot-GT7-QA -D /tmp/teamcs-qa
+          gh run download 42545222024 --repo "$GITHUB_REPOSITORY" -n TeamCS-Godot-GT7-QA -D /tmp/teamcs-qa
           APK_SOURCE=$(find /tmp/teamcs-qa -name TeamCS_Godot_GT7_QA.apk -type f -print -quit)
           test -n "$APK_SOURCE"
           cp "$APK_SOURCE" TeamCS_Godot_GT7_QA.apk
@@ -35,7 +35,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
-          target: google_apis
+          target: default
           arch: x86_64
           profile: pixel_7_pro
           cores: 2
