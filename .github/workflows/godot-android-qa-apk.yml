@@ -83,8 +83,13 @@ jobs:
           # Fail the QA release if Android would install an invisible/no-launcher app.
           TOOLS="$ANDROID_HOME/build-tools/35.0.1"
           "$TOOLS/apksigner" verify --verbose --print-certs TeamCS_Godot_GT7_QA.apk
-          "$TOOLS/aapt" dump badging TeamCS_Godot_GT7_QA.apk | tee /tmp/teamcs-badging.log
-          grep -q "^launchable-activity:" /tmp/teamcs-badging.log
+          "$TOOLS/aapt" dump badging TeamCS_Godot_GT7_QA.apk | grep -E '^(package:|sdkVersion:|targetSdkVersion:|native-code:|application-label:)' | tee /tmp/teamcs-badging.log
+          # Godot 4.7 exports a launcher activity-alias; aapt badging doesn't list
+          # aliases as launchable-activity, even when MAIN/LAUNCHER is present.
+          "$TOOLS/aapt" dump xmltree TeamCS_Godot_GT7_QA.apk AndroidManifest.xml > /tmp/teamcs-manifest.log
+          grep -q 'android.intent.action.MAIN' /tmp/teamcs-manifest.log
+          grep -q 'android.intent.category.LAUNCHER' /tmp/teamcs-manifest.log
+          grep -q 'GodotAppLauncher' /tmp/teamcs-manifest.log
           "$TOOLS/zipalign" -c -v 4 TeamCS_Godot_GT7_QA.apk
           ls -lh TeamCS_Godot_GT7_QA.apk
       - name: Upload native Android QA APK and export logs (private test artifact, not Play Store release)
