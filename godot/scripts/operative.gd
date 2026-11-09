@@ -15,6 +15,10 @@ var left_arm: Node3D
 var right_arm: Node3D
 var left_leg: Node3D
 var right_leg: Node3D
+var left_forearm: Node3D
+var right_forearm: Node3D
+var left_shin: Node3D
+var right_shin: Node3D
 var accent: StandardMaterial3D
 var uniform: StandardMaterial3D
 var uniform_secondary: StandardMaterial3D
@@ -115,7 +119,10 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
     root.add_child(torso)
     _sphere(torso,Vector3(0,.09,0),Vector3(.66,.77,.35),uniform,"TexturedTorso")
     _sphere(torso,Vector3(0,-.32,0),Vector3(.52,.35,.35),uniform_secondary,"BeltHip")
-    _block(torso,Vector3(0,.10,-.23),Vector3(.50,.56,.17),armor,"ContouredArmourVest")
+    # Rounded overlapping panels hug the body; no flat cardboard/box torso.
+    _sphere(torso,Vector3(0,.10,-.215),Vector3(.53,.57,.205),armor,"CurvedKevlarVest")
+    _sphere(torso,Vector3(0,.28,-.302),Vector3(.43,.23,.072),armor_edge,"UpperVestPlate")
+    _sphere(torso,Vector3(0,-.08,-.295),Vector3(.43,.17,.075),armor_edge,"LowerVestPlate")
     _sphere(torso,Vector3(0,.36,-.14),Vector3(.63,.17,.43),armor_edge,"ShoulderArmorBridge")
     _block(torso,Vector3(0,-.25,-.22),Vector3(.43,.11,.14),glove,"UtilityBelt")
     _capsule(torso,Vector3(0,.54,0),.105,.23,skin,"Neck")
@@ -138,9 +145,17 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         torso.add_child(arm)
         _capsule(arm,Vector3(0,-.19,0),.128,.48,uniform,"Sleeve")
         _sphere(arm,Vector3(0,-.075,-.01),Vector3(.265,.22,.275),armor_edge,"ArmourPauldron")
-        _capsule(arm,Vector3(0,-.53,-.055),.105,.41,uniform_secondary,"Forearm")
-        _sphere(arm,Vector3(0,-.77,-.075),Vector3(.20,.20,.18),glove,"Glove")
-        _sphere(arm,Vector3(0,-.43,-.14),Vector3(.20,.17,.09),armor,"ElbowGuard")
+        var forearm := Node3D.new()
+        forearm.name = "ElbowJoint"
+        forearm.position = Vector3(0,-.385,-.04)
+        arm.add_child(forearm)
+        _capsule(forearm,Vector3(0,-.155,-.015),.105,.37,uniform_secondary,"ArticulatedForearm")
+        _sphere(forearm,Vector3(0,-.365,-.035),Vector3(.20,.20,.18),glove,"Glove")
+        _sphere(arm,Vector3(0,-.40,-.125),Vector3(.20,.17,.09),armor,"ElbowGuard")
+        if left:
+            left_forearm = forearm
+        else:
+            right_forearm = forearm
         if left:
             left_arm = arm
         else:
@@ -151,8 +166,16 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         root.add_child(leg)
         _capsule(leg,Vector3(0,-.22,0),.161,.58,uniform,"UniformThigh")
         _sphere(leg,Vector3(0,-.53,-.075),Vector3(.30,.24,.21),armor_edge,"KneeGuard")
-        _capsule(leg,Vector3(0,-.71,.015),.129,.40,uniform_secondary,"UniformShin")
-        _sphere(leg,Vector3(0,-.99,-.10),Vector3(.30,.205,.45),glove,"Boot")
+        var shin := Node3D.new()
+        shin.name = "KneeJoint"
+        shin.position = Vector3(0,-.56,.015)
+        leg.add_child(shin)
+        _capsule(shin,Vector3(0,-.155,0),.129,.38,uniform_secondary,"ArticulatedShin")
+        _sphere(shin,Vector3(0,-.43,-.115),Vector3(.30,.205,.45),glove,"Boot")
+        if left:
+            left_shin = shin
+        else:
+            right_shin = shin
         if left:
             left_leg = leg
         else:
@@ -197,6 +220,15 @@ func update_pose(speed: float, delta: float, aim: float = 0.0) -> void:
         left_leg.rotation.x = lerpf(left_leg.rotation.x,swing,clampf(delta*9.,0.,1.))
     if is_instance_valid(right_leg):
         right_leg.rotation.x = lerpf(right_leg.rotation.x,-swing,clampf(delta*9.,0.,1.))
+    # A second joint bends elbows and knees naturally instead of rigid windmill limbs.
+    if is_instance_valid(left_shin):
+        left_shin.rotation.x = lerpf(left_shin.rotation.x,-maxf(0.,swing)*.8,clampf(delta*11.,0.,1.))
+    if is_instance_valid(right_shin):
+        right_shin.rotation.x = lerpf(right_shin.rotation.x,-maxf(0.,-swing)*.8,clampf(delta*11.,0.,1.))
+    if is_instance_valid(left_forearm):
+        left_forearm.rotation.x = lerpf(left_forearm.rotation.x,-.22-maxf(0.,-swing)*.38,clampf(delta*9.,0.,1.))
+    if is_instance_valid(right_forearm):
+        right_forearm.rotation.x = lerpf(right_forearm.rotation.x,-.22-maxf(0.,swing)*.38,clampf(delta*9.,0.,1.))
     if is_instance_valid(left_arm):
         left_arm.rotation.x = lerpf(left_arm.rotation.x,-swing*.7-.18,clampf(delta*9.,0.,1.))
     if is_instance_valid(right_arm):
