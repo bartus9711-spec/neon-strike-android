@@ -76,7 +76,8 @@ jobs:
           xvfb-run -a -s "-screen 0 1280x720x24" \
             /tmp/godot --path godot --rendering-method gl_compatibility \
             --script res://tools/capture.gd 2>&1 | tee /tmp/teamcs-visual-gametest.log
-          grep -q "CI_ANIMATED_HUMAN_ASSET_OK" /tmp/teamcs-visual-gametest.log
+          grep -q "CI_HUMAN_CHARACTER_LOD_OK" /tmp/teamcs-visual-gametest.log
+          grep -q "CI_WEATHER_AND_HUMANOID_DETAIL_OK" /tmp/teamcs-visual-gametest.log
           grep -q "CI_FPS_GAMEPLAY_OK" /tmp/teamcs-visual-gametest.log
           grep -q "ALL_EIGHT_ARENAS_RENDERED_AND_TESTED" /tmp/teamcs-visual-gametest.log
           if grep -E 'SCRIPT ERROR|Parse Error|Invalid call|Invalid access' /tmp/teamcs-visual-gametest.log; then exit 1; fi
