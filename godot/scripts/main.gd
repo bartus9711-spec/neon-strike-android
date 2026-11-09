@@ -5,6 +5,7 @@ const HUD = preload("res://scripts/hud.gd")
 const ARENAS = preload("res://scripts/arenas.gd")
 const NETWORK = preload("res://scripts/network_monitor.gd")
 const BOTS = preload("res://scripts/bots.gd")
+const WEATHER = preload("res://scripts/environment_fx.gd")
 
 var hero: CharacterBody3D
 var camera: Camera3D
@@ -14,6 +15,7 @@ var hud
 var arena
 var net
 var bots
+var weather
 var scanner: Node3D
 var pulse_requested := false
 var recharge_requested := false
@@ -49,6 +51,9 @@ func _ready() -> void:
     arena.configure(sun, atmosphere)
     arena.load_arena(0)
     _make_hero()
+    weather = WEATHER.new()
+    weather.name = "AtmosphericWeatherEffects"
+    add_child(weather)
     net = NETWORK.new()
     add_child(net)
     bots = BOTS.new()
@@ -319,6 +324,11 @@ func switch_map(index: int) -> void:
     elevation = -.10
     if is_instance_valid(bots):
         bots.new_round(arena.current_map,arena,hero)
+    if is_instance_valid(weather):
+        var world_detail := 1
+        if is_instance_valid(hud):
+            world_detail = hud.detail_select.selected
+        weather.setup_for_map(str(arena.current_map.get("id","port")),hero,world_detail)
     if is_instance_valid(hud):
         arena.apply_advanced(hud.texture_toggle.button_pressed,hud.detail_select.selected)
         bots.apply_actor_quality(hud.actor_select.selected)
@@ -614,6 +624,8 @@ func _collect_beacon() -> void:
 func _apply_advanced_graphics(textured: bool, detail: int, actor_lod: int) -> void:
     actor_quality = actor_lod
     arena.apply_advanced(textured, detail)
+    if is_instance_valid(weather):
+        weather.set_detail(detail)
     if is_instance_valid(bots):
         bots.apply_actor_quality(actor_lod)
 
