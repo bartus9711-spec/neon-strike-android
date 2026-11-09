@@ -16,6 +16,9 @@ var net
 var bots
 var scanner: Node3D
 var scanner_recoil := 0.0
+var audio_pulse: AudioStreamPlayer
+var audio_hit: AudioStreamPlayer
+var audio_charge: AudioStreamPlayer
 var pulse_requested := false
 var recharge_requested := false
 var pulse_cooldown := 0.0
@@ -44,6 +47,7 @@ func _ready() -> void:
         DisplayServer.screen_set_orientation(DisplayServer.SCREEN_LANDSCAPE)
     print("TEAMCS_RENDER_DRIVER: ", RenderingServer.get_current_rendering_driver_name(), " / ", RenderingServer.get_current_rendering_method())
     _setup_palette()
+    _setup_audio()
     _setup_lighting()
     arena = ARENAS.new()
     add_child(arena)
@@ -76,6 +80,43 @@ func _ready() -> void:
     hud.set_network_info(net.get_network_text(), net.get_ping_text())
     hud.set_message("MECZ 4 × 4: PULS ⚡ / ŁADUJ ↻   •   RUCH: LEWY DRĄŻEK   •   CELOWANIE: PRAWY", 6.0)
     print("TEAMCS_MATCH_READY: native Godot 4v4 actor_count=",bots.count_bots()," map_count=",arena.maps.size())
+
+func _create_arcade_tone(frequency_start: float, frequency_end: float, duration: float) -> AudioStreamWAV:
+    # Original synthesized energy-tag sounds; no external files or copyrighted music.
+    var wav := AudioStreamWAV.new()
+    var frames := int(22050.0*duration)
+    var buffer := PackedByteArray()
+    buffer.resize(frames*2)
+    var phase := 0.0
+    for i in range(frames):
+        var t := float(i)/float(frames)
+        var frequency := lerpf(frequency_start,frequency_end,t)
+        phase += TAU*frequency/22050.0
+        var envelope := pow(1.0-t,2.4)*minf(1.0,t*55.0)
+        var sample := roundi(sin(phase)*envelope*8600.0)
+        buffer.encode_s16(i*2,clampi(sample,-32768,32767))
+    wav.format = AudioStreamWAV.FORMAT_16_BITS
+    wav.mix_rate = 22050
+    wav.stereo = false
+    wav.data = buffer
+    return wav
+
+func _setup_audio() -> void:
+    audio_pulse = AudioStreamPlayer.new()
+    audio_pulse.name = "PhotonPulseSFX"
+    audio_pulse.stream = _create_arcade_tone(840.0,280.0,.16)
+    audio_pulse.volume_db = -15.
+    add_child(audio_pulse)
+    audio_hit = AudioStreamPlayer.new()
+    audio_hit.name = "HitConfirmSFX"
+    audio_hit.stream = _create_arcade_tone(610.0,1280.0,.18)
+    audio_hit.volume_db = -16.
+    add_child(audio_hit)
+    audio_charge = AudioStreamPlayer.new()
+    audio_charge.name = "EnergyRechargeSFX"
+    audio_charge.stream = _create_arcade_tone(290.0,720.0,.22)
+    audio_charge.volume_db = -19.
+    add_child(audio_charge)
 
 func _setup_palette() -> void:
     var colors := {
@@ -543,6 +584,8 @@ func _recharge() -> void:
     if energy == ENERGY_MAX or recharge_remaining > 0.0:
         return
     recharge_remaining = 1.55
+    if is_instance_valid(audio_charge):
+        audio_charge.play()
     hud.set_message("UZUPEŁNIANIE ENERGII…",1.5)
 
 func _emit_pulse() -> void:
@@ -554,6 +597,8 @@ func _emit_pulse() -> void:
     pulse_cooldown = .19
     energy -= 1
     scanner_recoil = 1.0
+    if is_instance_valid(audio_pulse):
+        audio_pulse.play()
     var start := camera.global_position
     var end := start - camera.global_transform.basis.z * 74.0
     var query := PhysicsRayQueryParameters3D.create(start,end,1|4,[hero.get_rid()])
@@ -564,6 +609,8 @@ func _emit_pulse() -> void:
         if scored:
             hud.set_message("PUNKT DLA CYAN!  +1",1.2)
             hud.flash_hit()
+            if is_instance_valid(audio_hit):
+                audio_hit.play()
         _impact_flash(end,scored)
     _pulse_visual(start+(-camera.global_transform.basis.z)*.42,end)
     if energy == 0:
