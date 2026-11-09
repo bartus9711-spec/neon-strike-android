@@ -1,11 +1,7 @@
 name: Buduj TeamCS APK
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
-    paths:
-      - 'app/**'
-      - '.github/workflows/build-apk.yml'
+
 jobs:
   build:
     runs-on: ubuntu-latest
