@@ -1,4 +1,5 @@
 extends CanvasLayer
+const RADAR = preload("res://scripts/radar.gd")
 ## Responsive mobile HUD: virtual thumbstick, right-side look swipe and wired / Bluetooth pad support.
 signal jump_requested
 signal action_requested
@@ -17,6 +18,7 @@ var pad_deadzone := .16
 var invert_look_y := false
 var sprint_enabled := false
 var pulse_held := false
+var radar: Control
 var match_label: Label
 var shield_label: Label
 var power_label: Label
@@ -87,7 +89,7 @@ func _ready() -> void:
     status_label.position = Vector2(22, 9)
     status_label.size = Vector2(680, 46)
     ui.add_child(status_label)
-    match_label = _label("CYAN  00  :  00  MAGENTA", 20, Color(.82,.98,1))
+    match_label = _label("CT  00  :  00  T", 20, Color(.90,.93,.95))
     match_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
     match_label.anchor_left = .46
     match_label.anchor_right = .46
@@ -216,6 +218,17 @@ func _button(value: String) -> Button:
     pressed.bg_color = Color(.10,.38,.43,.94)
     b.add_theme_stylebox_override("pressed", pressed)
     return b
+
+func attach_radar(player: CharacterBody3D, bot_controller: Node3D, arena_node: Node3D) -> void:
+    if is_instance_valid(radar):
+        radar.queue_free()
+    radar = RADAR.new()
+    radar.name = "RealTimeTeamRadar"
+    radar.position = Vector2(19,117)
+    radar.custom_minimum_size = Vector2(164,164)
+    radar.size = Vector2(164,164)
+    ui.add_child(radar)
+    radar.configure(player,bot_controller,arena_node)
 
 func _make_controls() -> void:
     touch_base = Panel.new()
@@ -628,7 +641,7 @@ func set_combat_state(cyan: int, magenta: int, shield: int, power: int, capacity
     if is_instance_valid(match_label):
         var minutes := int(time_left) / 60
         var seconds := int(time_left) % 60
-        match_label.text = "CYAN %02d : %02d RÓŻ  •  %d:%02d" % [cyan,magenta,minutes,seconds]
+        match_label.text = "CT %02d : %02d T  •  %d:%02d" % [cyan,magenta,minutes,seconds]
     if is_instance_valid(shield_label):
         shield_label.text = "OSŁONA %d%%" % maxi(0,shield)
         shield_label.add_theme_color_override("font_color", Color(.92,.43,.41) if shield <= 25 else Color(.59,.97,1))
