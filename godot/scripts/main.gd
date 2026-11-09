@@ -82,6 +82,7 @@ func _ready() -> void:
     net.status_changed.connect(func(_desc: String): hud.set_network_info(net.get_network_text(), net.get_ping_text()))
     hud.map_requested.connect(switch_map)
     hud.restart_requested.connect(_return_to_lobby)
+    hud.settings_closed.connect(_on_settings_closed)
     hud.configure_maps(arena.maps)
     switch_map(0)
     # Restore saved Low / High / Ultra and network preferences, not hardcoded Ultra.
@@ -107,10 +108,19 @@ func _start_from_lobby(index: int) -> void:
 
 func _open_settings_from_lobby() -> void:
     # Settings are the existing genuine Low/High/Ultra controls, not a mockup.
-    lobby.hide_lobby()
+    # Keep the match paused while the native settings overlay is visible.
+    lobby.root.hide()
+    hud.layer = 10
     hud.visible = true
     hud.process_mode = Node.PROCESS_MODE_INHERIT
     hud.toggle_settings()
+
+func _on_settings_closed() -> void:
+    if is_instance_valid(lobby) and lobby.active:
+        lobby.show_lobby()
+        hud.visible = false
+        hud.process_mode = Node.PROCESS_MODE_DISABLED
+        hud.layer = 0
 
 func _return_to_lobby() -> void:
     Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
