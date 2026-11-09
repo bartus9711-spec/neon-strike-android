@@ -38,10 +38,26 @@ func _run() -> void:
         push_error("CI: 4v4 gameplay actors missing")
         quit(24)
         return
-    if main.bots._model_resource == null:
-        push_error("CI: animated CC0 humanoid asset failed to import")
+    if main.bots._model_resource == null or not ResourceLoader.exists("res://assets/models/Soldier.glb"):
+        push_error("CI: textured animated human Soldier model failed to import")
         quit(25)
         return
+    var model: Node3D = main.bots.roster[0]["high_model"]
+    var animation_player: AnimationPlayer = main.bots.roster[0]["animation_player"]
+    if not is_instance_valid(model) or not is_instance_valid(animation_player):
+        push_error("CI: real humanoid skeleton and animation playback are missing")
+        quit(31)
+        return
+    var clips: Array = animation_player.get_animation_list()
+    var matching := 0
+    for name in clips:
+        if str(name).to_lower().contains("idle") or str(name).to_lower().contains("run") or str(name).to_lower().contains("walk"):
+            matching += 1
+    if matching < 2:
+        push_error("CI: Soldier animations failed import; available names: "+str(clips))
+        quit(32)
+        return
+    print("CI_ANIMATED_HUMAN_ASSET_OK: skeletal humanoid clips=",clips)
     var ally: CharacterBody3D = main.bots.roster[0]["body"]
     if ally.global_position.distance_to(main.hero.global_position) < 3.0:
         push_error("CI: human player spawned inside AI teammate")
