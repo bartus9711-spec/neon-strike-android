@@ -2,8 +2,8 @@ extends Control
 ## Small, inexpensive tactical radar using live map collisions and bot positions.
 ## No fake positions; draws from the actual current scene.
 var tracked_player: CharacterBody3D
-var squad: Node3D
-var current_arena: Node3D
+var squad
+var current_arena
 var elapsed := 0.0
 
 func configure(player: CharacterBody3D, bot_controller: Node3D, arena_node: Node3D) -> void:
