@@ -58,7 +58,7 @@ public class MainActivity extends Activity {
      Uri uri=req.getUrl();
      if(!HOST.equals(uri.getHost()))return super.shouldInterceptRequest(v,req);
      String path=uri.getPath();
-     if(path!=null&&(path.equals("/themes.js")||path.equals("/games.js")||path.equals("/duo.js")||path.equals("/navigation.js")||path.equals("/motion.js")||path.equals("/challenges.js")||path.equals("/bluetooth.js")||path.equals("/backgrounds.js")||path.equals("/holiday-shells.js")||path.equals("/menu-worlds.js")||path.equals("/new-pets.js")||path.equals("/friendships.js")||path.equals("/retro-layout.js")||path.equals("/vivid-worlds.js")||path.equals("/seasonal-music.js"))){
+     if(path!=null&&(path.equals("/themes.js")||path.equals("/games.js")||path.equals("/duo.js")||path.equals("/navigation.js")||path.equals("/motion.js")||path.equals("/challenges.js")||path.equals("/bluetooth.js")||path.equals("/backgrounds.js")||path.equals("/holiday-shells.js")||path.equals("/menu-worlds.js")||path.equals("/new-pets.js")||path.equals("/friendships.js")||path.equals("/retro-layout.js")||path.equals("/vivid-worlds.js")||path.equals("/seasonal-music.js")||path.equals("/keeper-profile.js"))){
        try{InputStream data=getAssets().open(path.substring(1));return new WebResourceResponse("application/javascript","UTF-8",data);}catch(Exception e){return new WebResourceResponse("text/plain","UTF-8",new ByteArrayInputStream(new byte[0]));}
      }
      if(path==null||path.equals("/")||path.equals("/index.html")){
