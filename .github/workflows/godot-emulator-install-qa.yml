@@ -1,0 +1,53 @@
+name: TeamCS Android 15 Emulator Launch and Screenshot QA
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/scripts/teamcs-android-emulator-smoke.sh"
+      - ".github/workflows/godot-emulator-install-qa.yml"
+jobs:
+  emulator-install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch native APK from previous successful dual-ABI export
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 42540828686 --repo "$GITHUB_REPOSITORY" -n TeamCS-Godot-GT7-QA -D /tmp/teamcs-qa
+          APK_SOURCE=$(find /tmp/teamcs-qa -name TeamCS_Godot_GT7_QA.apk -type f -print -quit)
+          test -n "$APK_SOURCE"
+          cp "$APK_SOURCE" TeamCS_Godot_GT7_QA.apk
+          unzip -l TeamCS_Godot_GT7_QA.apk | grep 'lib/x86_64/libgodot_android.so'
+          unzip -l TeamCS_Godot_GT7_QA.apk | grep 'lib/arm64-v8a/libgodot_android.so'
+          sha256sum TeamCS_Godot_GT7_QA.apk
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install launch dismiss immersive dialog and photograph game on Android 15
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7_pro
+          cores: 2
+          ram-size: 3072M
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash .github/scripts/teamcs-android-emulator-smoke.sh
+      - name: Publish emulator evidence, NOT a new user APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TeamCS-Android-Emulator-Install-Evidence
+          path: |
+            teamcs-emulator-smoke.png
+            teamcs-emulator-logcat.txt
+          if-no-files-found: warn
