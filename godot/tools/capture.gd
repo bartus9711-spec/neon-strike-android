@@ -33,6 +33,38 @@ func _run() -> void:
         push_error("CI: graphics profiles missing")
         quit(7)
         return
+    # Native FPS gameplay must really exist, not just render empty scenery.
+    if main.bots.count_bots() != 7 or main.bots.count_visible_rivals() != 4:
+        push_error("CI: 4v4 gameplay actors missing")
+        quit(24)
+        return
+    if main.bots._model_resource == null:
+        push_error("CI: animated CC0 humanoid asset failed to import")
+        quit(25)
+        return
+    var ally: CharacterBody3D = main.bots.roster[0]["body"]
+    if ally.global_position.distance_to(main.hero.global_position) < 3.0:
+        push_error("CI: human player spawned inside AI teammate")
+        quit(26)
+        return
+    var rival: CharacterBody3D = main.bots.roster[3]["body"]
+    if not main.bots.tag_from_player(rival) or main.bots.cyan_score != 1:
+        push_error("CI: energy-tag scoring/respawn gameplay broken")
+        quit(27)
+        return
+    main.switch_map(0)
+    main._emit_pulse()
+    if main.energy != 23 or main.pulse_cooldown <= 0.0:
+        push_error("CI: first-person pulse/energy gameplay failed")
+        quit(28)
+        return
+    main._recharge()
+    if main.recharge_remaining <= 0.0:
+        push_error("CI: recharge input failed")
+        quit(29)
+        return
+    main.switch_map(0)
+    print("CI_FPS_GAMEPLAY_OK: 4v4 animated actors, team score, respawn, first-person energy-tag and recharge")
     main.hud._emit_graphics()
     if Engine.max_fps != 120:
         push_error("CI: 120 FPS configuration was not applied")
@@ -126,6 +158,10 @@ func _run() -> void:
         await create_timer(.65).timeout
         var map_id := str(main.arena.current_map.get("id", ""))
         ids[map_id] = true
+        if main.bots.count_bots() != 7 or main.bots.count_visible_rivals() != 4:
+            push_error("CI: missing 4v4 characters on map index "+str(i))
+            quit(30)
+            return
         if main.arena.current_index != i:
             push_error("CI: selected map index not loaded")
             quit(14)
