@@ -180,8 +180,6 @@ func _import_real_human(team: int) -> bool:
     root = shell
     imported_model = node
     var animation_players := node.find_children("*","AnimationPlayer",true,false)
-    if node is AnimationPlayer:
-        animation_players.append(node)
     if not animation_players.is_empty():
         imported_anim = animation_players[0] as AnimationPlayer
         for track_name in imported_anim.get_animation_list():
