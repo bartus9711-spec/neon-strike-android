@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-PKG="pl.teamcs.arena4v4universal"
+PKG="pl.teamcs.arena4v4vulkan"
 APK="$GITHUB_WORKSPACE/TeamCS_Godot_GT7_QA.apk"
 test -s "$APK"
 echo "EMULATOR_OS=$(adb shell getprop ro.build.version.release | tr -d '\r')"
@@ -20,7 +20,7 @@ echo "START_ATTEMPT: ordinary Android app launcher alias"
 adb shell am start -W -n "$PKG/com.godot.game.GodotAppLauncher" | tee /tmp/teamcs-launch.log
 # This QA build deliberately disables immersive mode, avoiding Android's
 # system fullscreen tutorial so the first screenshot shows game content.
-sleep 14
+sleep 24
 adb shell dumpsys activity activities | grep -E 'ResumedActivity|mResumed|pl.teamcs' | head -12 || true
 adb shell screencap -p /sdcard/teamcs-smoke.png
 adb pull /sdcard/teamcs-smoke.png "$GITHUB_WORKSPACE/teamcs-emulator-smoke.png"
