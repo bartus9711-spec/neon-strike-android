@@ -50,6 +50,18 @@ func _run() -> void:
         push_error("CI: procedural humanoid gait never moved")
         quit(31)
         return
+    main.bots.apply_actor_quality(0)
+    if first_rig.detail.visible:
+        push_error("CI: actor LOW setting does not hide accessory geometry")
+        quit(32)
+        return
+    main.bots.apply_actor_quality(2)
+    if not first_rig.detail.visible:
+        push_error("CI: actor ULTRA setting does not restore vest/pouch details")
+        quit(33)
+        return
+    main.bots.apply_actor_quality(1)
+    print("CI_HUMAN_CHARACTER_LOD_OK: articulated body, animated walk, detailed apparel and mobile performance tiers")
     var ally: CharacterBody3D = main.bots.roster[0]["body"]
     if ally.global_position.distance_to(main.hero.global_position) < 3.0:
         push_error("CI: human player spawned inside AI teammate")
