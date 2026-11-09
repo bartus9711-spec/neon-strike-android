@@ -1,4 +1,4 @@
-name: Build Tamagotchi 3.1 APK
+name: Build Tamagotchi 3.2 APK
 on:
   push:
     branches: [ pikopet-apk-build ]
@@ -37,6 +37,7 @@ jobs:
           node --check pikopet/app/src/main/assets/retro-layout.js
           node --check pikopet/app/src/main/assets/vivid-worlds.js
           node --check pikopet/app/src/main/assets/seasonal-music.js
+          node --check pikopet/app/src/main/assets/keeper-profile.js
           python3 - <<'PY'
           import re, subprocess
           from pathlib import Path
@@ -57,6 +58,7 @@ jobs:
           assert '<script src="./retro-layout.js"></script>' in html
           assert '<script src="./vivid-worlds.js"></script>' in html
           assert '<script src="./seasonal-music.js"></script>' in html
+          assert '<script src="./keeper-profile.js"></script>' in html
           assert 'stocking' in (p/'backgrounds.js').read_text()
           assert 'window.PikoMotion.cozy' in html
           assert "const defs=[" in (p/'challenges.js').read_text()
@@ -73,7 +75,7 @@ jobs:
           assert 'const classics=THEMES.map' in (p/'themes.js').read_text()
           assert '64 wymienne obudowy' in (p/'themes.js').read_text()
           assert 'const BONUS=[' in (p/'games.js').read_text()
-          print('Tamagotchi 3.1: wszystkie skrypty i pliki są dostępne offline')
+          print('Tamagotchi 3.2: wszystkie skrypty i pliki są dostępne offline')
           PY
       - name: Android SDK 35
         run: test -f "$ANDROID_HOME/platforms/android-35/android.jar"
@@ -92,8 +94,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view tamagotchi-christmas-music-v3.1 >/dev/null 2>&1; then
-            gh release upload tamagotchi-christmas-music-v3.1 Tamagotchi.apk --clobber
+          if gh release view tamagotchi-keeper-profiles-v3.2 >/dev/null 2>&1; then
+            gh release upload tamagotchi-keeper-profiles-v3.2 Tamagotchi.apk --clobber
           else
-            gh release create tamagotchi-christmas-music-v3.1 Tamagotchi.apk --target "${GITHUB_SHA}" --title "Tamagotchi 3.1 — obudowy, minigry i odwiedziny" --notes "Instalator Android (APK). Pikselowy pupil, 64 obudowy (32 klasyczne, 32 nowe Deluxe), 32 gatunki, 20 minigier, 12 zabaw, album pamiątek, zapis offline i przypomnienia o opiece. Ulepszone wykrywanie telefonow, rzeczywiste potwierdzenie widocznosci, skaner systemowy Androida i parowanie BT; Wi-Fi bez zmian. Zwierzaki chodzą po ekranie, po wizycie BT/Wi-Fi pojawia się przytulny pokoik. Można wykryć i sparować telefony Bluetooth. X cofa do poprzedniego menu, Android Wstecz działa tak samo. Budowa testowa z podpisem debug."
+            gh release create tamagotchi-keeper-profiles-v3.2 Tamagotchi.apk --target "${GITHUB_SHA}" --title "Tamagotchi 3.2 — obudowy, minigry i odwiedziny" --notes "Instalator Android (APK). Pikselowy pupil, 64 obudowy (32 klasyczne, 32 nowe Deluxe), 32 gatunki, 20 minigier, 12 zabaw, album pamiątek, zapis offline i przypomnienia o opiece. Ulepszone wykrywanie telefonow, rzeczywiste potwierdzenie widocznosci, skaner systemowy Androida i parowanie BT; Wi-Fi bez zmian. Zwierzaki chodzą po ekranie, po wizycie BT/Wi-Fi pojawia się przytulny pokoik. Można wykryć i sparować telefony Bluetooth. X cofa do poprzedniego menu, Android Wstecz działa tak samo. Budowa testowa z podpisem debug."
           fi
