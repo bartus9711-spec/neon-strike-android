@@ -127,12 +127,12 @@ func _make_actor(team: int, name: String, position: Vector3, index: int) -> Dict
     var animated: Node3D = Node3D.new()
     animated.name = "Character"
     actor.add_child(animated)
-    var operator: Node3D = OPERATIVE.new()
-    operator.name = "AnimatedArmouredHumanoid"
-    animated.add_child(operator)
-    operator.build(team,index,actor_quality)
+    var operative = OPERATIVE.new()
+    operative.name = "AnimatedArmouredHumanoid"
+    animated.add_child(operative)
+    operative.build(team,index,actor_quality)
     var entry := {
-        "body":actor, "visual":animated, "operative":operator,
+        "body":actor, "visual":animated, "operative":operative,
         "team":team, "index":index, "alive":true, "respawn":0.0,
         "cooldown":_rng.randf_range(.6,2.0), "think":0.0,
         "goal":Vector3.ZERO, "motion":0.0, "speed":_rng.randf_range(2.8,3.7),
