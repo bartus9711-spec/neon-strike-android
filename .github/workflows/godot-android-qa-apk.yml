@@ -52,6 +52,8 @@ jobs:
           ls -lh "$HOME/.local/share/godot/export_templates/4.7.2.stable"
       - name: Fetch legally reusable PBR texture set for all eight native arenas
         run: |
+          python3 godot/tools/fetch_cc0_character.py
+          test -s godot/assets/models/RobotExpressive.glb
           python3 godot/tools/fetch_cc0_textures.py
           test -s godot/assets/asphalt_01_diff.jpg
       - name: Import Godot project, enable plugin and install Android Gradle template
