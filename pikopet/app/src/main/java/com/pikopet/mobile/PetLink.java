@@ -168,6 +168,8 @@ public final class PetLink {
         if(species.length()>30||name.length()>25)return;
         JSONObject safe=new JSONObject();
         safe.put("species",species);safe.put("name",name);
+        safe.put("keeper",p.optString("keeper","Opiekun").replaceAll("[\\r\\n]"," ").substring(0,Math.min(24,p.optString("keeper","Opiekun").length())));
+        safe.put("avatar",Math.max(0,Math.min(19,p.optInt("avatar",0))));
         myPet=safe;
       }catch(Exception ignored){}
     }
@@ -502,6 +504,9 @@ public final class PetLink {
     if(species.length()>30)return safe;
     safe.put("species",species);
     safe.put("name",raw.optString("name","Pupil").replaceAll("[\\r\\n]"," ").substring(0,Math.min(24,raw.optString("name","Pupil").length())));
+    String keeper=raw.optString("keeper","Opiekun").replaceAll("[\\r\\n]"," ");
+    safe.put("keeper",keeper.substring(0,Math.min(24,keeper.length())));
+    safe.put("avatar",Math.max(0,Math.min(19,raw.optInt("avatar",0))));
     return safe;
   }
   private void sendWire(JSONObject payload){
