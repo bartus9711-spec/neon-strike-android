@@ -181,7 +181,7 @@ func _make_actor(team: int, name: String, position: Vector3, index: int) -> Dict
 
 func _play(bot: Dictionary, action: String) -> void:
     var player: AnimationPlayer = bot["animation_player"]
-    if player == null or actor_quality == 0 or (actor_quality == 1 and int(bot["index"]) % 2 == 1):
+    if player == null or actor_quality == 0:
         return
     var desired := action.to_lower()
     for animation_name in player.get_animation_list():
@@ -242,7 +242,7 @@ func apply_actor_quality(quality: int) -> void:
         if is_instance_valid(proxy):
             proxy.visible = actor_quality == 0
         if p != null:
-            if actor_quality == 0 or (actor_quality == 1 and int(entry["index"])%2 == 1):
+            if actor_quality == 0:
                 p.stop()
             else:
                 _play(entry,"Idle")
