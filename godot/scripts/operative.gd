@@ -162,7 +162,7 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         Vector4(.30,.33,.20,.01),
         Vector4(.43,.22,.145,.015)
     ],uniform,"TailoredUniformBody")
-    _sphere(torso,Vector3(0,-.32,0),Vector3(.52,.35,.35),uniform_secondary,"BeltHip")
+    _sphere(torso,Vector3(0,-.32,0),Vector3(.47,.31,.33),uniform_secondary,"BeltHip")
     # Rounded overlapping panels hug the body; no flat cardboard/box torso.
     _garment(torso, [
         Vector4(-.17,.226,.178,-.068),
@@ -173,7 +173,7 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
     ],armor,"ContouredProtectiveVest")
     _sphere(torso,Vector3(0,.28,-.302),Vector3(.43,.23,.072),armor_edge,"UpperVestPlate")
     _sphere(torso,Vector3(0,-.08,-.295),Vector3(.43,.17,.075),armor_edge,"LowerVestPlate")
-    _sphere(torso,Vector3(0,.36,-.14),Vector3(.63,.17,.43),armor_edge,"ShoulderArmorBridge")
+    _sphere(torso,Vector3(0,.36,-.11),Vector3(.54,.11,.32),uniform_secondary,"ClothShoulderSeam")
     _sphere(torso,Vector3(0,-.25,-.20),Vector3(.48,.13,.18),glove,"CurvedUtilityBelt")
     _capsule(torso,Vector3(0,.54,0),.105,.23,skin,"Neck")
     helmet = Node3D.new()
@@ -200,7 +200,12 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         arm.name = "LeftShoulderRig" if left else "RightShoulderRig"
         arm.position = Vector3(.395*flank,.37,0)
         torso.add_child(arm)
-        _capsule(arm,Vector3(0,-.19,0),.128,.48,uniform,"Sleeve")
+        _garment(arm, [
+            Vector4(.075,.125,.12,.0),
+            Vector4(-.07,.153,.145,-.005),
+            Vector4(-.23,.14,.125,.0),
+            Vector4(-.38,.113,.105,.005)
+        ], uniform, "TailoredUniformSleeve")
         _capsule(arm,Vector3(0,-.365,-.008),.115,.23,uniform_secondary,"FabricElbowConnector")
         _sphere(arm,Vector3(0,-.075,-.01),Vector3(.25,.21,.245),uniform_secondary,"ClothShoulderOverlay")
         if blue:
@@ -209,7 +214,12 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         forearm.name = "ElbowJoint"
         forearm.position = Vector3(0,-.385,-.04)
         arm.add_child(forearm)
-        _capsule(forearm,Vector3(0,-.155,-.015),.105,.37,uniform_secondary,"ArticulatedForearm")
+        _garment(forearm, [
+            Vector4(.045,.118,.110,.0),
+            Vector4(-.12,.118,.115,-.005),
+            Vector4(-.28,.105,.105,-.012),
+            Vector4(-.35,.086,.09,-.025)
+        ], uniform_secondary, "ArticulatedFabricForearm")
         _sphere(forearm,Vector3(0,-.365,-.035),Vector3(.20,.20,.18),glove,"Glove")
         _sphere(arm,Vector3(0,-.40,-.125),Vector3(.20,.17,.09),armor,"ElbowGuard")
         if left:
@@ -224,7 +234,12 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         leg.name = "LeftLegRig" if left else "RightLegRig"
         leg.position = Vector3(flank*.17,1.06,0)
         root.add_child(leg)
-        _capsule(leg,Vector3(0,-.22,0),.161,.58,uniform,"UniformThigh")
+        _garment(leg, [
+            Vector4(.105,.183,.186,.005),
+            Vector4(-.06,.186,.178,.0),
+            Vector4(-.24,.168,.168,-.006),
+            Vector4(-.46,.133,.137,0.0)
+        ], uniform, "TaperedTrouserThigh")
         _capsule(leg,Vector3(0,-.50,0),.145,.22,uniform_secondary,"FabricKneeConnector")
         _sphere(leg,Vector3(flank*.12,-.24,-.015),Vector3(.15,.27,.175),uniform_secondary,"ThighFabricCargoPocket")
         _sphere(leg,Vector3(0,-.53,-.075),Vector3(.30,.24,.21),armor_edge,"KneeGuard")
@@ -232,8 +247,13 @@ func build(team: int, character_variant: int, actor_quality: int) -> void:
         shin.name = "KneeJoint"
         shin.position = Vector3(0,-.56,.015)
         leg.add_child(shin)
-        _capsule(shin,Vector3(0,-.155,0),.129,.38,uniform_secondary,"ArticulatedShin")
-        _sphere(shin,Vector3(0,-.43,-.115),Vector3(.30,.205,.45),glove,"Boot")
+        _garment(shin, [
+            Vector4(.065,.144,.138,.005),
+            Vector4(-.09,.136,.13,.0),
+            Vector4(-.24,.13,.118,.008),
+            Vector4(-.355,.113,.11,-.015)
+        ], uniform_secondary, "TailoredTrouserShin")
+        _sphere(shin,Vector3(0,-.43,-.115),Vector3(.27,.165,.40),glove,"Boot")
         _sphere(shin,Vector3(0,-.29,-.015),Vector3(.25,.145,.24),armor_edge,"SoftBootCuff")
         # Moulded but flexible kneecap and boot collar, both following knee movement.
         _sphere(shin,Vector3(0,-.02,-.16),Vector3(.205,.105,.08),armor_edge,"LowerKneePad")
