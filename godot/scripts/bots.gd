@@ -338,6 +338,14 @@ func _end_round(winner: int) -> void:
     round_over = true
     round_finished.emit(winner)
 
+func player_lost_shield() -> void:
+    if round_over:
+        return
+    magenta_score += 1
+    score_changed.emit(cyan_score,magenta_score)
+    if magenta_score >= WIN_SCORE:
+        _end_round(1)
+
 func count_bots() -> int:
     return roster.size()
 
