@@ -1,0 +1,6 @@
+RobotExpressive.glb — CC0 1.0 (public domain dedication)
+Original 3D humanoid robot: Tomás Laulhé (Quaternius).
+Modifications and glTF conversion: Don McCurdy.
+Source: https://github.com/mrdoob/three.js/tree/master/examples/models/gltf/RobotExpressive
+Source README expressly states CC0 1.0.
+Fetched at build time, not an AI-generated or unlicensed game asset.
