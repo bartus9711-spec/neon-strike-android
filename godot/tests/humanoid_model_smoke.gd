@@ -48,6 +48,21 @@ func _run() -> void:
                 _verify(actor.anim_idle != &"","rigged humanoid includes idle animation")
                 _verify(actor.anim_run != &"","rigged humanoid includes locomotion animation")
         actor.update_pose(2.5,.016)
+    # Verify the *actual* in-match operator config on both sides, not just
+    # the showcase suit. Both teams must carry an animated skeleton.
+    for team in range(2):
+        var field_actor = CHARACTER.new()
+        get_root().add_child(field_actor)
+        field_actor.build(team,team+2,2)
+        _verify(is_instance_valid(field_actor.imported_model),
+            "in-match team %d uses a real mesh, not procedural placeholder" % team)
+        _verify(is_instance_valid(field_actor.imported_anim),
+            "in-match team %d uses rigged animated mesh" % team)
+        _verify(field_actor.anim_idle != &"" and field_actor.anim_run != &"",
+            "in-match team %d has idle and locomotion clips" % team)
+        field_actor.update_pose(3.1,.016)
+        print("TEAMCS_MATCH_HUMAN team=",team," model=",field_actor.imported_model != null,
+            " run=",field_actor.anim_run)
     if issues.is_empty():
         print("TEAMCS_HUMAN_IMPORT_PASS")
         quit(0)

@@ -184,7 +184,9 @@ func _stage() -> void:
         _stage_block(world,Vector3(bx,2.56,3.82),Vector3(.65,.08,.13),Color(.74,.68,.59))
     for team in range(2):
         var actor = OPERATOR.new()
-        actor.prefer_detail_lod = true
+        # Detailed CT tactical suit; separate rigged T soldier with true idle animation.
+        # Do not reuse one static model for both teams.
+        actor.prefer_detail_lod = team == 0
         # Camera looks in +Z, so world X is horizontally mirrored on screen.
         actor.position = Vector3(.76 if team==0 else -.76,-.10,0.12)
         actor.rotation.y = -.17 if team==0 else .21
