@@ -39,6 +39,9 @@ var ground_level := 0.0
 
 func _ready() -> void:
     Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+    if OS.has_feature("android"):
+        DisplayServer.screen_set_orientation(DisplayServer.SCREEN_LANDSCAPE)
+    print("TEAMCS_RENDER_DRIVER: ", RenderingServer.get_current_rendering_driver_name(), " / ", RenderingServer.get_current_rendering_method())
     _setup_palette()
     _setup_lighting()
     arena = ARENAS.new()
