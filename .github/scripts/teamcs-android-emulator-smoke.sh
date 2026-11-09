@@ -13,12 +13,9 @@ grep -q "Success" /tmp/teamcs-install.log
 adb shell pm path "$PKG" | tee /tmp/teamcs-pmpath.log
 grep -q package: /tmp/teamcs-pmpath.log
 adb logcat -c
-# Reduce software-Vulkan frame pressure on GitHub hosted emulator only.
-adb shell wm size 1280x720
-adb shell wm density 240
-# Emulator only: force the virtual display into landscape.
-adb shell settings put system accelerometer_rotation 0 || true
-adb shell settings put system user_rotation 1 || true
+# Do NOT hot-change emulator resolution after boot: this can hang Quickstep
+# on slow software-Vulkan devices and produce a false positive for rendering.
+# Hardware AVD profile and Godot's landscape orientation provide the size.
 echo "START_ATTEMPT: ordinary Android app launcher alias"
 adb shell am start -W -n "$PKG/com.godot.game.GodotAppLauncher" | tee /tmp/teamcs-launch.log
 # This QA build deliberately disables immersive mode, avoiding Android's
