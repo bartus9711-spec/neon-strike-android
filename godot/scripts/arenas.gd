@@ -365,6 +365,23 @@ func _tower_light(x: float,z: float,mat: String = "yellow") -> void:
 
 func _port() -> void:
     # Stacked freight containers, quay markings, cranes and waterfront floodlights.
+    # Fine roadway details are GPU-instanced; no extra physics bodies or draws.
+    for lane in [-16.0,0.0,16.0]:
+        for dash in range(22):
+            var z_mark := -34.0 + float(dash) * 3.15
+            _piece(Vector3(lane,.054,z_mark),Vector3(.10,.018,1.22),"yellow")
+    # Subtle industrial drainage grilles and raised steel edging.
+    for grate in range(15):
+        var gx := -12.0 + float(grate%5)*6.0
+        var gz := -16.0 + float(grate/5)*17.0
+        _piece(Vector3(gx,.062,gz),Vector3(1.65,.018,.27),"dark")
+        for slot in range(4):
+            _piece(Vector3(gx-.60+float(slot)*.40,.079,gz),Vector3(.035,.018,.23),"steel")
+    for edge in [-1,1]:
+        var x_edge := float(edge)*40.0
+        for z_edge in range(-36,37,6):
+            _piece(Vector3(x_edge,.18,float(z_edge)),Vector3(.26,.36,.9),"stone")
+            _piece(Vector3(x_edge,.42,float(z_edge)),Vector3(.31,.12,.75),"yellow")
     for x in [-34.0,34.0]:
         for z in [-31.0,0.0,31.0]:
             _piece(Vector3(x,.065,z),Vector3(8,.11,.19),"yellow")
