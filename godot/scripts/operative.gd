@@ -1,11 +1,14 @@
 extends Node3D
-## Original game-art: modular HUMAN sci-fi arena operator, not a robot.
-## Performance-aware geometry; rigged pivots are animated every physics tick.
-## Uniforms, padded vest, boots, helmet, visor, neck, gloves and optional utility
-## pouches. No external model licence / network download needed.
+## Licensed imported humanoids with an original procedural fallback.
+## Source authors and licences: res://assets/models/ATTRIBUTION.md.
 var phase := 0.0
 const RIGGED_HUMAN := "res://assets/models/soldier.glb"
 const DETAILED_HUMAN := "res://assets/models/soldier_tac.glb"
+const SKINNED_BOUNDS = preload("res://scripts/skinned_bounds.gd")
+# Rest-pose fitting is shared by all bots using a source. Never skin vertices
+# on the CPU during animation or once per actor on mobile.
+static var source_bounds: Dictionary = {}
+static var fitted_headset_skin: Skin
 var prefer_detail_lod := false
 var imported_model: Node3D
 var imported_source_path: String = ""
@@ -154,8 +157,9 @@ func _import_real_human(team: int) -> bool:
         var spatial := spatial_node as Node3D
         if is_instance_valid(spatial):
             spatial.visible = true
-    # Keep the original glTF root and armature transforms untouched. Imported
-    # assets use wildly different units and a Z-up authoring convention.
+    # glTF has already converted authoring axes to Y-up. Skin bind matrices
+    # also compensate authoring units; a raw mesh AABB ignores those matrices.
+    # Preserve the imported armature and measure the deformed rest pose.
     var shell := Node3D.new()
     shell.name = "Fitted3DHuman"
     add_child(shell)
@@ -169,11 +173,11 @@ func _import_real_human(team: int) -> bool:
     center_offset.name = "OriginalModelOffset"
     fit.add_child(center_offset)
     center_offset.add_child(human)
+    if prefer_detail_lod:
+        _fit_tactical_headset(human)
     var meshes: Array[Node] = human.find_children("*","MeshInstance3D",true,false)
     if human is MeshInstance3D:
         meshes.append(human)
-    var smallest := Vector3(INF,INF,INF)
-    var largest := Vector3(-INF,-INF,-INF)
     imported_mesh_count = 0
     for mesh in meshes:
         var instance := mesh as MeshInstance3D
@@ -184,43 +188,37 @@ func _import_real_human(team: int) -> bool:
         instance.visibility_range_begin = 0.0
         instance.visibility_range_end = 120.0
         imported_mesh_count += 1
-        var into_fit: Transform3D = fit.global_transform.affine_inverse() * instance.global_transform
-        var bounds := instance.get_aabb()
-        for vertex in range(8):
-            var point: Vector3 = into_fit * bounds.get_endpoint(vertex)
-            smallest = smallest.min(point)
-            largest = largest.max(point)
     if meshes.is_empty():
         shell.queue_free()
         return false
-    var extent: Vector3 = largest-smallest
-    var is_z_up: bool = extent.z > extent.y*1.45
-    var raw_height: float = extent.z if is_z_up else extent.y
-    if raw_height <= .000001:
+    if not source_bounds.has(model_path):
+        source_bounds[model_path] = SKINNED_BOUNDS.model_bounds(human, fit)
+    var bounds: AABB = source_bounds[model_path]
+    var extent: Vector3 = bounds.size
+    var raw_height: float = extent.y
+    if not extent.is_finite() or raw_height <= .000001:
         shell.queue_free()
         return false
-    # No artificial min/max scaling clamp. A GLB authored in centimetres
-    # or micrometres must still become a 1.75 m character, not a tiny dot.
     var factor: float = 1.75 / raw_height
     imported_source_path = model_path
     imported_model_height = 1.75
-    var middle: Vector3 = (smallest+largest)*.5
-    center_offset.position = Vector3(-middle.x,-middle.y,-smallest.z) if is_z_up else Vector3(-middle.x,-smallest.y,-middle.z)
+    var middle: Vector3 = bounds.get_center()
+    center_offset.position = Vector3(-middle.x,-bounds.position.y,-middle.z)
     fit.scale = Vector3.ONE*factor
-    axis_pivot.rotation.x = -PI/2.0 if is_z_up else 0.0
     axis_pivot.rotation.y = PI
-    # Cloth-coloured identification patch, not emissive neon head rings.
-    var patch := MeshInstance3D.new()
-    patch.name = "FabricUniformPatch"
-    var patch_mesh := BoxMesh.new()
-    patch_mesh.size = Vector3(.12,.09,.027)
-    patch.mesh = patch_mesh
-    patch.position = Vector3(.28,1.32,-.13)
-    var patch_mat := StandardMaterial3D.new()
-    patch_mat.albedo_color = Color(.30,.43,.48) if team == 0 else Color(.51,.33,.25)
-    patch_mat.roughness = .94
-    patch.material_override = patch_mat
-    shell.add_child(patch)
+    # Team colours belong on the skinned clothing. An unattached box at a
+    # guessed shoulder position floats beside both the fitted and animated rig.
+    for node in meshes:
+        var mesh := node as MeshInstance3D
+        for surface in range(mesh.mesh.get_surface_count()):
+            var original := mesh.get_active_material(surface) as StandardMaterial3D
+            if original == null or original.resource_name not in ["Soldier_Clothes", "Soldier_Fabric", "Soldier_Armor"]:
+                continue
+            var cloth := original.duplicate() as StandardMaterial3D
+            cloth.albedo_color = Color(.25,.31,.34) if team == 0 else Color(.40,.31,.22)
+            cloth.roughness = .92
+            cloth.metallic = 0.0
+            mesh.set_surface_override_material(surface, cloth)
     root = shell
     shell.visible = true
     imported_model = human
@@ -254,9 +252,32 @@ func _import_real_human(team: int) -> bool:
         if anim_idle != &"":
             imported_anim.play(anim_idle)
     print("TEAMCS_HUMAN_FITTED: ",model_path," dimensions=",extent,
-        " upZ=",is_z_up," units=",factor," meshes=",imported_mesh_count,
+        " units=",factor," meshes=",imported_mesh_count,
         " visible=",imported_model_visible," idle=",anim_idle," locomotion=",anim_run)
     return true
+
+func _fit_tactical_headset(human: Node3D) -> void:
+    # The pinned source ships its headset in an exploded presentation position
+    # above the cap. Fit that existing accessory without editing source geometry.
+    var cap: MeshInstance3D
+    var headset: MeshInstance3D
+    for node in human.find_children("*", "MeshInstance3D", true, false):
+        var mesh := node as MeshInstance3D
+        var material := mesh.get_active_material(0)
+        if material != null and material.resource_name == "GreenCap":
+            cap = mesh
+        elif material != null and material.resource_name == "HeadphonesT":
+            headset = mesh
+    if cap == null or headset == null:
+        return
+    if fitted_headset_skin == null:
+        var cap_bounds: AABB = SKINNED_BOUNDS.mesh_bounds(cap, human)
+        var headset_bounds: AABB = SKINNED_BOUNDS.mesh_bounds(headset, human)
+        var offset := Vector3(0,cap_bounds.end.y + .015 - headset_bounds.end.y,0)
+        SKINNED_BOUNDS.offset_skin(headset, human, offset)
+        fitted_headset_skin = headset.skin
+    else:
+        headset.skin = fitted_headset_skin
 
 func force_render_visibility() -> void:
     # Re-assert visibility after GLB import and after quality changes. This is

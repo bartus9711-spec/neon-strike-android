@@ -111,6 +111,14 @@ func _ready() -> void:
     hud.process_mode = Node.PROCESS_MODE_DISABLED
     hud.visible = false
     print("TEAMCS_MATCH_READY: 5v5 elimination bots=",bots.count_bots()," maps=",arena.maps.size())
+    # Opt-in on the CI emulator through run-as; normal launches do no GPU
+    # readback and never run tests. The flag lives in this debug app's sandbox.
+    if OS.is_debug_build() and FileAccess.file_exists("user://teamcs-render-qa"):
+        call_deferred("_run_character_render_qa")
+
+func _run_character_render_qa() -> void:
+    var check = load("res://tests/character_render_check.gd").new()
+    await check.run(lobby, "user://")
 
 func _start_from_lobby(index: int) -> void:
     hud.visible = true

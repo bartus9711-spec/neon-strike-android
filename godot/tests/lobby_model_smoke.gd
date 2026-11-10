@@ -39,6 +39,13 @@ func _run() -> void:
         _assert(is_instance_valid(clip),"T animation player")
         if is_instance_valid(clip):
             _assert(clip.get_animation_list().size()>1,"T contains animation clips")
+        lobby.root.hide()
+        _assert(ct.process_mode == Node.PROCESS_MODE_DISABLED,"hidden CT stops processing")
+        _assert(t.process_mode == Node.PROCESS_MODE_DISABLED,"hidden T stops animating")
+        _assert(lobby.preview.render_target_update_mode == SubViewport.UPDATE_DISABLED,"hidden preview stops rendering")
+        lobby.show_lobby()
+        _assert(t.process_mode == Node.PROCESS_MODE_ALWAYS,"showing lobby resumes animation")
+        _assert(lobby.preview.render_target_update_mode != SubViewport.UPDATE_DISABLED,"showing lobby resumes rendering")
     if problems.is_empty():
         print("TEAMCS_LOBBY_ART_PASS")
         quit(0)

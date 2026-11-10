@@ -1,6 +1,7 @@
 extends SceneTree
 ## End-to-end Godot GLB import regression test for actual humanoid meshes.
 const CHARACTER = preload("res://scripts/operative.gd")
+const BOUNDS = preload("res://scripts/skinned_bounds.gd")
 var issues: Array[String] = []
 
 func _initialize() -> void:
@@ -27,20 +28,15 @@ func _run() -> void:
                 if (shape as MeshInstance3D).get_aabb().size.length_squared() > 0:
                     aabb_count += 1
             _verify(aabb_count>0,"imported model geometry not empty")
-            var bottom := Vector3(INF,INF,INF)
-            var top := Vector3(-INF,-INF,-INF)
-            for surface in geometry:
-                var mesh := surface as MeshInstance3D
-                var to_actor: Transform3D = actor.global_transform.affine_inverse() * mesh.global_transform
-                for v in range(8):
-                    var point: Vector3 = to_actor * mesh.get_aabb().get_endpoint(v)
-                    bottom = bottom.min(point)
-                    top = top.max(point)
-            var size: Vector3 = top-bottom
+            # Mesh.get_aabb() is in bind space and can be off by six orders of
+            # magnitude for these GLBs. Verify the vertices after skinning.
+            var fitted: AABB = BOUNDS.model_bounds(actor.imported_model, actor)
+            var size: Vector3 = fitted.size
             print("TEAMCS_HUMAN_NORMALIZED_SIZE: team=",index," size=",size)
             _verify(size.y > 1.48 and size.y < 2.05,"imported model standing height ~1.75m")
             _verify(size.x > .25 and size.x < 2.1,"imported model plausible width")
             _verify(size.z > .15 and size.z < 2.1,"imported model plausible depth")
+            _verify(absf(fitted.position.y) < .03,"boots rest on the ground")
         if index == 1:
             _verify(is_instance_valid(actor.imported_anim),"rigged in-game humanoid has animator")
             if is_instance_valid(actor.imported_anim):

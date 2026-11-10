@@ -16,7 +16,6 @@ var profile_text: Label
 var preview: SubViewport
 var preview_frame: SubViewportContainer
 var preview_camera: Camera3D
-var preview_debug_logged := false
 var previews: Array[Node3D] = []
 var preview_clock := 0.0
 var credits := 650
@@ -137,12 +136,12 @@ func _stage() -> void:
     _place(frame,.268,.27,.732,.825)
     root.add_child(frame)
     preview = SubViewport.new()
-    # This is an opaque 3D render target. Android Vulkan can skip a transparent
-    # secondary viewport when no previous visible frame has been composited.
+    # Render only while the preview is actually displayed, including when
+    # main.gd hides the lobby directly for the settings screen.
     preview.size = Vector2i(640,420)
     preview.transparent_bg = false
     preview.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
-    preview.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+    preview.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
     preview.own_world_3d = true
     frame.add_child(preview)
     preview_frame = frame
@@ -210,23 +209,12 @@ func _stage() -> void:
             " visible=",actor.imported_model_visible,
             " position=",actor.position)
         previews.append(actor)
-    # _process can be paused or inherited as disabled during Android startup.
-    # A deferred first-frame probe makes the live viewport observable without
-    # changing gameplay state.
-    call_deferred("_log_preview_diagnostics")
+    root.visibility_changed.connect(_sync_preview_activity)
 
-func _log_preview_diagnostics() -> void:
-    await get_tree().process_frame
-    if preview_debug_logged or not is_instance_valid(preview):
-        return
-    preview_debug_logged = true
-    var viewport_texture := preview.get_texture()
-    print("TEAMCS_PREVIEW_LAYOUT: frame=",preview_frame.size," viewport=",preview.size,
-        " cam=",preview_camera," actors=",previews.size())
-    var screenshot := viewport_texture.get_image()
-    if screenshot != null and not screenshot.is_empty():
-        print("TEAMCS_PREVIEW_PIXEL: ",screenshot.get_pixel(
-            int(screenshot.get_width()/2),int(screenshot.get_height()/2)))
+func _sync_preview_activity() -> void:
+    preview.render_target_update_mode = SubViewport.UPDATE_ALWAYS if root.is_visible_in_tree() else SubViewport.UPDATE_DISABLED
+    for actor in previews:
+        actor.process_mode = Node.PROCESS_MODE_ALWAYS if root.is_visible_in_tree() else Node.PROCESS_MODE_DISABLED
 
 func _stage_block(world: Node3D, p: Vector3, dimensions: Vector3, color: Color) -> void:
     var node := MeshInstance3D.new()
@@ -356,11 +344,9 @@ func _load_career() -> void:
     gear_variant = clampi(int(file.get_value("career","gear",0)),0,1) if unlocked_variant else 0
 
 func _process(delta: float) -> void:
-    if not active:
+    if not active or not root.is_visible_in_tree():
         return
     preview_clock += delta
-    if not preview_debug_logged and preview_clock > 1.0 and is_instance_valid(preview):
-        _log_preview_diagnostics()
     for i in range(previews.size()):
         if is_instance_valid(previews[i]):
             previews[i].update_pose(.25+absf(sin(preview_clock*.6+float(i)))*.15,delta,0.0)

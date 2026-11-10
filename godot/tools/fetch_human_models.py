@@ -4,13 +4,16 @@
 Models are CC BY 4.0, not CC0. See assets/models/ATTRIBUTION.md.
 Pinned upstream commit protects builds from unreviewed binary changes.
 """
-import pathlib, struct, urllib.request, json
+import pathlib, struct, urllib.request, json, hashlib
 root=pathlib.Path(__file__).resolve().parents[1]/"assets"/"models"
 root.mkdir(parents=True,exist_ok=True)
 commit="130ac2a5c856401ec36e7d35afcfefe40c5801f4"
 base=f"https://raw.githubusercontent.com/cktang88/3d-fps/{commit}/public/assets/models/characters"
-specs=[("soldier.glb",3_094_592),("soldier_tac.glb",4_532_132)]
-for name,expected_size in specs:
+specs=[
+    ("soldier.glb",3_094_592,"6f229176b1ca49ff33605718ebfcca7fcee8f65d6d311ce3c86693df9310d2d7"),
+    ("soldier_tac.glb",4_532_132,"fe02bc307077d7a5a74069d085893988d93751495871c84082256e60bf9bfc9e"),
+]
+for name,expected_size,expected_digest in specs:
     dest=root/name
     if not dest.is_file() or dest.stat().st_size!=expected_size:
         url=f"{base}/{name}"
@@ -21,6 +24,8 @@ for name,expected_size in specs:
             raise ValueError(f"Invalid source binary: {name} ({len(blob)} bytes)")
         dest.write_bytes(blob)
     data=dest.read_bytes()
+    if hashlib.sha256(data).hexdigest() != expected_digest:
+        raise ValueError(f"Source checksum mismatch: {name}; review source before changing the pin")
     declared=struct.unpack_from("<I",data,8)[0]
     if declared!=len(data):
         raise ValueError(f"Invalid glTF binary header: {name}")

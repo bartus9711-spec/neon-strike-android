@@ -9,4 +9,14 @@ These models are redistributed in an adapted, game-integrated context and downlo
 
 Licensing information: https://creativecommons.org/licenses/by/4.0/
 
+## Animation and upstream adaptation credits
+
+The pinned upstream [README](https://github.com/cktang88/3d-fps/blob/130ac2a5c856401ec36e7d35afcfefe40c5801f4/README.md) also credits assets embedded in `soldier.glb`:
+
+- Quaternius, **Universal Animation Library 1 & 2 (Standard)**, CC0, https://quaternius.com — retargeted animation clips.
+- Ian Mason, Sebastian Starke and Taku Komura, **100STYLE** dataset, CC BY 4.0, https://zenodo.org/records/8127870 — walk/jog/crouch motion in the `mocap_*` clips, extracted, loop-closed and retargeted upstream.
+- Upstream adapted the tactical meshes and converted their textures to WebP. Its GLB metadata independently identifies DanlyVostok, the original Sketchfab URL and CC-BY-4.0.
+
+TeamCS adaptations: skin-aware fitting to 1.75 m, clothing colour/roughness overrides, and repositioned headset bind transforms. Original GLB files remain unchanged. No new third-party model was added in the rendering repair.
+
 This file must remain packaged alongside distributed source/project credits. Other TeamCS procedural art is original.

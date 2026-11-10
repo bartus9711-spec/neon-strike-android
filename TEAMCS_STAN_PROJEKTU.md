@@ -1,6 +1,33 @@
 # TeamCS — sprawdzony stan i kierunek projektu
 
-Aktualizacja: 2026-11-09. Ten plik chroni projekt przed powtarzaniem tych samych zadań.
+Aktualizacja: 2026-11-10. Ten plik chroni projekt przed powtarzaniem tych samych zadań.
+
+## Aktywny etap: naprawa rzeczywistego renderowania
+
+Gałąź robocza: `teamcs-visual-render-fix-20261109-atlas`, bazuje na `teamcs-natural-motion-20261109-atlas` (`228e4ee51c9e`). Stan sprzed naprawy: `d0198aa23c28`. Poprzednie zielone Actions nie dowodziły widoczności operatorów; obejrzane obrazy Androida pokazywały puste podium.
+
+- Przyczyna: dopasowanie modeli według surowego `Mesh.get_aabb()` pomijało skin/bind matrices. CT był skalowany przez około 0.00000084, T przez 83, a obu dodatkowo błędnie obracano jak modele Z-up. Po deformacji skórą oba źródła są Y-up i mają około 2 m wysokości.
+- Naprawa: mierzenie zdeformowanej pozy spoczynkowej, dopasowanie do 1.75 m i podłoża, cache pomiaru raz na plik źródłowy; brak obliczeń wierzchołków w każdej klatce.
+- Poprawiono osadzenie słuchawek CT na czapce przez lokalną kopię bindów; usunięto unoszące się znaczniki i przeniesiono kolory drużyny na materiały ubrania. Oryginalne pliki GLB bez zmian.
+- Ukryte lobby zatrzymuje animacje podglądu i jego renderowanie. Zwykły start nie wykonuje odczytu obrazu GPU.
+- Test pikseli porównuje każdego operatora z pustą sceną i sprawdza powierzchnię, wysokość oraz położenie sylwetki. Kontrola negatywna (istniejące, ale niewidoczne modele) musi zakończyć się błędem. Ten sam test uruchamia się na emulatorze Androida tylko po ustawieniu flagi QA.
+- Zweryfikowano lokalny render OpenGL (Godot 4.6.3, llvmpipe), geometrię, lobby oraz 20 asercji ekonomii. Testy CI/Androida tej poprawki wymagają jeszcze wyniku nowego commitu — nie traktować tego wpisu jako potwierdzenia APK.
+- Uzupełniono kredyty klipów Quaternius i 100STYLE na podstawie przypiętego README upstream; plik z atrybucją jest jawnie dołączany do eksportu. Pobieranie modeli sprawdza SHA-256.
+
+### Porównanie istniejących gałęzi
+
+| Gałąź z datą 20261109-atlas | Sprawdzony commit | Co zachować |
+| --- | --- | --- |
+| teamcs-human-characters | 2641b1c2ecaf | baza GLB i ekonomii |
+| teamcs-verified-humanoid | 8ee34733d136 | różne modele CT/T w lobby; zawarte w natural-motion |
+| teamcs-natural-motion | 228e4ee51c9e | idle/walk/run/sprint i płynna prędkość; wybrana baza |
+| teamcs-integrated-humanoids | a01e3fd348c1 | istniejące profile broni FPS, blokada inputu przy zakupach i HUD amunicji; osobna gałąź, jeszcze nie scalona |
+
+### Następny etap po potwierdzeniu Androida
+
+1. Przenieść animacje na szczegółowy model taktyczny (źródłowy GLB nadal bez klipów), ocenić stopy, barki i chwyt broni w ruchu. Aktualny model T nadal ma uproszczony opancerzony wygląd; sam poprawny render nie spełnia całego celu artystycznego.
+2. Zweryfikować i przenieść istniejące zmiany widoku broni z integrated-humanoids bez przepisywania ekonomii/menu.
+3. Dopiero potem detal otoczenia i pomiary czasu klatki na fizycznym Androidzie. FPS z renderera programowego/emulatora nie jest wynikiem telefonu.
 
 ## Cel
 Pełnoprawna taktyczna gra na Androida z czytelnym lobby, humanoidalnymi operatorami CT/T, animacjami i mapami. Nie prezentować prototypów z figurami lub neonowymi blasterami jako gotowej gry.

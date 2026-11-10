@@ -90,6 +90,27 @@ jobs:
           set -euo pipefail
           timeout --signal=TERM --kill-after=5s 90s /tmp/godot --headless --path godot --script res://tests/economy_smoke.gd 2>&1 | tee /tmp/economy-smoke.log
           grep -q 'TEAMCS_ECONOMY_PASS' /tmp/economy-smoke.log
+      - name: Verify actual character silhouettes with a real graphics driver
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb libgl1-mesa-dri
+          mkdir -p teamcs-desktop-render teamcs-negative-control
+          TEAMCS_QA_OUTPUT="$GITHUB_WORKSPACE/teamcs-desktop-render" xvfb-run -a timeout 90s /tmp/godot --path godot --rendering-method gl_compatibility --audio-driver Dummy --script res://tests/character_render_smoke.gd 2>&1 | tee /tmp/teamcs-render.log
+          grep -q 'TEAMCS_CHARACTER_RENDER_PASS' /tmp/teamcs-render.log
+          # Prove that mesh existence and valid bounds cannot pass an empty render.
+          set +e
+          TEAMCS_QA_OUTPUT="$GITHUB_WORKSPACE/teamcs-negative-control" xvfb-run -a timeout 90s /tmp/godot --path godot --rendering-method gl_compatibility --audio-driver Dummy --script res://tests/character_render_smoke.gd -- --invisible-models > /tmp/teamcs-render-negative.log 2>&1
+          status=$?
+          set -e
+          test "$status" -eq 1
+          grep -q 'TEAMCS_CHARACTER_RENDER_FAIL' /tmp/teamcs-render-negative.log
+      - name: Check fitted in-game humanoids on all eight 5v5 maps
+        run: |
+          set -euo pipefail
+          timeout 90s /tmp/godot --headless --path godot --script res://tests/gameplay_humanoid_smoke.gd 2>&1 | tee /tmp/teamcs-gameplay.log
+          grep -q 'TEAMCS_GAMEPLAY_HUMANOIDS_PASS' /tmp/teamcs-gameplay.log
+          if grep -E 'SCRIPT ERROR|Parse Error' /tmp/teamcs-gameplay.log; then exit 1; fi
       - name: Export signed native test APK (NEVER publishes official release)
         run: |
           set -o pipefail
@@ -138,7 +159,7 @@ jobs:
           script: |
             python3 -m pip install --quiet Pillow
             bash .github/scripts/teamcs-android-emulator-smoke.sh
-      - name: Export smaller ARM64-only APK for the actual GT 7, same signed 4v4 game
+      - name: Export smaller ARM64-only APK for the actual GT 7, same signed 5v5 game
         run: |
           set -euo pipefail
           sed -i 's#architectures/x86_64=true#architectures/x86_64=false#' godot/export_presets.cfg
@@ -172,5 +193,13 @@ jobs:
             /tmp/godot-export-arm64.log
             teamcs-emulator-smoke.png
             teamcs-emulator-logcat.txt
+            teamcs-android-render/
+            teamcs-desktop-render/
+            /tmp/human-model-smoke.log
+            /tmp/teamcs-lobby-model.log
+            /tmp/economy-smoke.log
+            /tmp/teamcs-render.log
+            /tmp/teamcs-render-negative.log
+            /tmp/teamcs-gameplay.log
           if-no-files-found: warn
           retention-days: 14
