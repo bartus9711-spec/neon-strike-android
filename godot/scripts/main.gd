@@ -110,17 +110,23 @@ func _ready() -> void:
     bots.process_mode = Node.PROCESS_MODE_DISABLED
     hud.process_mode = Node.PROCESS_MODE_DISABLED
     hud.visible = false
+    # The opaque lobby has its own SubViewport. Do not draw the entire arena
+    # behind it; restore the main 3D viewport before entering the match.
+    get_viewport().disable_3d = true
     print("TEAMCS_MATCH_READY: 5v5 elimination bots=",bots.count_bots()," maps=",arena.maps.size())
-    # Opt-in on the CI emulator through run-as; normal launches do no GPU
-    # readback and never run tests. The flag lives in this debug app's sandbox.
-    if OS.is_debug_build() and FileAccess.file_exists("user://teamcs-render-qa"):
+    # Only the CI emulator export has this feature. Normal phone builds do no
+    # GPU readback. The sandbox flag is also useful for local desktop QA.
+    if OS.has_feature("teamcs_render_qa") or (OS.is_debug_build() and FileAccess.file_exists("user://teamcs-render-qa")):
         call_deferred("_run_character_render_qa")
 
 func _run_character_render_qa() -> void:
+    print("TEAMCS_QA_OUTPUT: ",OS.get_user_data_dir())
     var check = load("res://tests/character_render_check.gd").new()
-    await check.run(lobby, "user://")
+    if await check.run(lobby, "user://"):
+        await check.capture_gameplay(self)
 
 func _start_from_lobby(index: int) -> void:
+    get_viewport().disable_3d = false
     hud.visible = true
     hud.process_mode = Node.PROCESS_MODE_INHERIT
     arsenal.begin_match()
@@ -180,6 +186,7 @@ func _on_settings_closed() -> void:
         hud.layer = 0
 
 func _return_to_lobby() -> void:
+    get_viewport().disable_3d = true
     Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
     buy_active = false
     if is_instance_valid(buy_menu):

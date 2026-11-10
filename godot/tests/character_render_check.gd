@@ -56,6 +56,8 @@ func run(lobby: CanvasLayer, directory: String) -> bool:
             actor.imported_anim.advance(.4)
             actor.imported_anim.pause()
     await _frame()
+    print("TEAMCS_QA_RENDER_COST: draws=",Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+        " primitives=",Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
     _save(tree.root.get_texture().get_image(), "teamcs-lobby.png")
     _save(lobby.preview.get_texture().get_image(), "teamcs-operators.png")
     for actor in lobby.previews:
@@ -81,3 +83,21 @@ func run(lobby: CanvasLayer, directory: String) -> bool:
     else:
         print("TEAMCS_CHARACTER_RENDER_FAIL: ",failures)
         return false
+
+func capture_gameplay(game: Node3D) -> void:
+    # Exercise the real PLAY -> purchase -> match transition in the exported
+    # APK as well. Save the actual first-person view for manual visual review.
+    game.lobby._play()
+    game._close_buy_phase()
+    game.set_physics_process(false)
+    game.bots.process_mode = Node.PROCESS_MODE_DISABLED
+    await _frame()
+    _check(not tree.root.disable_3d, "PLAY restores the main Android 3D viewport")
+    _check(not game.lobby.root.visible, "match hides the lobby")
+    _save(tree.root.get_texture().get_image(), "teamcs-match.png")
+    print("TEAMCS_QA_MATCH_COST: draws=",Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
+    game._return_to_lobby()
+    game.set_physics_process(true)
+    await _frame()
+    if failures.is_empty():
+        print("TEAMCS_GAMEPLAY_RENDER_PASS")

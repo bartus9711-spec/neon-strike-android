@@ -15,6 +15,13 @@ func _run() -> void:
     var game = load("res://scenes/main.tscn").instantiate()
     root.add_child(game)
     _check(game.arena.maps.size() == 8, "eight existing arenas")
+    _check(root.disable_3d, "arena rendering stops behind the lobby")
+    game.lobby._play()
+    _check(not root.disable_3d, "PLAY restores main 3D rendering")
+    game._close_buy_phase()
+    _check(not root.disable_3d, "match remains visible after buying")
+    game._return_to_lobby()
+    _check(root.disable_3d, "return to lobby stops hidden arena rendering")
     for index in range(game.arena.maps.size()):
         game.switch_map(index)
         await process_frame

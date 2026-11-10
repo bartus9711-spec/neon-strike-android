@@ -80,6 +80,8 @@ jobs:
           timeout --signal=TERM --kill-after=3s 45s /tmp/godot --headless --path godot --script res://tests/humanoid_model_smoke.gd 2>&1 | tee /tmp/human-model-smoke.log
           grep -q 'TEAMCS_HUMAN_IMPORT_PASS' /tmp/human-model-smoke.log
           grep -q 'TEAMCS_HUMAN_MOTION_STATES_PASS' /tmp/human-model-smoke.log
+          timeout 45s /tmp/godot --headless --path godot --script res://tests/bot_motion_smoke.gd 2>&1 | tee /tmp/bot-motion-smoke.log
+          grep -q 'TEAMCS_BOT_MOTION_PASS' /tmp/bot-motion-smoke.log
       - name: Validate CT and T use distinct real imported humanoids in lobby
         run: |
           set -euo pipefail
@@ -116,6 +118,7 @@ jobs:
           set -o pipefail
           # The QA APK includes both arm64 for the GT 7 and x86_64 for actual Android emulator validation.
           sed -i 's#architectures/x86_64=false#architectures/x86_64=true#' godot/export_presets.cfg
+          sed -i 's#custom_features=""#custom_features="teamcs_render_qa"#' godot/export_presets.cfg
           /tmp/godot --headless --path godot --editor --install-android-build-template --export-debug "Android GT7 QA"             "$GITHUB_WORKSPACE/TeamCS_Godot_GT7_QA.apk" 2>&1 | tee /tmp/godot-export.log
           test -f godot/android/build/build.gradle
           test -s TeamCS_Godot_GT7_QA.apk
@@ -124,6 +127,7 @@ jobs:
         run: |
           set -euo pipefail
           unzip -l TeamCS_Godot_GT7_QA.apk | grep -E 'lib/arm64-v8a/libgodot_android.so|lib/arm64-v8a/libgodot'
+          unzip -p TeamCS_Godot_GT7_QA.apk assets/assets/models/ATTRIBUTION.md | grep -q '100STYLE'
           unzip -p TeamCS_Godot_GT7_QA.apk classes.dex > /tmp/teamcs-classes.dex
           if ! strings /tmp/teamcs-classes.dex | grep -q 'TeamCSNetwork'; then
             echo "Native Wi-Fi/mobile plugin class missing from APK" >&2
@@ -163,6 +167,7 @@ jobs:
         run: |
           set -euo pipefail
           sed -i 's#architectures/x86_64=true#architectures/x86_64=false#' godot/export_presets.cfg
+          sed -i 's#custom_features="teamcs_render_qa"#custom_features=""#' godot/export_presets.cfg
           /tmp/godot --headless --path godot --editor --export-debug "Android GT7 QA" \
             "$GITHUB_WORKSPACE/TeamCS_Godot_GT7_ARM64.apk" 2>&1 | tee /tmp/godot-export-arm64.log
           test -s TeamCS_Godot_GT7_ARM64.apk
@@ -196,6 +201,7 @@ jobs:
             teamcs-android-render/
             teamcs-desktop-render/
             /tmp/human-model-smoke.log
+            /tmp/bot-motion-smoke.log
             /tmp/teamcs-lobby-model.log
             /tmp/economy-smoke.log
             /tmp/teamcs-render.log

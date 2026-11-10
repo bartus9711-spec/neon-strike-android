@@ -13,10 +13,6 @@ grep -q "Success" /tmp/teamcs-install.log
 adb shell pm path "$PKG" | tee /tmp/teamcs-pmpath.log
 grep -q package: /tmp/teamcs-pmpath.log
 adb logcat -c
-# Enable pixel comparison only for this emulator installation. Phone builds
-# launch normally; no readbacks or automated visibility changes in gameplay.
-adb shell run-as "$PKG" mkdir -p files
-adb shell run-as "$PKG" touch files/teamcs-render-qa
 # Do NOT hot-change emulator resolution after boot: this can hang Quickstep
 # on slow software-Vulkan devices and produce a false positive for rendering.
 # Hardware AVD profile and Godot's landscape orientation provide the size.
@@ -30,10 +26,23 @@ adb shell screencap -p /sdcard/teamcs-smoke.png
 adb pull /sdcard/teamcs-smoke.png "$GITHUB_WORKSPACE/teamcs-emulator-smoke.png"
 adb logcat -d -v brief > "$GITHUB_WORKSPACE/teamcs-emulator-logcat.txt"
 mkdir -p "$GITHUB_WORKSPACE/teamcs-android-render"
-for image in teamcs-lobby.png teamcs-operators.png teamcs-empty-stage.png teamcs-operator-0.png teamcs-operator-1.png; do
-    adb exec-out run-as "$PKG" cat "files/$image" > "$GITHUB_WORKSPACE/teamcs-android-render/$image"
+QA_DATA_DIR=$(sed -n 's/.*TEAMCS_QA_OUTPUT: //p' "$GITHUB_WORKSPACE/teamcs-emulator-logcat.txt" | tr -d '\r' | tail -1)
+if test -z "$QA_DATA_DIR"; then
+    echo "The emulator QA feature did not start the pixel test" >&2
+    exit 33
+fi
+for image in teamcs-lobby.png teamcs-operators.png teamcs-empty-stage.png teamcs-operator-0.png teamcs-operator-1.png teamcs-match.png; do
+    adb exec-out run-as "$PKG" cat "$QA_DATA_DIR/$image" > "$GITHUB_WORKSPACE/teamcs-android-render/$image"
 done
-adb shell run-as "$PKG" rm files/teamcs-render-qa
+python3 - "$GITHUB_WORKSPACE/teamcs-android-render" <<'PY'
+from pathlib import Path
+from PIL import Image
+import sys
+for path in Path(sys.argv[1]).glob('*.png'):
+    with Image.open(path) as image:
+        image.verify()
+print('TEAMCS_QA_RENDER_FILES_VALID')
+PY
 python3 - "$GITHUB_WORKSPACE/teamcs-emulator-smoke.png" <<'PY'
 import struct, sys, pathlib
 p=pathlib.Path(sys.argv[1])
@@ -73,7 +82,7 @@ if ! grep -q "TEAMCS_MATCH_READY" "$GITHUB_WORKSPACE/teamcs-emulator-logcat.txt"
     echo "No scene-ready signal in Android logcat: game may have failed after launching" >&2
     exit 32
 fi
-for marker in TEAMCS_PREVIEW_ACTOR TEAMCS_CHARACTER_RENDER_PASS; do
+for marker in TEAMCS_PREVIEW_ACTOR TEAMCS_CHARACTER_RENDER_PASS TEAMCS_GAMEPLAY_RENDER_PASS; do
   if ! grep -q "$marker" "$GITHUB_WORKSPACE/teamcs-emulator-logcat.txt"; then
     echo "Missing $marker diagnostic: the live Android lobby preview was not verified" >&2
     exit 33

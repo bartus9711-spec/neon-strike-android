@@ -141,7 +141,9 @@ func _stage() -> void:
     preview.size = Vector2i(640,420)
     preview.transparent_bg = false
     preview.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
-    preview.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
+    # Force the initial Android offscreen frame; visibility-based startup can
+    # leave this render target black. The hide/show handler disables it later.
+    preview.render_target_update_mode = SubViewport.UPDATE_ALWAYS
     preview.own_world_3d = true
     frame.add_child(preview)
     preview_frame = frame

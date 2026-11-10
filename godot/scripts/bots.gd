@@ -273,11 +273,15 @@ func _physics_process(delta: float) -> void:
         if distance > .3:
             var desired_angle := atan2(-destination.x,-destination.z)
             body.rotation.y = lerp_angle(body.rotation.y,desired_angle,delta*7.0)
-        var walking := body.velocity.length() > 1.5 and distance > 7.5
+        # Drive locomotion from actual horizontal motion, including acceleration
+        # and braking inside engagement distance. Goal distance is AI policy,
+        # not evidence that the feet have stopped moving.
+        var planar_speed := Vector2(body.velocity.x,body.velocity.z).length()
+        var walking := planar_speed > .45
         _play(entry,"Walking" if walking else "Idle")
         var rig: Node3D = entry["operative"]
         if is_instance_valid(rig):
-            rig.update_pose(Vector2(body.velocity.x,body.velocity.z).length() if walking else 0.0,delta)
+            rig.update_pose(planar_speed,delta)
         if float(entry["cooldown"]) <= 0 and distance < 22 and distance > .5:
             var target := _best_target(entry)
             if target != null and _has_sight(body,target):
