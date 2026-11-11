@@ -2,7 +2,22 @@
 
 Aktualizacja: 2026-11-11. Ten plik chroni projekt przed powtarzaniem tych samych zadań.
 
-## Aktywny etap: naprawa rzeczywistego renderowania
+## Aktywny etap: animowany szczegółowy CT
+
+Gałąź robocza: `teamcs-tactical-motion-20261111-atlas`, od `3925fd56ba8d` (kod potwierdzony w `e4f6760`). Nie scalać do main bez dalszej oceny gry.
+
+- Szczegółowy model CT otrzymał idle z oddechem, chód, bieg i sprint. Ten sam model jest używany przez czterech botów CT w meczu; T zachowuje oddzielny model. Ekonomia i menu zakupów bez zmian.
+- `godot/assets/models/tactical_motion.tres` zawiera gotowe klipy: 65 mapowanych kości, zachowane proporcje modelu, korekta kontaktu butów z podłożem, zamknięte pętle. Brak szkieletu pomocniczego i przeliczania wierzchołków podczas odtwarzania na telefonie. Biblioteka animacji jest współdzielona przez operatorów; stałe ścieżki chwytu rąk mają tylko klucze końcowe.
+- Wykorzystano istniejące klipy 100STYLE ze zweryfikowanego GLB, z górną częścią ciała w pozycji `ready_idle`. Próba użycia starych `ready_walk/run/sprint` ujawniła gwałtowne obroty stóp i zanurzanie buta nawet o 17 cm między klatkami; nie wysyłano tej próby jako poprawnej wersji. Aktualny test próbuje pełne cykle co 1/120 s: chód około -0.5 do +1.9 mm, bieg 0–57.6 mm, sprint około -0.1 do +51.9 mm nad podłożem. Fazy lotu w biegu pozostają zachowane.
+- Zapętlono również kopie dotychczasowych klipów żołnierza, które wcześniej były jednorazowe. Oryginalne GLB pozostają bez zmian; kredyty adaptacji są w `ATTRIBUTION.md`.
+- Lokalny Godot 4.6.3: pozytywne testy modeli i czterech stanów obu frakcji, pełnych cykli CT, lobby, ruszania/hamowania botów, 20 asercji ekonomii i ośmiu map 5v5. Render OpenGL/llvmpipe potwierdził oba modele oraz zmiany pikseli CT między fazami trzech rodzajów ruchu. Kontrola negatywna ukrywająca modele poprawnie kończy się błędem (zero pikseli postaci/ruchu).
+- **Nowe Actions i eksport APK wymagają potwierdzenia dla tego etapu.** Poprzedni sukces `42869740913` nie potwierdza nowych animacji. Nadal brak pomiaru FPS na fizycznym Androidzie; test programowego renderera nie zastępuje telefonu.
+
+Odtwarzanie zasobu po zmianie przypiętych modeli: `python3 godot/tools/fetch_human_models.py`, import edytorem Godota, następnie `godot --headless --path godot --script res://tools/bake_tactical_motion.gd` i `res://tests/tactical_motion_smoke.gd`. Generator działa offline podczas przygotowania projektu; gotowy TRES jest wersjonowany i eksportowany do APK. Przed publikacją obejrzeć klatki `teamcs-ct-ready_*` z testu Androida.
+
+Następnie: dopasowanie trzymanej broni i ocena przejść animacji w rozgrywce, poprawa uproszczonego wyglądu T, przeniesienie istniejących profili broni FPS z integrated-humanoids bez przepisywania ekonomii, pomiary fizycznego telefonu.
+
+## Poprzedni potwierdzony etap: naprawa rzeczywistego renderowania
 
 Gałąź robocza: `teamcs-visual-render-fix-20261109-atlas`, bazuje na `teamcs-natural-motion-20261109-atlas` (`228e4ee51c9e`). Stan sprzed naprawy: `d0198aa23c28`. Poprzednie zielone Actions nie dowodziły widoczności operatorów; obejrzane obrazy Androida pokazywały puste podium.
 

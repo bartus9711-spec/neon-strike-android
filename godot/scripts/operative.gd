@@ -5,6 +5,8 @@ var phase := 0.0
 const RIGGED_HUMAN := "res://assets/models/soldier.glb"
 const DETAILED_HUMAN := "res://assets/models/soldier_tac.glb"
 const SKINNED_BOUNDS = preload("res://scripts/skinned_bounds.gd")
+const TACTICAL_MOTION := "res://assets/models/tactical_motion.tres"
+static var looping_libraries: Dictionary = {}
 # Rest-pose fitting is shared by all bots using a source. Never skin vertices
 # on the CPU during animation or once per actor on mobile.
 static var source_bounds: Dictionary = {}
@@ -223,6 +225,13 @@ func _import_real_human(team: int) -> bool:
     shell.visible = true
     imported_model = human
     imported_model_visible = true
+    if prefer_detail_lod and ResourceLoader.exists(TACTICAL_MOTION):
+        var skeletons := human.find_children("*", "Skeleton3D", true, false)
+        if not skeletons.is_empty():
+            var player := AnimationPlayer.new()
+            player.name = "TacticalMotion"
+            skeletons[0].add_child(player)
+            player.add_animation_library(&"", load(TACTICAL_MOTION) as AnimationLibrary)
     var animation_players := human.find_children("*","AnimationPlayer",true,false)
     if not animation_players.is_empty():
         imported_anim = animation_players[0] as AnimationPlayer
@@ -249,6 +258,20 @@ func _import_real_human(team: int) -> bool:
             anim_run = anim_walk
         if anim_idle == &"" and not clips.is_empty():
             anim_idle = StringName(clips[0])
+        # Imported ready_* clips are one-shots. Loop the gameplay copies so
+        # walking does not stop/restart once per stride; keep source GLBs intact.
+        if not looping_libraries.has(model_path):
+            var library := imported_anim.get_animation_library(&"").duplicate() as AnimationLibrary
+            for clip in [anim_idle, anim_walk, anim_run, anim_sprint]:
+                if clip == &"" or library.get_animation(clip).loop_mode == Animation.LOOP_LINEAR:
+                    continue
+                var looped := library.get_animation(clip).duplicate() as Animation
+                looped.loop_mode = Animation.LOOP_LINEAR
+                library.remove_animation(clip)
+                library.add_animation(clip, looped)
+            looping_libraries[model_path] = library
+        imported_anim.remove_animation_library(&"")
+        imported_anim.add_animation_library(&"", looping_libraries[model_path])
         if anim_idle != &"":
             imported_anim.play(anim_idle)
     print("TEAMCS_HUMAN_FITTED: ",model_path," dimensions=",extent,

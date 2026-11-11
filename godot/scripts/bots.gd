@@ -134,6 +134,9 @@ func _make_actor(team: int, name: String, position: Vector3, index: int) -> Dict
     actor.add_child(animated)
     var operative = OPERATIVE.new()
     operative.name = "AnimatedArmouredHumanoid"
+    # The tactical CT now has baked locomotion, so use its actual clothing and
+    # vest during the match too. Meshes/textures/animation resources are shared.
+    operative.prefer_detail_lod = team == 0
     animated.add_child(operative)
     operative.build(team,index,actor_quality)
     var entry := {

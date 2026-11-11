@@ -32,6 +32,7 @@ func _run() -> void:
             var actor = bot.operative
             _check(is_instance_valid(actor.imported_model), "imported in-game humanoid")
             _check(is_instance_valid(actor.imported_anim), "in-game animator")
+            _check(actor.imported_source_path.ends_with("soldier_tac.glb" if bot.team == 0 else "soldier.glb"), "distinct CT/T models in the actual match")
         _check(teams == [4,5], "player + four CT versus five T")
         var operative = game.bots.roster[0].operative
         operative.update_pose(3.0,.2)

@@ -31,7 +31,7 @@ if test -z "$QA_DATA_DIR"; then
     echo "The emulator QA feature did not start the pixel test" >&2
     exit 33
 fi
-for image in teamcs-lobby.png teamcs-operators.png teamcs-empty-stage.png teamcs-operator-0.png teamcs-operator-1.png teamcs-match.png; do
+for image in teamcs-lobby.png teamcs-operators.png teamcs-empty-stage.png teamcs-operator-0.png teamcs-operator-1.png teamcs-match.png teamcs-ct-ready_walk-{1,2}.png teamcs-ct-ready_run-{1,2}.png teamcs-ct-ready_sprint-{1,2}.png; do
     adb exec-out run-as "$PKG" cat "$QA_DATA_DIR/$image" > "$GITHUB_WORKSPACE/teamcs-android-render/$image"
 done
 python3 - "$GITHUB_WORKSPACE/teamcs-android-render" <<'PY'
@@ -82,7 +82,7 @@ if ! grep -q "TEAMCS_MATCH_READY" "$GITHUB_WORKSPACE/teamcs-emulator-logcat.txt"
     echo "No scene-ready signal in Android logcat: game may have failed after launching" >&2
     exit 32
 fi
-for marker in TEAMCS_PREVIEW_ACTOR TEAMCS_CHARACTER_RENDER_PASS TEAMCS_GAMEPLAY_RENDER_PASS; do
+for marker in TEAMCS_PREVIEW_ACTOR TEAMCS_CHARACTER_RENDER_PASS TEAMCS_GAMEPLAY_RENDER_PASS TEAMCS_TACTICAL_RENDER_MOTION; do
   if ! grep -q "$marker" "$GITHUB_WORKSPACE/teamcs-emulator-logcat.txt"; then
     echo "Missing $marker diagnostic: the live Android lobby preview was not verified" >&2
     exit 33

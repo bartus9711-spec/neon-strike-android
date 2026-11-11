@@ -73,6 +73,35 @@ func run(lobby: CanvasLayer, directory: String) -> bool:
         _save(rendered, "teamcs-operator-%d.png" % team)
         _coverage(rendered, empty, team)
         actor.hide()
+    # The detailed CT used to have no clips at all. Prove the skinned pixels
+    # change with each gait, on desktop AND inside the exported Android APK.
+    var ct = lobby.previews[0]
+    ct.show()
+    if not is_instance_valid(ct.imported_anim):
+        _check(false, "detailed CT animator exists")
+    else:
+        for clip in ["ready_walk", "ready_run", "ready_sprint"]:
+            var images: Array[Image] = []
+            var animation: Animation = ct.imported_anim.get_animation(clip)
+            for phase in [.125, .625]:
+                ct.imported_anim.play(clip)
+                ct.imported_anim.seek(animation.length * phase, true)
+                ct.imported_anim.pause()
+                await _frame()
+                var pose: Image = lobby.preview.get_texture().get_image()
+                images.append(pose)
+                _save(pose, "teamcs-ct-%s-%d.png" % [clip, images.size()])
+            var changed := 0
+            for y in range(images[0].get_height()):
+                for x in range(images[0].get_width()):
+                    var a := images[0].get_pixel(x,y)
+                    var b := images[1].get_pixel(x,y)
+                    if absf(a.r-b.r) + absf(a.g-b.g) + absf(a.b-b.b) > .12:
+                        changed += 1
+            _check(changed > images[0].get_width()*images[0].get_height()*.003, clip + " changes visible CT pixels")
+            print("TEAMCS_TACTICAL_RENDER_MOTION: ", clip, " changed_pixels=", changed)
+        ct.imported_anim.play(ct.anim_idle)
+        ct.imported_anim.advance(0)
     for actor in lobby.previews:
         actor.show()
     lobby.active = was_active

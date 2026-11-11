@@ -4,6 +4,7 @@ on:
     branches:
       - teamcs-natural-motion-20261109-atlas
       - teamcs-visual-render-fix-20261109-atlas
+      - teamcs-tactical-motion-20261111-atlas
   workflow_dispatch:
 
 jobs:
@@ -82,6 +83,8 @@ jobs:
           grep -q 'TEAMCS_HUMAN_MOTION_STATES_PASS' /tmp/human-model-smoke.log
           timeout 45s /tmp/godot --headless --path godot --script res://tests/bot_motion_smoke.gd 2>&1 | tee /tmp/bot-motion-smoke.log
           grep -q 'TEAMCS_BOT_MOTION_PASS' /tmp/bot-motion-smoke.log
+          timeout 90s /tmp/godot --headless --path godot --script res://tests/tactical_motion_smoke.gd 2>&1 | tee /tmp/tactical-motion-smoke.log
+          grep -q 'TEAMCS_TACTICAL_MOTION_PASS' /tmp/tactical-motion-smoke.log
       - name: Validate CT and T use distinct real imported humanoids in lobby
         run: |
           set -euo pipefail
@@ -202,6 +205,7 @@ jobs:
             teamcs-desktop-render/
             /tmp/human-model-smoke.log
             /tmp/bot-motion-smoke.log
+            /tmp/tactical-motion-smoke.log
             /tmp/teamcs-lobby-model.log
             /tmp/economy-smoke.log
             /tmp/teamcs-render.log

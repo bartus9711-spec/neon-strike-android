@@ -37,7 +37,7 @@ func _run() -> void:
             _verify(size.x > .25 and size.x < 2.1,"imported model plausible width")
             _verify(size.z > .15 and size.z < 2.1,"imported model plausible depth")
             _verify(absf(fitted.position.y) < .03,"boots rest on the ground")
-        if index == 1:
+        if index in [0, 1]:
             _verify(is_instance_valid(actor.imported_anim),"rigged in-game humanoid has animator")
             if is_instance_valid(actor.imported_anim):
                 print("TEAMCS_HUMAN_CLIPS: ",actor.imported_anim.get_animation_list())
