@@ -1,6 +1,6 @@
 # TeamCS — sprawdzony stan i kierunek projektu
 
-Aktualizacja: 2026-11-10. Ten plik chroni projekt przed powtarzaniem tych samych zadań.
+Aktualizacja: 2026-11-11. Ten plik chroni projekt przed powtarzaniem tych samych zadań.
 
 ## Aktywny etap: naprawa rzeczywistego renderowania
 
@@ -11,8 +11,11 @@ Gałąź robocza: `teamcs-visual-render-fix-20261109-atlas`, bazuje na `teamcs-n
 - Poprawiono osadzenie słuchawek CT na czapce przez lokalną kopię bindów; usunięto unoszące się znaczniki i przeniesiono kolory drużyny na materiały ubrania. Oryginalne pliki GLB bez zmian.
 - Ukryte lobby zatrzymuje animacje podglądu i jego renderowanie. Zwykły start nie wykonuje odczytu obrazu GPU.
 - Test pikseli porównuje każdego operatora z pustą sceną i sprawdza powierzchnię, wysokość oraz położenie sylwetki. Kontrola negatywna (istniejące, ale niewidoczne modele) musi zakończyć się błędem. Ten sam test uruchamia się na emulatorze Androida tylko z cechą eksportu `teamcs_render_qa`; ARM64 dla telefonu jej nie zawiera.
-- Zweryfikowano lokalny render OpenGL (Godot 4.6.3, llvmpipe), geometrię, lobby oraz 20 asercji ekonomii. Testy CI/Androida tej poprawki wymagają jeszcze wyniku nowego commitu — nie traktować tego wpisu jako potwierdzenia APK.
-- CI `42868278620` (`799049f`) zaliczyło import, testy geometrii/ekonomii, piksele desktopowe i osiem map, ale zatrzymało się na Androidzie: brak sygnału testu pikseli i czarny podgląd. Poprawka uruchamia QA przez jawną cechę eksportu, pobiera rzeczywistą ścieżkę user:// z aplikacji i przywraca UPDATE_ALWAYS na pierwszą klatkę podglądu. Wymaga nowego testu Androida.
+- **Potwierdzona podstawa: `e4f6760febe62e08458f61e932027b738a5119a6`.** [CI 42869740913](https://github.com/bartus9711-spec/neon-strike-android/actions/runs/42869740913) zakończyło się sukcesem 10 listopada: import Godot 4.7.2, modele/animacje, lobby, 20 asercji ekonomii, test pikseli wraz z kontrolą negatywną, ruszanie/hamowanie botów, osiem map 5v5, podpis APK, rzeczywisty emulator Android 15/Vulkan oraz eksport ARM64.
+- Obejrzano rzeczywiste obrazy Androida: obaj operatorzy są widoczni, słuchawki CT osadzone na głowie, po przejściu GRAJ → zakupy → mecz arena ponownie się renderuje. W teście pikseli CT zajmuje 22566, T 16948 pikseli kadru 593×431. Lobby: 76 wywołań rysowania w emulatorze. To nie jest pomiar FPS fizycznego telefonu ani dowód docelowej jakości artystycznej.
+- ARM64: 99910747 bajtów, SHA-256 `dbdd3f2d3da74c84fc30ad3064abd20823d02684510e325480db13fea4d8c432`. Sprawdzono ABI tylko arm64-v8a, obecność atrybucji w APK oraz brak cechy automatycznego testu w `project.binary`. ARM64 nie było uruchamiane na fizycznym telefonie; emulator uruchamia wariant x86_64 tego samego kodu gry.
+- [Artefakt CI](https://github.com/bartus9711-spec/neon-strike-android/actions/runs/42869740913/artifacts/13789122161) zawiera APK i obrazy lobby/meczu; wygasa 24 listopada. SHA-256 ZIP: `443272dd08abfb3747df3c50f6d77ecd29b6f6a1e0e9c0bcb2a85a811887cd41`.
+- Historyczne CI `42868278620` (`799049f`) zatrzymało się na Androidzie: brak sygnału testu pikseli i czarny podgląd. Naprawiono jawne włączanie QA w eksporcie emulatora i UPDATE_ALWAYS na pierwszą klatkę. Ukrywanie podglądu nadal zatrzymuje renderowanie; nie przywracać UPDATE_WHEN_VISIBLE na start bez ponownego testu Androida.
 - Uzupełniono kredyty klipów Quaternius i 100STYLE na podstawie przypiętego README upstream; plik z atrybucją jest jawnie dołączany do eksportu. Pobieranie modeli sprawdza SHA-256.
 
 ### Porównanie istniejących gałęzi
@@ -24,7 +27,7 @@ Gałąź robocza: `teamcs-visual-render-fix-20261109-atlas`, bazuje na `teamcs-n
 | teamcs-natural-motion | 228e4ee51c9e | idle/walk/run/sprint i płynna prędkość; wybrana baza |
 | teamcs-integrated-humanoids | a01e3fd348c1 | istniejące profile broni FPS, blokada inputu przy zakupach i HUD amunicji; osobna gałąź, jeszcze nie scalona |
 
-### Następny etap po potwierdzeniu Androida
+### Następny etap na potwierdzonej podstawie
 
 Dodatkowo lokalnie wykryto i naprawiono dwa koszty/regresje: rysowanie całej areny za nieprzezroczystym lobby (558 → 86 wywołań rysowania w OpenGL/llvmpipe, bez obietnicy FPS telefonu) oraz przełączanie poruszających się botów do idle poniżej 1.5 m/s lub podczas hamowania. Test botów sprawdza ruszanie, hamowanie i zatrzymanie; przed poprawką pierwsze dwa przypadki nie przechodziły. Test sceny weryfikuje przywrócenie 3D po GRAJ i zakupach.
 
